@@ -26,6 +26,7 @@ const skillTargets = [
   join(homedir, '.claude/skills/munch'),
   join(homedir, '.kilocode/skills/munch'),
   join(homedir, '.agents/skills/munch'),
+  join(homedir, '.codex/skills/munch'),
   join(homedir, '.gemini/skills/munch'),
   join(homedir, '.config/opencode/skills/munch'),
   join(homedir, '.opencode/skills/munch'),
@@ -172,7 +173,7 @@ function updateCodexConfig(configPath) {
     }
 
     // 2. Register and enable the skill (using the correct [[skills.config]] format)
-    const skillFilePath = join(homedir, '.agents/skills/munch/SKILL.md').replace(/\\/g, '/');
+    const skillFilePath = join(homedir, '.codex/skills/munch/SKILL.md').replace(/\\/g, '/');
     const skillEntry = `[[skills.config]]\npath = "${skillFilePath}"\nenabled = true`;
 
     const escapedPath = skillFilePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
