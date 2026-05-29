@@ -1,0 +1,39 @@
+# munch — Codex / Antigravity Plugin Manifest v1.0
+# Place this file at:
+#   Codex:       ~/.agents/plugins/munch/agents/openai.yaml
+#                OR repo-local: .agents/plugins/munch/agents/openai.yaml
+#   Antigravity: ~/.gemini/config/plugins/munch/ (shared across all Agy tools)
+#                OR project-local: .antigravity/plugins/munch/
+
+name: munch
+version: "1.0"
+description: >
+  Augmented cognitive agent skill. Activates anti-regression tracking,
+  adaptive user modeling, BTL build loop, OWASP security scanning, and
+  polyglot code generation across 20+ T1 languages.
+author: cika
+license: MIT
+homepage: https://github.com/cika/munch
+
+# Skills bundled with this plugin
+skills:
+  - name: munch
+    path: ../skill/munch/SKILL.md
+    description: >
+      Full-stack coding, UI/UX, architecture, security, and analysis kernel.
+      Activates when building, reviewing, designing, or fixing code.
+
+# MCP server bundled with this plugin (optional wiring)
+mcp:
+  servers:
+    munch:
+      command: node
+      args:
+        - "{{PLUGIN_DIR}}/../../mcp-server/build/index.js"
+      env: {}
+
+# Codex: auto-install hook
+install:
+  post_install: |
+    echo "[munch] Plugin installed. Skill available as: munch"
+    echo "[munch] MCP server: run 'npm install && npm run build' in mcp-server/"
