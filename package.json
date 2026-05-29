@@ -7,7 +7,7 @@
     "munch": "./mcp-server/build/index.js"
   },
   "scripts": {
-    "install": "node install.js",
+    "setup": "node install.js",
     "build": "npm run --prefix mcp-server build",
     "start": "npm run --prefix mcp-server start"
   },

@@ -44,7 +44,7 @@ Clone the repository and run the automated installer:
 ```bash
 git clone https://github.com/WyvernCW/MunchsPlugin.git
 cd MunchsPlugin
-npm run install
+npm run setup
 ```
 
 The installer script will automatically:
