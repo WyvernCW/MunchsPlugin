@@ -279,6 +279,17 @@ async function main(): Promise<void> {
         return;
       }
 
+      if (req.method === "GET" && (pathname === "/" || pathname === "/health")) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          status: "online",
+          mcp: "active",
+          version: "1.0.0",
+          message: "munch MCP Server is running"
+        }, null, 2));
+        return;
+      }
+
       res.writeHead(404, { "Content-Type": "text/plain" });
       res.end("Not Found");
     });
