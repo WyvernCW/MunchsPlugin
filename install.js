@@ -4,7 +4,7 @@
  * Cross-platform installer to copy skills/plugins and configure MCP host files automatically.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, cpSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -14,32 +14,30 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const homedir = os.homedir();
 
 // Paths in the local repository
-const LOCAL_SKILL_SRC = join(__dirname, 'skill/munch/SKILL.md');
+const LOCAL_SKILL_DIR = join(__dirname, 'skill/munch');
 const LOCAL_OPENCODE_PLUGIN_SRC = join(__dirname, 'opencode-plugin/munch.plugin.ts');
-const LOCAL_CODEX_PLUGIN_DIR = join(__dirname, 'codex-plugin');
 
 console.log('⟦§MUNCH INSTALLER⟧ Starting auto-setup...');
 
 // ──────────────────────────────────────────────
-// 1. Copy Skill Files
+// 1. Copy Skill Packages (Recursive)
 // ──────────────────────────────────────────────
 const skillTargets = [
-  join(homedir, '.claude/skills/munch/SKILL.md'),
-  join(homedir, '.kilocode/skills/munch/SKILL.md'),
-  join(homedir, '.agents/skills/munch/SKILL.md'),
-  join(homedir, '.gemini/skills/munch/SKILL.md'),
-  join(homedir, '.config/opencode/skills/munch/SKILL.md'),
-  join(homedir, '.opencode/skills/munch/SKILL.md'),
+  join(homedir, '.claude/skills/munch'),
+  join(homedir, '.kilocode/skills/munch'),
+  join(homedir, '.agents/skills/munch'),
+  join(homedir, '.gemini/skills/munch'),
+  join(homedir, '.config/opencode/skills/munch'),
+  join(homedir, '.opencode/skills/munch'),
 ];
 
 skillTargets.forEach((target) => {
   try {
-    const dir = dirname(target);
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
+    if (!existsSync(target)) {
+      mkdirSync(target, { recursive: true });
     }
-    copyFileSync(LOCAL_SKILL_SRC, target);
-    console.log(`✓ Copied skill to: ${target}`);
+    cpSync(LOCAL_SKILL_DIR, target, { recursive: true });
+    console.log(`✓ Copied skill package recursively to: ${target}`);
   } catch (err) {
     console.error(`✗ Failed to copy skill to ${target}:`, err.message);
   }
@@ -66,43 +64,17 @@ opencodePluginTargets.forEach((target) => {
   }
 });
 
-// Codex/Antigravity plugins (requires copying entire folder structures)
-const pluginFolders = [
-  {
-    dest: join(homedir, '.agents/plugins/munch'),
-    skillDest: join(homedir, '.agents/plugins/munch/skill/munch/SKILL.md'),
-  },
-  {
-    dest: join(homedir, '.gemini/config/plugins/munch'),
-    skillDest: null,
-  },
-];
-
-pluginFolders.forEach(({ dest, skillDest }) => {
-  try {
-    if (!existsSync(dest)) {
-      mkdirSync(dest, { recursive: true });
-    }
-    // Copy manifest yaml
-    const yamlSrc = join(LOCAL_CODEX_PLUGIN_DIR, 'agents/openai.yaml');
-    const yamlDestDir = join(dest, 'agents');
-    if (!existsSync(yamlDestDir)) {
-      mkdirSync(yamlDestDir, { recursive: true });
-    }
-    copyFileSync(yamlSrc, join(yamlDestDir, 'openai.yaml'));
-
-    if (skillDest) {
-      const skillDestDir = dirname(skillDest);
-      if (!existsSync(skillDestDir)) {
-        mkdirSync(skillDestDir, { recursive: true });
-      }
-      copyFileSync(LOCAL_SKILL_SRC, skillDest);
-    }
-    console.log(`✓ Configured Codex/Antigravity plugin directory at: ${dest}`);
-  } catch (err) {
-    console.error(`✗ Failed to configure plugin at ${dest}:`, err.message);
+// Antigravity plugin manifest copy
+try {
+  const dest = join(homedir, '.gemini/config/plugins/munch/agents');
+  if (!existsSync(dest)) {
+    mkdirSync(dest, { recursive: true });
   }
-});
+  copyFileSync(join(LOCAL_SKILL_DIR, 'agents/openai.yaml'), join(dest, 'openai.yaml'));
+  console.log(`✓ Configured Antigravity plugin directory at: ${dirname(dest)}`);
+} catch (err) {
+  console.error(`✗ Failed to configure Antigravity plugin:`, err.message);
+}
 
 // ──────────────────────────────────────────────
 // 3. Compile MCP Server

@@ -104,15 +104,18 @@ Or use the MCP `save_snapshot` / `restore_snapshot` tools.
 munch/
 ├── skill/
 │   └── munch/
-│       └── SKILL.md              ← The skill (all agents)
+│       ├── SKILL.md              ← The skill (all agents)
+│       ├── agents/
+│       │   └── openai.yaml        ← Codex/Antigravity manifest
+│       ├── scripts/              ← Supporting scripts (empty placeholder)
+│       ├── references/           ← Supporting documentation (empty placeholder)
+│       └── assets/               ← Supporting templates/resources (empty placeholder)
 ├── mcp-server/
 │   ├── src/index.ts              ← MCP server source
 │   ├── package.json
 │   └── tsconfig.json
 ├── opencode-plugin/
 │   └── munch.plugin.ts           ← OpenCode plugin
-├── codex-plugin/
-│   └── agents/openai.yaml        ← Codex/Antigravity plugin manifest
 └── README.md
 ```
 
