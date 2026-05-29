@@ -51,7 +51,7 @@ The installer script will automatically:
 1. **Install Skills**: Copy `SKILL.md` to destination folders for **Claude Code**, **KiloCode**, **Codex**, **Antigravity**, and **OpenCode**.
 2. **Install Plugins**: Copy plugin modules for **OpenCode**, **Codex**, and **Antigravity**.
 3. **Compile MCP Server**: Run `npm install` and compile typescript in the `mcp-server` directory.
-4. **Configure Host Files**: Auto-register the compiled MCP Server inside configuration files such as `~/.claude/settings.json` and `~/.gemini/config/mcp_config.json`.
+4. **Configure Host Files**: Auto-register your remote Railway SSE URL (`https://munchsplugin-production.up.railway.app/sse`) inside configuration files such as `~/.claude/settings.json` and `~/.gemini/config/mcp_config.json`.
 
 
 ---
