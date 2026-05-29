@@ -156,6 +156,58 @@ function updateJsonConfig(configPath, key) {
   }
 }
 
+// OpenCode config helper
+function updateOpenCodeConfig(configPath) {
+  try {
+    const dir = dirname(configPath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    let config = {};
+    if (existsSync(configPath)) {
+      try {
+        config = JSON.parse(readFileSync(configPath, 'utf8'));
+      } catch (e) {}
+    }
+    if (!config.mcp) config.mcp = {};
+    config.mcp.munch = {
+      url: 'https://munchsplugin-production.up.railway.app/sse',
+    };
+    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+    console.log(`✓ Registered remote munch MCP server (SSE) in OpenCode: ${configPath}`);
+  } catch (err) {
+    console.error(`✗ Failed to write OpenCode config ${configPath}:`, err.message);
+  }
+}
+
+// Codex config helper
+function updateCodexConfig(configPath) {
+  try {
+    const dir = dirname(configPath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    let content = '';
+    if (existsSync(configPath)) {
+      content = readFileSync(configPath, 'utf8');
+    }
+    const entry = '[mcp.munch]\nurl = "https://munchsplugin-production.up.railway.app/sse"';
+    if (content.includes('[mcp.munch]')) {
+      content = content.replace(/\[mcp\.munch\]\s*\n\s*url\s*=\s*"[^"]*"/g, entry);
+    } else {
+      content = content.trim() + '\n\n' + entry + '\n';
+    }
+    writeFileSync(configPath, content.trim() + '\n', 'utf8');
+    console.log(`✓ Registered remote munch MCP server (SSE) in Codex: ${configPath}`);
+  } catch (err) {
+    console.error(`✗ Failed to write Codex config ${configPath}:`, err.message);
+  }
+}
+
+// ──────────────────────────────────────────────
+// 5. Update Configurations for All Hosts
+// ──────────────────────────────────────────────
+
 // Claude Code config paths
 const claudeConfigPaths = [
   join(homedir, '.claude/settings.json'),
@@ -169,7 +221,6 @@ if (process.platform === 'win32') {
 }
 
 claudeConfigPaths.forEach((p) => {
-  // If the directory exists or it's the home config, we attempt to write/update it
   if (existsSync(dirname(p)) || p.includes('.claude')) {
     updateJsonConfig(p, 'munch');
   }
@@ -178,11 +229,44 @@ claudeConfigPaths.forEach((p) => {
 // Antigravity config path
 updateJsonConfig(join(homedir, '.gemini/config/mcp_config.json'), 'munch');
 
+// KiloCode config paths
+const kilocodePaths = [
+  join(homedir, '.kilocode/settings.json'),
+  join(homedir, '.config/kilocode/settings.json'),
+];
+kilocodePaths.forEach((p) => {
+  if (existsSync(dirname(p)) || p.includes('.kilocode')) {
+    updateJsonConfig(p, 'munch');
+  }
+});
+
+// OpenCode config paths
+const opencodePaths = [
+  join(homedir, '.config/opencode/opencode.json'),
+  join(homedir, '.opencode/opencode.json'),
+];
+opencodePaths.forEach((p) => {
+  if (existsSync(dirname(p)) || p.includes('.opencode')) {
+    updateOpenCodeConfig(p);
+  }
+});
+
+// Codex config paths
+const codexPaths = [
+  join(homedir, '.codex/config.toml'),
+  join(homedir, '.config/codex/config.toml'),
+];
+codexPaths.forEach((p) => {
+  if (existsSync(dirname(p)) || p.includes('.codex')) {
+    updateCodexConfig(p);
+  }
+});
+
 console.log('\n======================================================');
 console.log('⟦§MUNCH AUTO-INSTALL COMPLETE⟧');
 console.log('Installed files:');
 console.log(`  • Skill: ~/.gemini/skills/munch/SKILL.md`);
 console.log(`  • Skill: ~/.claude/skills/munch/SKILL.md`);
 console.log(`  • MCP server: Remote SSE via https://munchsplugin-production.up.railway.app/sse`);
-console.log('Restart your AI Agent (e.g. Claude Code) to load the changes.');
+console.log('Restart your AI Agent to load the changes.');
 console.log('======================================================\n');
