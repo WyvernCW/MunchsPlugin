@@ -7,6 +7,9 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { createServer } from "http";
+import { parse as parseUrl } from "url";
 import { z } from "zod";
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
@@ -172,9 +175,56 @@ server.registerTool("ping", {
 // Start
 // ──────────────────────────────────────────────
 async function main() {
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    console.error("⟦§MUNCH⟧ MCP server v1.0 running on stdio");
+    const isSseMode = process.argv.includes("--sse") || process.env.MUNCH_SSE === "true" || process.env.PORT !== undefined;
+    const port = parseInt(process.env.PORT || "8080", 10);
+    if (isSseMode) {
+        const transports = new Map();
+        const httpServer = createServer(async (req, res) => {
+            // CORS headers
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-session-id");
+            if (req.method === "OPTIONS") {
+                res.writeHead(200);
+                res.end();
+                return;
+            }
+            const parsedUrl = parseUrl(req.url || "", true);
+            const pathname = parsedUrl.pathname;
+            if (req.method === "GET" && pathname === "/sse") {
+                const transport = new SSEServerTransport("/messages", res);
+                transports.set(transport.sessionId, transport);
+                await server.connect(transport);
+                console.error(`⟦§MUNCH⟧ SSE Client connected. Session: ${transport.sessionId}`);
+                req.on("close", () => {
+                    transports.delete(transport.sessionId);
+                    console.error(`⟦§MUNCH⟧ SSE Client disconnected. Session: ${transport.sessionId}`);
+                });
+                return;
+            }
+            if (req.method === "POST" && pathname === "/messages") {
+                const sessionId = parsedUrl.query.sessionId;
+                const transport = transports.get(sessionId);
+                if (!transport) {
+                    res.writeHead(404, { "Content-Type": "text/plain" });
+                    res.end("Session not found or expired");
+                    return;
+                }
+                await transport.handlePostMessage(req, res);
+                return;
+            }
+            res.writeHead(404, { "Content-Type": "text/plain" });
+            res.end("Not Found");
+        });
+        httpServer.listen(port, () => {
+            console.error(`⟦§MUNCH⟧ MCP SSE server v1.0 running on port ${port}`);
+        });
+    }
+    else {
+        const transport = new StdioServerTransport();
+        await server.connect(transport);
+        console.error("⟦§MUNCH⟧ MCP server v1.0 running on stdio");
+    }
 }
 main().catch((err) => {
     console.error("⟦§MUNCH⟧ Fatal:", err);
