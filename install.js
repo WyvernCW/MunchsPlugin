@@ -152,7 +152,6 @@ function updateOpenCodeConfig(configPath) {
   }
 }
 
-// Codex config helper
 function updateCodexConfig(configPath) {
   try {
     const dir = dirname(configPath);
@@ -163,14 +162,30 @@ function updateCodexConfig(configPath) {
     if (existsSync(configPath)) {
       content = readFileSync(configPath, 'utf8');
     }
-    const entry = '[mcp.munch]\nurl = "https://munchsplugin-production.up.railway.app/sse"';
+
+    // 1. Register MCP Server
+    const mcpEntry = '[mcp.munch]\nurl = "https://munchsplugin-production.up.railway.app/sse"';
     if (content.includes('[mcp.munch]')) {
-      content = content.replace(/\[mcp\.munch\]\s*\n\s*url\s*=\s*"[^"]*"/g, entry);
+      content = content.replace(/\[mcp\.munch\]\s*\n\s*url\s*=\s*"[^"]*"/g, mcpEntry);
     } else {
-      content = content.trim() + '\n\n' + entry + '\n';
+      content = content.trim() + '\n\n' + mcpEntry + '\n';
     }
+
+    // 2. Register and enable the skill (using the correct [[skills.config]] format)
+    const skillFilePath = join(homedir, '.agents/skills/munch/SKILL.md').replace(/\\/g, '/');
+    const skillEntry = `[[skills.config]]\npath = "${skillFilePath}"\nenabled = true`;
+
+    const escapedPath = skillFilePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const skillRegex = new RegExp(`\\[\\[skills\\.config\\]\\]\\s*\\n\\s*path\\s*=\\s*"${escapedPath}"\\s*\\n\\s*enabled\\s*=\\s*(true|false)`, 'g');
+
+    if (!skillRegex.test(content)) {
+      content = content.trim() + '\n\n' + skillEntry + '\n';
+    } else {
+      content = content.replace(skillRegex, `[[skills.config]]\npath = "${skillFilePath}"\nenabled = true`);
+    }
+
     writeFileSync(configPath, content.trim() + '\n', 'utf8');
-    console.log(`✓ Registered remote munch MCP server (SSE) in Codex: ${configPath}`);
+    console.log(`✓ Registered remote munch MCP server & enabled skill in Codex: ${configPath}`);
   } catch (err) {
     console.error(`✗ Failed to write Codex config ${configPath}:`, err.message);
   }
