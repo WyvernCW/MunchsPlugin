@@ -39,86 +39,20 @@ kernel into any compatible AI coding agent. Once active it provides:
 
 ## Quick Install
 
-### Skill only (Claude Code, KiloCode, Codex, Antigravity)
+Clone the repository and run the automated installer:
 
 ```bash
-# Clone repo
-git clone https://github.com/YOUR_HANDLE/munch.git
-
-# Claude Code (global)
-mkdir -p ~/.claude/skills/munch
-cp skill/munch/SKILL.md ~/.claude/skills/munch/SKILL.md
-
-# KiloCode (global)
-mkdir -p ~/.kilocode/skills/munch
-cp skill/munch/SKILL.md ~/.kilocode/skills/munch/SKILL.md
-
-# Codex (global)
-mkdir -p ~/.agents/skills/munch
-cp skill/munch/SKILL.md ~/.agents/skills/munch/SKILL.md
-
-# Antigravity CLI + IDE (shared global)
-mkdir -p ~/.gemini/skills/munch
-cp skill/munch/SKILL.md ~/.gemini/skills/munch/SKILL.md
-
-# OpenCode (global)
-mkdir -p ~/.config/opencode/skills/munch
-cp skill/munch/SKILL.md ~/.config/opencode/skills/munch/SKILL.md
+git clone https://github.com/WyvernCW/MunchsPlugin.git
+cd MunchsPlugin
+npm run install
 ```
 
-### OpenCode Plugin
+The installer script will automatically:
+1. **Install Skills**: Copy `SKILL.md` to destination folders for **Claude Code**, **KiloCode**, **Codex**, **Antigravity**, and **OpenCode**.
+2. **Install Plugins**: Copy plugin modules for **OpenCode**, **Codex**, and **Antigravity**.
+3. **Compile MCP Server**: Run `npm install` and compile typescript in the `mcp-server` directory.
+4. **Configure Host Files**: Auto-register the compiled MCP Server inside configuration files such as `~/.claude/settings.json` and `~/.gemini/config/mcp_config.json`.
 
-```bash
-# Project-level
-mkdir -p .opencode/plugins
-cp opencode-plugin/munch.plugin.ts .opencode/plugins/munch.plugin.ts
-
-# Global
-mkdir -p ~/.config/opencode/plugins
-cp opencode-plugin/munch.plugin.ts ~/.config/opencode/plugins/munch.plugin.ts
-```
-
-### Codex / Antigravity Plugin
-
-```bash
-# Codex — user-level
-mkdir -p ~/.agents/plugins/munch
-cp -r codex-plugin/* ~/.agents/plugins/munch/
-cp skill/munch/SKILL.md ~/.agents/plugins/munch/skill/munch/SKILL.md
-
-# Antigravity — shared global plugins
-mkdir -p ~/.gemini/config/plugins/munch
-cp -r codex-plugin/* ~/.gemini/config/plugins/munch/
-```
-
-### MCP Server
-
-```bash
-cd mcp-server
-npm install
-npm run build
-
-# Claude Code — add to .claude/settings.json or ~/.claude/settings.json
-# {
-#   "mcpServers": {
-#     "munch": {
-#       "command": "node",
-#       "args": ["/absolute/path/to/munch/mcp-server/build/index.js"]
-#     }
-#   }
-# }
-
-# OpenCode — add to opencode.json
-# { "mcp": { "munch": { "command": "node", "args": ["./mcp-server/build/index.js"] } } }
-
-# Antigravity — add to ~/.gemini/config/mcp_config.json
-# { "mcpServers": { "munch": { "command": "node", "args": ["/path/to/munch/mcp-server/build/index.js"] } } }
-
-# Codex — add to ~/.codex/config.toml
-# [mcp.munch]
-# command = "node"
-# args = ["/path/to/munch/mcp-server/build/index.js"]
-```
 
 ---
 

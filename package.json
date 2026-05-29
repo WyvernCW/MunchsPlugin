@@ -1,0 +1,19 @@
+{
+  "name": "munch",
+  "version": "1.0.0",
+  "description": "Augmented cognitive agent skill & MCP server",
+  "type": "module",
+  "scripts": {
+    "install": "node install.js",
+    "build": "npm run --prefix mcp-server build",
+    "start": "npm run --prefix mcp-server start"
+  },
+  "keywords": [
+    "mcp",
+    "munch",
+    "agent",
+    "skill"
+  ],
+  "author": "cika",
+  "license": "MIT"
+}
