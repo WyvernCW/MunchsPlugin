@@ -1,0 +1,31 @@
+# ⟦§MUNCH SNAPSHOT SCHEMA v1.0⟧
+# Used to export and restore session momentum, user models, and active goals.
+
+§SNAPSHOT_v1.0:
+  timestamp: "ISO-8601 string"
+  user_preferences:
+    - name: "string"
+      value: "any"
+  fix_registry:
+    - id: "FIX_NNN"
+      problem: "description of regression"
+      resolution: "exact code/logic correction applied"
+      exchange: "number"
+  hard_pins:
+    - id: "PIN_NNN"
+      decision: "architectural or framework decision to protect"
+      source: "exchange reference"
+  project_context:
+    active_projects: []
+    tech_stack: []
+    design_tokens: []
+    constraints: []
+  user_model:
+    skill_level: "expert | intermediate | novice"
+    style: "concise | verbose | minimal"
+    vocab: []
+    rejected_patterns: []
+    accepted_patterns: []
+  pending:
+    - goal: "unresolved task description"
+      blockers: []

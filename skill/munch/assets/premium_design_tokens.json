@@ -1,0 +1,68 @@
+{
+  "name": "munch-premium-design-system",
+  "version": "1.0",
+  "theme": {
+    "colors": {
+      "primary": "hsl(220, 90%, 56%)",
+      "primary_hover": "hsl(220, 90%, 50%)",
+      "secondary": "hsl(260, 85%, 60%)",
+      "success": "hsl(142, 72%, 29%)",
+      "warning": "hsl(38, 92%, 50%)",
+      "error": "hsl(0, 84%, 60%)",
+      "info": "hsl(196, 80%, 50%)",
+      "background_dark": "hsl(222, 47%, 11%)",
+      "background_light": "hsl(210, 40%, 98%)",
+      "surface_dark": "hsl(222, 47%, 15%)",
+      "surface_light": "hsl(0, 0%, 100%)",
+      "neutral_scale": {
+        "n50": "hsl(210, 40%, 96.1%)",
+        "n100": "hsl(210, 40%, 90.2%)",
+        "n200": "hsl(210, 40%, 80.4%)",
+        "n300": "hsl(210, 40%, 65.1%)",
+        "n400": "hsl(210, 40%, 50.2%)",
+        "n500": "hsl(210, 40%, 36.1%)",
+        "n600": "hsl(210, 40%, 25.1%)",
+        "n700": "hsl(210, 40%, 15.1%)",
+        "n800": "hsl(210, 40%, 9.8%)",
+        "n900": "hsl(210, 40%, 5.9%)"
+      }
+    },
+    "spacing_fibonacci": {
+      "xs": "8px",
+      "sm": "13px",
+      "md": "21px",
+      "lg": "34px",
+      "xl": "55px",
+      "xxl": "89px"
+    },
+    "typography": {
+      "font_family_sans": "Inter, Roboto, -apple-system, sans-serif",
+      "font_family_mono": "Fira Code, JetBrains Mono, monospace",
+      "scale_major_third": {
+        "caption": "12px",
+        "body": "16px",
+        "h3": "20px",
+        "h2": "25px",
+        "h1": "31px",
+        "hero": "48px"
+      },
+      "line_height": {
+        "compact": "1.2",
+        "normal": "1.5",
+        "loose": "1.7"
+      }
+    },
+    "motion": {
+      "easing": "cubic-bezier(0.4, 0, 0.2, 1)",
+      "durations": {
+        "fast": "150ms",
+        "normal": "300ms",
+        "slow": "500ms"
+      }
+    },
+    "a11y": {
+      "touch_target_min": "44px",
+      "contrast_aa_min_ratio": 4.5
+    }
+  }
+}
