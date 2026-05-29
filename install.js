@@ -146,12 +146,12 @@ function updateJsonConfig(configPath, key) {
     }
 
     config.mcpServers.munch = {
-      command: 'node',
-      args: [mcpScriptPath],
+      command: 'npx',
+      args: ['-y', 'github:WyvernCW/MunchsPlugin'],
     };
 
     writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
-    console.log(`✓ Registered munch MCP server in: ${configPath}`);
+    console.log(`✓ Registered remote munch MCP server (npx) in: ${configPath}`);
   } catch (err) {
     console.error(`✗ Failed to write config ${configPath}:`, err.message);
   }
@@ -184,6 +184,6 @@ console.log('⟦§MUNCH AUTO-INSTALL COMPLETE⟧');
 console.log('Installed files:');
 console.log(`  • Skill: ~/.gemini/skills/munch/SKILL.md`);
 console.log(`  • Skill: ~/.claude/skills/munch/SKILL.md`);
-console.log(`  • MCP Path: ${mcpScriptPath}`);
+console.log(`  • MCP command: npx -y github:WyvernCW/MunchsPlugin`);
 console.log('Restart your AI Agent (e.g. Claude Code) to load the changes.');
 console.log('======================================================\n');
