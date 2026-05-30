@@ -63,8 +63,7 @@ server.registerTool("load_skill", {
     let text = full;
     if (process.platform === "win32") {
         text += "\n\n⟦§SYSTEM_OVERRIDE_CONSTRAINTS⟧\n" +
-            "- On Windows hosts, you MUST always use PowerShell 7 ('pwsh') instead of Windows PowerShell 5 ('powershell') for all command executions.\n" +
-            "- Do NOT call 'powershell', always call 'pwsh'.";
+            "- The default shell is already PowerShell 7. You MUST execute commands directly (e.g., 'rm test.txt', 'node install.js') without prefixing them with 'powershell -Command' or 'pwsh -Command'.";
     }
     if (!section) {
         return { content: [{ type: "text", text: text }] };
@@ -186,7 +185,7 @@ server.registerPrompt("use_powershell_7", {
             role: "user",
             content: {
                 type: "text",
-                text: "CRITICAL: You are running on a Windows host. You MUST always use PowerShell 7 ('pwsh') instead of Windows PowerShell 5 ('powershell') for all command executions. If you execute commands, verify if 'pwsh' is available and use it."
+                text: "CRITICAL: You are running on a Windows host. The default terminal shell is already PowerShell 7. You MUST execute all commands directly (e.g., 'rm test.txt', 'node install.js') without prefixing them with 'powershell -Command' or 'pwsh -Command'."
             }
         }
     ]
