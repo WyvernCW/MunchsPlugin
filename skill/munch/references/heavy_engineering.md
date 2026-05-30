@@ -5,60 +5,83 @@ This skill guides the AI agent through executing massive, highly complex, and lo
 
 ---
 
-## ⟦§CAPABILITY_MAXIMA⟧
-1. **Zero Horizon Limits**: You are capable of accomplishing *anything* in software engineering. There are no limitations on structural complexity, compilation sizes, or execution length.
-2. **Excellence First**: It is not about the speed of generation or writing a minimum viable product. It is about showing absolute engineering mastery, writing production-grade code, and delivering world-class software architectures.
-3. **Infinite Code Capacity**: Do not truncate outputs, write placeholders, or skip files because of size. Emit full, complete implementations.
-4. **Fearless Execution**: Treat complex, low-level compilation pipelines, toolchains, assembly code, and driver kernel code as standard engineering tasks. Approach them with confidence and rigorous planning.
+## 1. ⟦§HEAVY_ENGINEERING_FLOW⟧
+
+```mermaid
+graph TD
+  StartBuild["Init Compilation / System Task"] --> EnvCheck["1. Inspect Environment & Toolchain Paths"]
+  EnvCheck --> ToolchainVerify{"Are Compiler Versions Correct?"}
+  
+  ToolchainVerify --> |No| UpdateToolchain["Configure Correct Cross-Compilers"]
+  UpdateToolchain --> EnvCheck
+  
+  ToolchainVerify --> |Yes| SourceSync["2. Sync Source Trees & Submodules (Repo/Git)"]
+  SourceSync --> ConfigInit["3. Initialize Defconfig & Board Profiles"]
+  ConfigInit --> PreCompile["4. Execute Pre-Compile Checks (Verify headers/paths)"]
+  
+  PreCompile --> VerifyHeaders{"Headers & Config Valid?"}
+  VerifyHeaders --> |No| FixConfig["Re-run Defconfig/Export Headers"]
+  FixConfig --> ConfigInit
+  
+  VerifyHeaders --> |Yes| CompileStart["5. Execute Multi-Threaded Build (Make/Ninja)"]
+  
+  CompileStart --> BuildCheck{"Build Succeeds?"}
+  
+  BuildCheck --> |No| ErrorLog["6. Isolate Compile Errors (Read last lines)"]
+  ErrorLog --> DiagnosticGate["7. Trace back error parameters (no guessing)"]
+  DiagnosticGate --> CleanFix["8. Apply Surgical Fix to source/makefiles"]
+  CleanFix --> CompileStart
+  
+  BuildCheck --> |Yes| LinkImage["9. Assemble & Link Binary Images (boot/system)"]
+  LinkImage --> TestDeploy["10. Verify Image Signatures & Boot Integrity"]
+```
 
 ---
 
-## ⟦§LONG_HORIZON_EXECUTION_FLOW⟧
-When executing tasks that require hours of work, massive compilations, or multi-stage steps, use the following operational flow:
-
-### 1. Architectural Deconstruction
-* **First-Principles Decomposition**: Break the massive target system (e.g., a custom Android ROM build) down to its irreducible core components:
-  1. *Toolchain & Environment Setup*: Verify the existence and versions of compilers, build utilities, and host library dependencies.
-  2. *Source Tree & Dependencies Syncing*: Download, verify, and link the complete source code repositories including sub-modules.
-  3. *Core Configuration Init*: Setup hardware parameters, defconfigs, product configurations, and custom board layout definitions.
-  4. *Target Subsystems Compilation*: Build intermediate binaries, compiled kernel modules, device libraries, and core configurations.
-  5. *Image Linking & Packing*: Assemble compiled components into target binary images (like boot.img or system.img).
-  6. *Binary Validation & Testing*: Run checks, verify signatures, boot logs, and test functionality.
-* **Define Checkpoints**: Create a strict linear checklist of deliverables and checkpoint states.
-
-### 2. State & Context Anchoring
-* Because long tasks span multiple turns and risk context drift:
-  * Write progress files in the workspace to track current step, environment variables, compiled modules, and next operations.
-  * Before every exchange, verify your active configuration path and toolchain state.
-
-### 3. Incremental Compilation & Verification
-* **Divide and Conquer**: Compile modules individually before starting a full system build. 
-* **Early Fail Detection**: Run pre-compilation linting, header-file presence checks, and environment diagnostics to prevent 2-hour builds failing on trivial issues.
+## 2. How the AI Must Apply This Skill
+When tasked with system-level compilations, kernel development, or custom ROM building under this supporting skill, the AI agent must adopt these operational parameters:
+1. **Audit the Toolchain First**: Never begin a build command without checking compiler versions (e.g. clang, GCC), target architectures, cross-compiler paths, and system path variables.
+2. **Execute Repo Synchronization Conservatively**: When running repo sync, enforce strict network controls. Set clone limits, limit sync threads to prevent connection dropouts, and bypass unneeded tags.
+3. **Initialize Configuration Profiles Safely**: Utilize clean configuration targets (like mrproper) before loading defconfigs. Do not edit config headers manually; manage compile options using setup tools.
+4. **Isolate Compilation Errors**: If a build fails, do not attempt dynamic flag additions. Locate the precise error from compiler outputs, extract the failing command line, and execute it in isolation to diagnose the failure.
+5. **Enforce Build Caching**: Enforce compilation cache allocations (like CCache size settings) within environment parameters to optimize subsequent builds.
 
 ---
 
-## ⟦§COMPLEX_SYSTEMS_GUIDELINES⟧
+## 3. ⟦§COMPLEX_SYSTEMS_GUIDELINES⟧
 
 ### 1. Android/Linux Kernel Compilations
-* **Target Architecture Configuration**: Set variables defining the target processor type and build systems (e.g. setting architecture definitions to arm64 and sub-architectures to arm64).
-* **Cross-Compiler Declarations**: Verify the path parameters for your target cross-compiler tools (like clang, aarch64-linux-android-, and aarch64-linux-gnu- clang triples). Add toolchain binaries directly to the environment path variable.
-* **Config Initialization**: Run cleanup targets (mrproper, clean) to clear build flags, then load the default target vendor configuration definition (defconfig).
-* **Multi-threaded Compilation**: Launch compilers (like clang) using multi-threaded execution flags (linking threads dynamically to the host machine's total CPU cores).
-* **DTB Compilation**: Compile device tree source files (DTS) into binary device tree blobs (DTB) using device tree compilers. Audit and check compiled DTBs before linking boot image assets.
-* **Symbol Checking**: Inspect the compiled module symbols definitions files (like Module.symvers) to check cross-compilation interface signatures.
+* **Target Architecture Configuration**: Define the architecture target keys explicitly in the build environment parameters. Align compilation targets to the ARM64 processor architecture structure.
+* **Cross-Compiler Declarations**: Map toolchain directories to cross-compiler parameters. Point compiler systems to CLANG binary paths and set correct target triples (e.g. standard aarch64 Android compiler profiles).
+* **Configuration Clean Up**: Before building, clear intermediate files and previous compile options. Load the target board configuration definitions using standard configuration targets.
+* **Multi-threaded Compilation**: Configure build threads to match the available CPU count of the host machine, optimizing compilation speed.
+* **Device Tree Blobs (DTB)**: Compile device tree overlays and device tree source (DTS) files into device tree blobs (DTB) using device tree compiler (DTC) tools. Check compiled binaries for warnings before linking them to the kernel boot image.
+* **Symbol Matching**: Compare symbol addresses (using files like Module.symvers) to check module compatibility.
 
 ### 2. Android Custom ROMs (AOSP / LineageOS)
-* **Manifest Configurations**: Initialize the repository tree using the target branch manifest (such as lineage-21.0). Configure manifest sync targets, enabling Git Large File Storage (LFS) and limiting clone depth.
-* **Network Restraints Sync**: Perform a sync operation on all projects in the tree. Limit concurrent network connections and bypass unneeded clone packages or tags to ensure network and memory stability.
-* **Build Caching**: Enable compilation caches and define cache size allocations (e.g. 50 Gigabytes) in user-level files to accelerate successive rebuild configurations.
-* **Proprietary Vendor Blobs**: Extract device-specific vendor libraries directly from connected devices or extraction zip packages. Place these assets cleanly in the device vendor trees before running build lunch configurations.
-* **Compilation Orchestration**: Initialize the build shell parameters (using build envsetup scripts), run lunch configurations specifying target product userdebug types, and launch the multi-threaded system builder (like mka bacon).
+* **Manifest Management**: Select target branch manifestations when checking out repositories. Create custom local manifests to integrate external device trees or vendor components without altering the main manifest.
+* **Synchronization Rules**: Run source sync operations using shallow clones and thread limits to prevent server timeouts.
+* **CCache Setup**: Define cache paths and size options (e.g. 50GB minimum) in environment variables to reuse compiled object files and shorten iterative build steps.
+* **Vendor Blobs Extraction**: Extract proprietary hardware blobs (like camera, GPU, and radio binaries) from source devices or flashable image files. Map them under the vendor folder matching device configuration rules.
+* **Build System Setup**: Load environment definitions, run lunch options specifying product configurations and debug types, and execute target image compilation targets (such as mka bacon).
 
 ---
 
-## ⟦§RESILIENCE_GATE⟧
-If a build or compilation fails:
-1. **Never Guess**: Do not modify random flags to "try and fix it". Read the compilation log from the last error line upward to identify the root cause (e.g. missing include, symbol collision, compiler mismatch).
-2. **Isolate Build Errors**: Run the exact failing compilation command in isolation with verbose flags to extract precise error reports.
-3. **Environment Audit**: Audit compiler versions, headers, and library search paths before attempting rebuilding.
-4. **State Restorations**: If compilation configuration parameters are broken beyond diagnostic limits, restore the working tree to the last valid Git commit checkpoint and re-init parameters systematically.
+## 4. ⟦§RESILIENCE_GATE⟧
+If a build or compilation fails, apply the diagnostic protocol:
+
+### Step 1: Log Parsing
+Do not parse the entire log from the top down. Scroll to the bottom of the output, locate the compilation failure line, and trace back to find the actual compiler error description.
+
+### Step 2: Error Classification
+Identify the nature of the error:
+* Missing include headers or dynamic declarations.
+* Unresolved linker symbols or library paths mismatch.
+* Typo or syntax error inside compiler flags.
+* Out of memory (OOM) compilation crash.
+
+### Step 3: Isolated Command Run
+Isolate the specific file compilation command that failed. Execute it in the shell with verbose options enabled to debug the compiler's output and determine if compile search paths are wrong.
+
+### Step 4: Verification and Rebuild
+Apply the correction (e.g. patching Makefile, adding missing includes, or modifying configurations), clean the target subsystem, and compile again.

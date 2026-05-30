@@ -5,7 +5,42 @@ This skill guides the creation of distinctive, production-grade frontend interfa
 
 ---
 
-## ⟦§VISUAL_COMPOSITION⟧
+## 1. ⟦§UI_UX_CREATION_FLOW⟧
+
+```mermaid
+graph TD
+  Req["Frontend Requirements Received"] --> Tone["1. Determine Aesthetic Tone & Flavour"]
+  Tone --> CompSelect["2. Select Visual Composition Pattern (e.g. Asymmetric, Diagonal)"]
+  CompSelect --> LayoutSelect["3. Select Core Page Layout (e.g. Sidebar, Split Screen)"]
+  LayoutSelect --> GridMap["4. Select Grid System (e.g. 12-Column CSS Grid)"]
+  GridMap --> SpacingApply["5. Map Elements to 8px Spacing scale"]
+  SpacingApply --> TypographyPair["6. Assign Distinctive Typography pairing"]
+  TypographyPair --> ContrastCheck{"7. Run Contrast & Accessibility Audit"}
+  
+  subgraph Anti-Slop Check Gates
+    ContrastCheck --> |Pass| SlopCheck["8. Audit against AI Slop Cliches"]
+    SlopCheck --> |Detect Cliche| ReviseDesign["Backtrack & Redesign Layout"]
+    SlopCheck --> |Clean Design| OutputUI["9. Deliver Code & Design Tokens"]
+  end
+  
+  ContrastCheck --> |Fail| AdjustContrast["Adjust Contrast (relative luminance check)"]
+  AdjustContrast --> SpacingApply
+  ReviseDesign --> CompSelect
+```
+
+---
+
+## 2. How the AI Must Apply This Skill
+When designing or building user interfaces under this supporting skill, the AI agent must enforce the following design behaviors:
+1. **Choose an Expressive Aesthetic Direction**: Before writing code, declare a clear, bold visual direction (e.g. brutalist, refined luxury, tech-minimalist, editorial).
+2. **Apply Visual Compositions Intentionally**: Define the visual flow of your layout using one of the 27 composition patterns. Avoid generic centered layouts; use diagonal alignment, asymmetrical balance, or the rule of thirds.
+3. **Map the Page Layout & Grid System**: Select a grid system (like a 12-column responsive layout or baseline alignment). Ensure spacing conforms strictly to the 8px system.
+4. **Enforce Distinctive Typography**: Do not default to system fonts or Inter. Choose a display font and body font pair that matches the aesthetic theme.
+5. **Run the Anti-Slop Audit**: Check the visual elements against banned defaults (such as purple gradients, gratuitous glassmorphism, or shadow-everything layouts). Apply textured backgrounds and clean line borders to create visual depth.
+
+---
+
+## 3. ⟦§VISUAL_COMPOSITION⟧
 Master the followings to build breathtaking, balanced, and structural visual canvases:
 
 1. **Centered Composition**: The primary focal element is placed exactly at the visual center. Best for clean heroes, landing landing pages, and minimal dashboards.
@@ -38,7 +73,7 @@ Master the followings to build breathtaking, balanced, and structural visual can
 
 ---
 
-## ⟦§UI_UX_LAYOUT⟧
+## 4. ⟦§UI_UX_LAYOUT⟧
 Choose layouts intentionally based on the user's task and desired tone:
 
 ### General Page Layouts
@@ -93,7 +128,7 @@ Choose layouts intentionally based on the user's task and desired tone:
 
 ---
 
-## ⟦§LAYOUT_COMPOSITION_PRINCIPLES⟧
+## 5. ⟦§LAYOUT_COMPOSITION_PRINCIPLES⟧
 
 ### 1. Grid Sizing & Margins Mappings
 * Desktop Viewports (above 1200px): Use 12 columns, 32px gutters, and dynamic side margins (10% container bounds).
@@ -108,7 +143,7 @@ Establish clean visual groupings by locking paddings and margins to the system s
 
 ---
 
-## ⟦§FRONTEND_AESTHETICS⟧
+## 6. ⟦§FRONTEND_AESTHETICS⟧
 Avoid "AI Slop" — standard templates, purple gradient overlays, default Inter fonts, and unopinionated UI layouts.
 
 ### 1. Typography Selection & Scale
