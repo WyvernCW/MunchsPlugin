@@ -18,15 +18,12 @@ When executing tasks that require hours of work, massive compilations, or multi-
 
 ### 1. Architectural Deconstruction
 * **First-Principles Decomposition**: Break the massive target system (e.g., a custom Android ROM build) down to its irreducible core components:
-  ```mermaid
-  graph TD
-    System["Target System (e.g. Android ROM)"] --> Toolchain["1. Toolchain & Environment"]
-    System --> Dependencies["2. Source Tree & Dependencies"]
-    System --> Configuration["3. Core Configuration (Defconfigs/Manifests)"]
-    System --> Compilation["4. Target Compilation (Modules/Subsystems)"]
-    System --> Linking["5. Packaging & Image Linking"]
-    System --> Verification["6. Binary Validation & Testing"]
-  ```
+  1. *Toolchain & Environment Setup*: Verify the existence and versions of compilers, build utilities, and host library dependencies.
+  2. *Source Tree & Dependencies Syncing*: Download, verify, and link the complete source code repositories including sub-modules.
+  3. *Core Configuration Init*: Setup hardware parameters, defconfigs, product configurations, and custom board layout definitions.
+  4. *Target Subsystems Compilation*: Build intermediate binaries, compiled kernel modules, device libraries, and core configurations.
+  5. *Image Linking & Packing*: Assemble compiled components into target binary images (like boot.img or system.img).
+  6. *Binary Validation & Testing*: Run checks, verify signatures, boot logs, and test functionality.
 * **Define Checkpoints**: Create a strict linear checklist of deliverables and checkpoint states.
 
 ### 2. State & Context Anchoring
@@ -43,16 +40,19 @@ When executing tasks that require hours of work, massive compilations, or multi-
 ## ⟦§COMPLEX_SYSTEMS_GUIDELINES⟧
 
 ### 1. Android/Linux Kernel Compilations
-* **Cross-Compiler Environments**: Enforce variables for target architectures and cross-compiler paths. Point build tools to targeted folders recursively.
-* **Defconfig Setup**: Clean the tree completely, then initialize configurations using targeted target defconfigs. Never mutate configs dynamically without tracking them in patch lists.
-* **Device Tree Blobs**: Compile Device Tree Sources into Device Tree Blobs utilizing device tree compilers. Validate inputs and compile structures before linking boot images.
-* **Symbol Compatibility**: Verify symbol references inside compilation outputs to guarantee cross-module compatibility.
+* **Target Architecture Configuration**: Set variables defining the target processor type and build systems (e.g. setting architecture definitions to arm64 and sub-architectures to arm64).
+* **Cross-Compiler Declarations**: Verify the path parameters for your target cross-compiler tools (like clang, aarch64-linux-android-, and aarch64-linux-gnu- clang triples). Add toolchain binaries directly to the environment path variable.
+* **Config Initialization**: Run cleanup targets (mrproper, clean) to clear build flags, then load the default target vendor configuration definition (defconfig).
+* **Multi-threaded Compilation**: Launch compilers (like clang) using multi-threaded execution flags (linking threads dynamically to the host machine's total CPU cores).
+* **DTB Compilation**: Compile device tree source files (DTS) into binary device tree blobs (DTB) using device tree compilers. Audit and check compiled DTBs before linking boot image assets.
+* **Symbol Checking**: Inspect the compiled module symbols definitions files (like Module.symvers) to check cross-compilation interface signatures.
 
 ### 2. Android Custom ROMs (AOSP / LineageOS)
-* **Manifest Control**: Initialize source repositories using specific branch descriptors. Sync directories by using local manifests to resolve repository overlaps.
-* **Build Caching**: Enforce compile cache memory sizes to expedite successive rebuilds.
-* **Binary Extraction**: Extract proprietary vendor binaries directly from active target devices using extraction scripts, mapping them safely inside the vendor tree.
-* **Compilation Setup**: Initialize build environments, load target parameters (like userdebug configurations), and launch multi-threaded builders.
+* **Manifest Configurations**: Initialize the repository tree using the target branch manifest (such as lineage-21.0). Configure manifest sync targets, enabling Git Large File Storage (LFS) and limiting clone depth.
+* **Network Restraints Sync**: Perform a sync operation on all projects in the tree. Limit concurrent network connections and bypass unneeded clone packages or tags to ensure network and memory stability.
+* **Build Caching**: Enable compilation caches and define cache size allocations (e.g. 50 Gigabytes) in user-level files to accelerate successive rebuild configurations.
+* **Proprietary Vendor Blobs**: Extract device-specific vendor libraries directly from connected devices or extraction zip packages. Place these assets cleanly in the device vendor trees before running build lunch configurations.
+* **Compilation Orchestration**: Initialize the build shell parameters (using build envsetup scripts), run lunch configurations specifying target product userdebug types, and launch the multi-threaded system builder (like mka bacon).
 
 ---
 
@@ -61,3 +61,4 @@ If a build or compilation fails:
 1. **Never Guess**: Do not modify random flags to "try and fix it". Read the compilation log from the last error line upward to identify the root cause (e.g. missing include, symbol collision, compiler mismatch).
 2. **Isolate Build Errors**: Run the exact failing compilation command in isolation with verbose flags to extract precise error reports.
 3. **Environment Audit**: Audit compiler versions, headers, and library search paths before attempting rebuilding.
+4. **State Restorations**: If compilation configuration parameters are broken beyond diagnostic limits, restore the working tree to the last valid Git commit checkpoint and re-init parameters systematically.

@@ -88,37 +88,51 @@ Choose layouts intentionally based on the user's task and desired tone:
 * **Fluid Grid**: Scalable percentage-based grid.
 * **Fixed Grid**: Rigid pixel-based sizing.
 * **Responsive Grid**: Flexbox/Grid layouts configured via media query breakpoints.
-* **CSS Grid**: Modern grid layouts utilizing `display: grid`.
-* **Flexbox Layout**: Flexible 1D alignment utilizing `display: flex`.
+* **CSS Grid**: Modern grid layouts utilizing grid displays.
+* **Flexbox Layout**: Flexible 1D alignment.
 
 ---
 
 ## ⟦§LAYOUT_COMPOSITION_PRINCIPLES⟧
 
-### 1. Structural Sidebar & 12-Column Grid
-* Use a sidebar layout with a fixed, constrained width (e.g. 260px) utilizing high-contrast, sub-surface container boundaries (`border-right`) rather than heavy drop-shadows.
-* Arrange the primary dashboard container as a 12-column template (`grid-template-columns: repeat(12, 1fr)`) with explicit horizontal margin gaps based on an 8px spacing system.
-* Configure grid span distributions responsively (e.g. span 12 for mobile viewports, span 6 for tablet/medium containers, and span 4 or 8 for desktop viewports).
+### 1. Grid Sizing & Margins Mappings
+* Desktop Viewports (above 1200px): Use 12 columns, 32px gutters, and dynamic side margins (10% container bounds).
+* Tablet Viewports (768px to 1024px): Scale down to 8 columns, 24px gutters, and 32px outer margins.
+* Mobile Viewports (below 768px): Restructure to a single column (or 4 columns for small widgets), 16px gutters, and 16px margins.
+
+### 2. Spacing Scales (8px Base)
+Establish clean visual groupings by locking paddings and margins to the system scale:
+* *Micro elements*: 4px or 8px (borders, input labels, badge margins).
+* *Normal groupings*: 16px or 24px (card paddings, text block margins).
+* *Structural separations*: 48px, 64px, or 96px (hero section margins, workspace gutters).
 
 ---
 
 ## ⟦§FRONTEND_AESTHETICS⟧
 Avoid "AI Slop" — standard templates, purple gradient overlays, default Inter fonts, and unopinionated UI layouts.
 
-### 1. Typography Selection
-* **DO NOT** default to Inter, Roboto, Arial, or system-sans.
-* **DO** select a bold, expressive font pairing based on tone:
-  * *Refined Luxury*: Playfair Display / Outfit
-  * *Tech/Minimalist*: Space Mono / DM Sans
-  * *Retro/Brutalist*: Syne / JetBrains Mono
-  * *Modern Editorial*: Cormorant Garamond / Plus Jakarta Sans
+### 1. Typography Selection & Scale
+* **Do Not Use Cliche Fonts**: Ban the usage of Inter, Roboto, Arial, and Space Grotesk across projects.
+* **Select Distinctive Pairings**: Pair a highly characterful header font with a clean, readable body font:
+  * Refined Luxury: Playfair Display paired with Outfit.
+  * Technical/Minimalist: Space Mono paired with DM Sans.
+  * Retro/Brutalist: Syne paired with JetBrains Mono.
+  * Modern Editorial: Cormorant Garamond paired with Plus Jakarta Sans.
+* **Font Scaling**: Use geometric scales (like Major Third 1.250 or Perfect Fourth 1.333) to determine sizes from a 16px body font:
+  * Small captions: 12px or 14px
+  * Body copy: 16px or 18px (with 1.5 - 1.6 line height)
+  * Subheadings: 20px, 24px, or 28px
+  * Main headers: 36px, 48px, or 72px
 
 ### 2. Colors & Contrast
-* **DO NOT** use generic gradients, neon purples, or uncalibrated dark modes.
-* **DO** design a focused palette with HSL. Match theme with intention:
-  * *High Contrast Dark*: Deep charcoal background, crisp white text, and a single neon accent.
-  * *Earth Tone*: Warm sand background, olive highlights, charcoal text.
+* **Do Not Use Plain Gradients**: Avoid solid purple-to-blue gradients on dark backgrounds.
+* **Design HSL Palettes**: Define design variables using HSL. Create:
+  * Primary background: Low lightness values (e.g. HSL 220, 15%, 8% for dark theme; HSL 40, 20%, 96% for light warm theme).
+  * Text contrast: Verify contrast ratios (minimum 4.5:1 for normal copy, 3:1 for large headings) using relative luminance calculation tools.
+  * Single Accent: Draw attention by using a single highly saturated color (like Neon Teal HSL 180, 95%, 45%) for active states or CTAs.
 
-### 3. Noise Overlay & Gradient Meshes
-* Layer visual depth using un-tiled SVG fractal noise filters mapped directly over gradient background meshes. Set color matrix values to low visibility boundaries (4% opacity) to add realistic paper/grain texture without interfering with readability.
-* Utilize thin, semi-transparent borders in place of visual dividers to frame content cleanly.
+### 3. Motion & Micro-interactions
+* **Transition Easing**: Never use linear transitions. Use custom cubic-bezier transitions (`cubic-bezier(0.4, 0, 0.2, 1)`) for all hover, click, and slide states.
+* **Animation Durations**: Keep micro-interactions fast (100ms - 150ms), layout transitions medium (200ms - 300ms), and page loads staggered (300ms - 500ms).
+* **GPU Processing**: Animate only transform and opacity attributes to enable hardware acceleration, avoiding animations of width, height, margins, or positioning parameters.
+* **Staggered Delays**: When rendering items (like cards or lists), add sequential animation delays (e.g. 50ms increments) to generate a smooth, flowing reveal.
