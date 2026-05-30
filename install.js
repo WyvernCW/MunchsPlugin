@@ -4,7 +4,7 @@
  * Cross-platform installer to copy skills/plugins and configure MCP host files automatically.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, cpSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, cpSync, unlinkSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -28,6 +28,7 @@ const skillTargets = [
   join(homedir, '.agents/skills/munch'),
   join(homedir, '.codex/skills/munch'),
   join(homedir, '.gemini/skills/munch'),
+  join(homedir, '.gemini/config/plugins/munch/skills/munch'),
   join(homedir, '.config/opencode/skills/munch'),
   join(homedir, '.opencode/skills/munch'),
 ];
@@ -72,6 +73,10 @@ try {
     mkdirSync(dest, { recursive: true });
   }
   copyFileSync(join(LOCAL_SKILL_DIR, 'agents/openai.yaml'), join(dest, 'openai.yaml'));
+  
+  // Copy plugin.json to plugin root
+  const pluginJsonDest = join(homedir, '.gemini/config/plugins/munch/plugin.json');
+  copyFileSync(join(__dirname, 'plugin.json'), pluginJsonDest);
   console.log(`✓ Configured Antigravity plugin directory at: ${dirname(dest)}`);
 } catch (err) {
   console.error(`✗ Failed to configure Antigravity plugin:`, err.message);
@@ -280,7 +285,6 @@ if (process.platform === 'win32') {
   } finally {
     try {
       if (existsSync(tempPs1Path)) {
-        const { unlinkSync } = require('fs');
         unlinkSync(tempPs1Path);
       }
     } catch (e) {}
@@ -290,7 +294,7 @@ if (process.platform === 'win32') {
 console.log('\n======================================================');
 console.log('⟦§MUNCH AUTO-INSTALL COMPLETE⟧');
 console.log('Installed files:');
-console.log(`  • Skill: ~/.gemini/skills/munch/SKILL.md`);
+console.log(`  • Skill: ~/.gemini/config/plugins/munch/skills/munch/SKILL.md`);
 console.log(`  • Skill: ~/.claude/skills/munch/SKILL.md`);
 console.log(`  • MCP server: Remote SSE via https://munchsplugin-production.up.railway.app/sse`);
 console.log('Restart your AI Agent to load the changes.');

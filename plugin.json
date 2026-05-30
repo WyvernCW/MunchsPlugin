@@ -1,0 +1,10 @@
+{
+  "name": "munch",
+  "version": "1.0.0",
+  "description": "Augmented cognitive agent plugin with full-stack, design, engineering, and polyglot capabilities.",
+  "author": {
+    "name": "cika"
+  },
+  "repository": "https://github.com/WyvernCW/MunchsPlugin",
+  "license": "MIT"
+}
