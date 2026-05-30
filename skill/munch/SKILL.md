@@ -24,6 +24,7 @@ action: LOAD_ALL_SUPPORTING_SKILLS
 rules:
   - You MUST immediately read and load all files in the `references/` folder of this skill package.
   - Read `references/hallucination_prevention.md` to activate the Dialectical Verification Loop and anti-hallucination gates.
+  - Read `references/frontend_design.md` to activate the Visual Composition, UI/UX layouts, grid systems, and layout principles.
   - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
   - Execute `scripts/hallucination_guard.js` or `scripts/BTL_validator.js` when verifying or compiling code in the BTL loop.
 
@@ -177,6 +178,8 @@ whitespace: ≥40% negative_space
 gestalt:    closure + continuity + similarity + common_region + figure_ground
 
 ⟦§FRONTEND⟧
+supporting_modules:
+  - references/frontend_design.md             ← Visual Compositions, UI/UX Layouts, Grids, and Anti-Slop
 slop_detection:
   banned_defaults: neon_purple_gradients | gratuitous_glassmorphism | shadow_everything | rounded_xl_everywhere | random_hex_colors | mobile_afterthought | random_animations | stock_ai_3d_spheres
   mandate:         every_visual_decision_has_rationale | every_pixel_serves_purpose
