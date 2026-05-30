@@ -1,62 +1,180 @@
-# ⟦§POLYGLOT_IDIOMS v1.0⟧
+# ⟦§POLYGLOT_IDIOMS v2.0⟧
 > Clean coding paradigms, strict error handling, and type-safety rules for Tier 1 languages.
 
 ---
 
-## 1. TypeScript & JavaScript
+## 1. TypeScript & JavaScript (Advanced Paradigms)
 
-* **Type Assertions**: Minimize `any` and `as any`. Use `unknown` and guard types with type predicates or type assertion schemas (like `zod`).
-* **Optional Chaining**: Do not overuse `?.` to mask null pointer errors; if a variable *must* be present, check for it explicitly and throw a detailed error.
-* **Error Handling**: Always reject promises with `Error` instances, never strings. Use `try/catch` with structured logs detailing (what, where, why).
+### A. Type Assertions & Schema Validation
+* **Avoid `any` and `as any`**: Overusing `any` turns off TypeScript's compiler safety checks, leading to runtime failures. Use `unknown` for unchecked external inputs (like API responses).
+* **Guarding Types**: Enforce strict type predicates or parse runtime variables using validation schemas like **Zod**.
 
 ```typescript
-// Good Idiomatic Error Handling
-try {
-  await executeTask();
-} catch (error) {
-  const err = error instanceof Error ? error : new Error(String(error));
-  logger.error("Failed to execute task", { error: err.message, stack: err.stack });
-  throw err;
+import { z } from 'zod';
+
+// Define strict validation schemas
+export const UserSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  role: z.enum(['admin', 'user', 'guest']),
+  metadata: z.record(z.string()).optional()
+});
+
+export type User = z.infer<typeof UserSchema>;
+
+// Verify and assert unknown payloads
+export function validateAndLoadUser(payload: unknown): User {
+  const result = UserSchema.safeParse(payload);
+  if (!result.success) {
+    throw new Error(`Invalid user payload: ${result.error.message}`);
+  }
+  return result.data; // Safely typed as User
+}
+```
+
+### B. Error Handling & Exception Flow
+* **Structured Exceptions**: Do not throw strings (e.g. `throw "Error"`). Always throw instantiated `Error` objects so stack traces are preserved.
+* **Context Preservation**: Wrap catch blocks to log exactly where the failure occurred and preserve the original error message.
+
+```typescript
+export async function fetchConfigFile(path: string): Promise<string> {
+  try {
+    return await fs.promises.readFile(path, 'utf-8');
+  } catch (error) {
+    const originalError = error instanceof Error ? error : new Error(String(error));
+    // Propagate context details
+    const wrappedError = new Error(`Failed to load configuration from ${path}: ${originalError.message}`);
+    wrappedError.stack = originalError.stack;
+    throw wrappedError;
+  }
 }
 ```
 
 ---
 
-## 2. Python
+## 2. Python (Type Hints & Resource Integrity)
 
-* **Type Hints**: Explicitly type all function signatures, including parameters and return types. Use `typing.Optional`, `typing.Union`, or `|` syntax.
-* **Context Managers**: Always use `with` statements for resource management (files, network sockets, DB connections) to prevent resource leaks.
-* **Clean Code**: Follow PEP-8 strictly. Document public classes and functions using docstrings explaining arguments and exceptions.
+### A. Strict Type Annotations
+* Explicitly annotate all variables, class attributes, function parameters, and return types.
+* Leverage typing utilities like `Optional`, `Union`, `Any`, `Callable`, and `Protocol` for structural typing.
 
 ```python
-# Good Idiomatic Python
-from typing import List
+from typing import TypedDict, Optional, Union, Protocol
 
-def calculate_averages(values: List[float]) -> float:
-    """Calculates average from a list of floats.
-    Raises:
-        ValueError: If list is empty.
-    """
-    if not values:
-        raise ValueError("Cannot calculate average of empty list")
-    return sum(values) / len(values)
+class LogConfig(TypedDict):
+    level: str
+    format: str
+
+class Logger(Protocol):
+    def info(self, msg: str) -> None: ...
+    def error(self, msg: str) -> None: ...
+
+def initialize_system(
+    config: LogConfig, 
+    custom_logger: Optional[Logger] = None
+) -> Union[int, str]:
+    if custom_logger is not None:
+        custom_logger.info("Initializing systems...")
+    return "SUCCESS"
+```
+
+### B. Context Managers & Resource Management
+* Always use `with` statements when handling files, network sockets, DB connections, or thread locks.
+* If implementing custom resources, implement the `__enter__` and `__exit__` methods (or `@contextmanager` decorators).
+
+```python
+from contextlib import contextmanager
+import socket
+from typing import Generator
+
+@contextmanager
+def open_socket(host: str, port: int) -> Generator[socket.socket, None, None]:
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect((host, port))
+        yield s
+    finally:
+        s.close()
+
+# Safe usage guarantees closure even if an exception occurs
+with open_socket("127.0.0.1", 8080) as sock:
+    sock.sendall(b"PING")
 ```
 
 ---
 
-## 3. Go
+## 3. Go (Error Wrapping & Concurrency Safety)
 
-* **Error Handling**: Check errors immediately. Never ignore errors (`_`). Return detailed context wrapping errors using `fmt.Errorf("context: %w", err)`.
-* **Concurrency**: Always specify goroutine lifetime. Clean up channels and use `sync.WaitGroup` or `context.Context` to manage routine exits.
-* **Idiomatic Types**: Use interfaces to define behaviors, not structs, keeping interfaces small and focused (e.g., standard `io.Reader`, `io.Writer`).
+### A. Explicit Error Checking & Wrapping
+* Never ignore returned errors with `_`. Check them immediately.
+* Use `%w` within `fmt.Errorf` to wrap errors, preserving original context for error un-wrapping.
 
 ```go
-// Good Idiomatic Go
-func ProcessData(path string) ([]byte, error) {
-    data, err := os.ReadFile(path)
-    if err != nil {
-        return nil, fmt.Errorf("failed to read data file from path %s: %w", path, err)
-    }
-    return data, nil
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func ReadConfig(filePath string) ([]byte, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		// Wrap error to add context while retaining structural error details
+		return nil, fmt.Errorf("failed to open config file at %q: %w", filePath, err)
+	}
+	return data, nil
 }
 ```
+
+### B. Goroutine Lifetime & Timeout Orchestrations
+* Always specify the termination conditions of goroutines to prevent memory and channel leaks.
+* Manage timeouts using `context.Context` combined with select statements.
+
+```go
+package main
+
+import (
+	"context"
+	"time"
+)
+
+func ProcessAsync(ctx context.Context, data chan string) {
+	for {
+		select {
+		case <-ctx.Done():
+			// Exit goroutine safely when context times out or is canceled
+			return
+		case msg := <-data:
+			process(msg)
+		}
+	}
+}
+```
+
+---
+
+## 4. Rust (Memory Safety & Pattern Matching)
+
+### A. Safe Match Chains
+* Avoid raw indexing and nested `if let` blocks. Use compile-time matched `match` chains or helper combinators (`map`, `and_then`).
+
+```rust
+#[derive(Debug)]
+pub enum ConfigError {
+    FileNotFound,
+    InvalidSyntax(String),
+}
+
+pub fn parse_config(content: Option<&str>) -> Result<u32, ConfigError> {
+    match content {
+        Some(text) if text.is_empty() => Err(ConfigError::InvalidSyntax("Empty string".into())),
+        Some(text) => text.parse::<u32>().map_err(|e| ConfigError::InvalidSyntax(e.to_string())),
+        None => Err(ConfigError::FileNotFound),
+    }
+}
+```
+
+### B. Ownership, References, and Safe Slicing
+* Respect the borrow checker. Use slices (`&str`, `&[T]`) instead of consuming allocations (`String`, `Vec<T>`) when reading data.
+* Enforce explicit lifetimes when referencing data across structural boundaries.

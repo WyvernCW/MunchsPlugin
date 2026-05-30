@@ -58,7 +58,7 @@ Choose layouts intentionally based on the user's task and desired tone:
 * **Masonry**: Brick-layer style (like Pinterest), packing items of varying heights efficiently.
 * **Hero**: A large visual section at the top of a page with an impact header and call-to-action (CTA).
 * **Landing Page**: Goal-oriented single page designed for conversions (Hero → Features → Proof → CTA).
-* **Long Scroll**: Smooth scroll storytelling layouts with parallax and interactive triggers.
+* **Long Scroll**: Storytelling layouts with scroll-triggered animations.
 * **One Page**: Simple scroll-spy navigation where all sections live on one page.
 * **Wizard / Stepper**: Breaking complex processes into linear step-by-step layouts.
 * **Form Layout**: Clean labels, clear groupings, and single-column inputs for high conversion.
@@ -91,60 +91,102 @@ Choose layouts intentionally based on the user's task and desired tone:
 * **CSS Grid**: Modern grid layouts utilizing `display: grid`.
 * **Flexbox Layout**: Flexible 1D alignment utilizing `display: flex`.
 
-### UI Pattern Layouts
-* **Navigation Rail**: Very narrow vertical sidebar containing only icons.
-* **Tab Layout**: Segmented control switching between panes of inline content.
-* **Accordion**: Collapsible vertical drawers to hide details and save space.
-* **Carousel**: Horizontal slider for cycling through visual slides.
-* **Modal**: Layered dialog window blocking parent interactions.
-* **Drawer**: Side sheet sliding out from the left/right edges.
-* **Sheet**: Bottom/top sheet containing context-specific actions.
-* **Toast Stack**: Dynamic notifications stacking at the top/bottom corner.
-* **Command Palette**: Centered search bar overlay (`Ctrl+K`) for global operations.
-* **Mega Menu**: Large dropdown panel expanding into structured sub-categories.
-* **Breadcrumb**: Text link trail indicating directory level navigation.
-* **Master-Detail**: Left-side list panel (master), right-side detail preview pane.
-* **Empty State**: Friendly graphics/text guiding users when no data exists.
-* **Onboarding**: Carousel or slide deck showing app value during initial launch.
-* **Login/Register**: Single card focused purely on credentials input.
-* **Notification Center**: Popover or sidebar list aggregating recent alerts.
-* **Inbox**: Split view of mail items with quick swipe actions.
-* **Media Player**: Immersive visual background with central timeline and control buttons.
-* **Editor**: Workspace surrounded by side tool panels and inspector rails.
-* **File Manager**: Grid/list items with folder breadcrumbs and drag-and-drop zones.
-
-### Mobile Layouts
-* **Bottom Tab**: Standard 3-5 icon bar anchored at the bottom edge.
-* **Hamburger Menu**: Hidden off-canvas drawer opened by a top icon.
-* **Floating Action Button (FAB)**: Raised circular button at the bottom-right corner.
-* **Swipe Card**: Drag-to-dismiss interactive layout cards (Tinder style).
-* **Bottom Sheet**: Swipeable panel sliding from the bottom, showing options.
-* **Stack Navigation**: Linear page transition animation (slide-in left-to-right).
-* **Nested Tab**: Embedded tab bar within a main view.
-* **Thumb Zone**: Aligning primary actions inside the bottom 60% of the screen.
-* **Scrollable Feed**: Highly optimized virtualized list for infinite scrolling.
-* **Full Screen Modal**: Overlays the entire viewport on mobile to focus task attention.
-
 ---
 
-## ⟦§LAYOUT_COMPOSITION_PRINCIPLES⟧
-Enforce these principles on every frontend asset you generate:
+## ⟦§LAYOUT_COMPOSITION_TEMPLATES⟧
 
-1. **Hierarchy**: The visual weight of components matches their priority.
-2. **Spacing**: Implement consistent vertical rhythm using an 8px base grid (`8px`, `16px`, `24px`, `32px`, `48px`, `64px`, `96px`).
-3. **Grouping**: Visually group related items using containers, borders, or negative space (Gestalt proximity).
-4. **Consistency**: Lock colors, fonts, margins, and borders into CSS variables/tokens.
-5. **Balance**: Keep visual weight distributed evenly across the vertical/horizontal center.
-6. **Contrast**: Target WCAG AA (4.5:1) minimum contrast ratios.
-7. **Readability**: Keep text line width between 45–75 characters (measure). Set body line-height to 1.5–1.6.
-8. **Accessibility**: All interactive targets must be focusable, tabbable, and have `aria` labels.
-9. **Responsiveness**: Implement fluid layouts scaling smoothly between SM (640px), MD (768px), LG (1024px), XL (1280px).
-10. **Density**: Match layout density to use case (e.g., highly compact dashboards vs. airy editorial landing pages).
-11. **Focus**: Direct the user's focus to one core element per viewport.
-12. **Flow**: Lead the user's eye naturally down the screen.
-13. **Affordance**: Buttons must look clickable, inputs inputtable, and panels swipeable.
-14. **Scanning Pattern**: Structure layouts to support Z-pattern or F-pattern scanning.
-15. **Content Priority**: Above-the-fold content must instantly explain value.
+### 1. The Dynamic Dashboard & Sidebar (Vanilla CSS)
+Use this setup to create a structural 12-column dashboard layout with a responsive sidebar frame:
+
+```css
+:root {
+  /* System Design Tokens - HSL Tailored */
+  --bg-primary: hsl(220, 15%, 8%);
+  --bg-secondary: hsl(220, 15%, 12%);
+  --border-subtle: hsla(0, 0%, 100%, 0.08);
+  --text-main: hsl(0, 0%, 94%);
+  --text-muted: hsl(220, 10%, 65%);
+  --accent: hsl(190, 90%, 50%);
+  --font-family-display: 'Plus Jakarta Sans', sans-serif;
+  --font-family-body: 'DM Sans', sans-serif;
+  --spacing-base: 8px;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-family-body);
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Sidebar Layout */
+.sidebar {
+  width: 260px;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--spacing-base) * 3);
+  box-sizing: border-box;
+}
+
+.sidebar-title {
+  font-family: var(--font-family-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: calc(var(--spacing-base) * 4);
+}
+
+/* Dashboard Workspace Grid */
+.workspace {
+  flex: 1;
+  display: grid;
+  grid-template-rows: 70px 1fr;
+  overflow-y: auto;
+}
+
+.header {
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 calc(var(--spacing-base) * 4);
+}
+
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: calc(var(--spacing-base) * 3);
+  padding: calc(var(--spacing-base) * 4);
+}
+
+/* Card-Based Layout Items */
+.card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: calc(var(--spacing-base) * 3);
+  grid-column: span 12;
+  transition: border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  border-color: var(--accent);
+}
+
+@media (min-width: 768px) {
+  .card-medium-6 { grid-column: span 6; }
+}
+
+@media (min-width: 1200px) {
+  .card-large-4 { grid-column: span 4; }
+  .card-large-8 { grid-column: span 8; }
+}
+```
 
 ---
 
@@ -165,14 +207,30 @@ Avoid "AI Slop" — standard templates, purple gradient overlays, default Inter 
   * *High Contrast Dark*: Deep charcoal (`#121212`), crisp white, and a single neon accent.
   * *Earth Tone*: Warm sand background (`#F5F2EB`), olive highlights, charcoal text.
 
-### 3. Motion & Micro-interactions
-* **DO NOT** use jarring animations or hover delays.
-* **DO** apply cubic-bezier easing (`cubic-bezier(0.4, 0, 0.2, 1)`) for transitions (200ms–300ms).
-* **DO** use staggered entrance animations via `animation-delay` for layouts.
+### 3. Noise Overlay & Gradient Meshes
+Avoid flat solid colors by layering SVG noise filters inside backgrounds.
 
-### 4. Backgrounds & Textures
-* **DO NOT** use solid plain colors.
-* **DO** introduce visual depth:
-  * Radial gradient highlights behind components.
-  * Subtle noise overlays or SVG grain filters.
-  * Thin, structural borders (`1px solid rgba(255, 255, 255, 0.1)`) instead of heavy box-shadows.
+```html
+<!-- SVG Grain Overlay Filter -->
+<svg style="display: none;">
+  <filter id="noise-overlay">
+    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.04 0"/>
+  </filter>
+</svg>
+
+<style>
+.grain-bg {
+  position: relative;
+}
+.grain-bg::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
+  filter: url(#noise-overlay);
+  pointer-events: none;
+  z-index: 1;
+}
+</style>
+```

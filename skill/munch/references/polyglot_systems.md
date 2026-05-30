@@ -1,44 +1,115 @@
-# ⟦§POLYGLOT_SYSTEMS v1.0⟧
-> Safety gates, memory management patterns, and security constraints for systems, low-level, hardware, and scientific languages.
+# ⟦§POLYGLOT_SYSTEMS v2.0⟧
+> Code patterns, memory safety rules, and performance guidelines for low-level systems, hardware, and scientific computing.
 
 ---
 
-## 1. Low-Level & Systems (C, C++, Zig, D, Nim, Odin, V, Jai, Carbon)
+## 1. Low-Level Systems Programming (C, C++, Assembly)
 
-* **C**:
-  * *Rules*: Avoid deprecated buffer functions (`strcpy`, `gets`, `sprintf`). Always check pointer allocation returns.
-  * *Security*: Check for integer overflows before malloc, prevent Use-After-Free (UAF), and validate buffer limits.
-* **C++**:
-  * *Rules*: Use modern C++20 smart pointers (`std::unique_ptr`, `std::shared_ptr`). Avoid raw arrays (`std::vector` or `std::array` only).
-  * *Security*: Enforce RAII for resources. Prevent buffer overflow, format string vulnerability, and memory leaks.
-* **Zig, D, Nim, Odin, V, Jai, Carbon**:
-  * *Rules*: In Zig, always check error unions. In Nim, leverage the ARC/ORC garbage collector correctly. In D, maintain pure/nothrow safety annotations.
-  * *Security*: Zig check allocator out-of-memory cases. In D/Nim, avoid unsafe pointer casts and truncation in conversion casting.
+### A. C Memory Safety & Pointer Bounds
+* **Buffer Overflow Prevention**: Never use unbounded string/memory copying functions (`strcpy`, `sprintf`, `gets`). Always use bounded safe alternatives (`strncpy`, `snprintf`) and explicitly terminate buffers.
+* **Heap Discipline**: Keep a clear owner for every allocated pointer. Set pointers to `NULL` immediately after calling `free()` to prevent double-free and use-after-free vulnerabilities.
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_BUFFER_SIZE 256
+
+//  SAFE: Bounded copies and immediate NULL re-assignment
+void process_input_string(const char *input) {
+    char *buffer = (char *)malloc(MAX_BUFFER_SIZE);
+    if (buffer == NULL) {
+        return; // Allocation failure guard
+    }
+
+    // Copy at most size - 1 and force null terminator
+    strncpy(buffer, input, MAX_BUFFER_SIZE - 1);
+    buffer[MAX_BUFFER_SIZE - 1] = '\0';
+
+    printf("Input string: %s\n", buffer);
+
+    free(buffer);
+    buffer = NULL; // Prevent use-after-free
+}
+```
+
+### B. C++ Resource Acquisition Is Initialization (RAII)
+* **Smart Pointers**: Avoid raw pointers and manual memory allocation (`new`/`delete`). Use `std::unique_ptr` for singular ownership and `std::shared_ptr`/`std::weak_ptr` for shared reference counting.
+* **Move Semantics**: Implement move constructors and move assignment operators using `std::move` to transfer ownership of heavy heap resources without copying.
+
+```cpp
+#include <memory>
+#include <vector>
+#include <string>
+
+class ResourceHolder {
+private:
+    std::unique_ptr<std::vector<std::string>> data_buffer;
+
+public:
+    ResourceHolder() : data_buffer(std::make_unique<std::vector<std::string>>()) {}
+
+    // Move constructor: transfers ownership cleanly
+    ResourceHolder(ResourceHolder&& other) noexcept 
+        : data_buffer(std::move(other.data_buffer)) {}
+
+    // Move assignment operator
+    ResourceHolder& operator=(ResourceHolder&& other) noexcept {
+        if (this != &other) {
+            data_buffer = std::move(other.data_buffer);
+        }
+        return *this;
+    }
+
+    // Disable copy operations to enforce unique ownership
+    ResourceHolder(const ResourceHolder&) = delete;
+    ResourceHolder& operator=(const ResourceHolder&) = delete;
+};
+```
 
 ---
 
-## 2. Assembly & Core Systems (Assembly, Ada, Fortran, Pascal)
+## 2. Compile-Time & Typed Systems (Zig, Nim, D)
 
-* **Assembly (x86_64, ARM, RISC-V)**:
-  * *Rules*: Maintain strict calling conventions (preserving callee-saved registers). Watch stack alignments (e.g., 16-byte alignment on x86).
-  * *Security*: Watch stack Pivoting, shellcode injection vector vectors, and Return-Oriented-Programming (ROP) vulnerability.
-* **Ada, Fortran, Pascal**:
-  * *Rules*: In Ada, enforce strong typing compile-time restrictions. In Fortran, utilize array-parallel functions. In Pascal, avoid unsafe pointer manipulations.
+### A. Zig (Manual Allocation & Comptime)
+* **Explicit Allocators**: Zig has no hidden allocator. Always pass allocators explicitly to functions that require heap memory, and clean up allocations with `defer`.
+* **Comptime Execution**: Utilize `comptime` blocks to run logic, validation, and generic types at compile time.
+
+```zig
+const std:: = @import("std");
+
+//  SAFE: Explicit allocator passing and defer cleanup
+pub fn loadPayload(allocator: std.mem.Allocator, size: usize) ![]u8 {
+    const buffer = try allocator.alloc(u8, size);
+    errdefer allocator.free(buffer); // Clean up on failure
+
+    // Perform payload operations
+    return buffer;
+}
+```
 
 ---
 
-## 3. Hardware & Embedded (VHDL, Verilog, SystemVerilog, Embedded C, Forth, nesC)
+## 3. Scientific Computing (R, Julia, MATLAB)
 
-* **VHDL & Verilog / SystemVerilog**:
-  * *Rules*: In VHDL, separate registers from combinational processes. In SystemVerilog, use non-blocking assignments (`<=`) for registers.
-  * *Security*: Avoid latches, state machine locks, metastability, and signal glitches.
-* **Embedded C, Forth, nesC**:
-  * *Rules*: Avoid heap allocation in embedded loops. nesC watch component connection bindings. Forth watch parameter stack overflows.
+* **Julia Type Stability**: Ensure all functions are type-stable. Avoid returning variables of different types depending on inputs, preventing dynamic dispatch performance loss.
+* **Vectorization**: Always prefer vectorized matrix operations over raw `for` loops in R and MATLAB to leverage optimized BLAS/LAPACK binaries.
 
 ---
 
-## 4. Scientific Array Languages (APL, J, K, Q)
+## 4. Hardware Description Languages (VHDL, Verilog, SystemVerilog)
 
-* **APL, J, K, Q**:
-  * *Rules*: Vectorized operations only; avoid loops. Maintain high-density calculations. Inspect array dimensions before indexing.
-  * *Security*: Check bounds on sparse array calculations to prevent memory leakage.
+* **Clock Domain Crossing (CDC)**: Enforce double-flop synchronization on all asynchronous signals migrating across distinct clock domains to prevent metastability.
+* **Assignment Boundaries**: In Verilog, use Non-blocking assignments (`<=`) for sequential logic (triggered by `posedge clk`) and Blocking assignments (`=`) for combinational logic blocks.
+
+```verilog
+// Sequential logic clock block
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        q_reg <= 1'b0; // Non-blocking assignment
+    end else begin
+        q_reg <= d_in;
+    end
+end
+```

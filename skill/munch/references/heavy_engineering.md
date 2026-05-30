@@ -42,19 +42,59 @@ When executing tasks that require hours of work, massive compilations, or multi-
 
 ## ⟦§COMPLEX_SYSTEMS_GUIDELINES⟧
 
-### 1. Kernel Development (Linux / Android)
-* **Toolchain Rigor**: Always inspect target cross-compilers (`clang`, `gcc-arm-linux-gnueabi`, `aarch64-linux-android-`). Verify path configurations and target architectures (`ARCH=arm64`).
-* **Kernel Configs**: Read and analyze `.config` and `arch/arm64/configs/` directories. Never modify `.config` manually; use dynamic script modifications (`scripts/config`) or make defconfig targets.
-* **Header Integrity**: Ensure correct Kernel Headers (`make headers_install`) are exported before compiling user-space modules or external drivers.
+### 1. Android/Linux Kernel Compilations
+Configure and build kernel modules cleanly using the following environment declarations:
+
+```bash
+# Set build architecture and target cross-compiler prefixes
+export ARCH=arm64
+export SUBARCH=arm64
+export CROSS_COMPILE=aarch64-linux-android-
+export CLANG_TRIPLE=aarch64-linux-gnu-
+
+# Define toolchain installation path (e.g., prebuilts/clang/host/linux-x86)
+export PATH="/path/to/clang/bin:$PATH"
+
+# 1. Clean the tree and load the default configuration (defconfig)
+make clean && make mrproper
+make vendor/codename_defconfig
+
+# 2. Compile kernel, modules, and Device Tree Blobs (DTB) using multi-threading
+make -j$(nproc) CC=clang CLANG_TRIPLE=$CLANG_TRIPLE
+```
+
+* **Symbol Checking**: Check `Module.symvers` to verify symbol compatibility across compile modules.
+* **DTB Compilation**: Compile device tree sources using `dtc` and verify device tree blobs before packing them into target boot images:
+  ```bash
+  dtc -I dts -O dtb -o arch/arm64/boot/dts/vendor/codename.dtb arch/arm64/boot/dts/vendor/codename.dts
+  ```
 
 ### 2. Android Custom ROMs (AOSP / LineageOS)
-* **Manifest Control**: Inspect `.repo/manifests/` and local manifests (`.repo/local_manifests/`) to resolve dependency conflicts before running `repo sync`.
-* **Device Trees**: Ensure the device tree (`device/vendor/codename`), kernel source (`kernel/vendor/codename`), and vendor blobs (`vendor/vendor/codename`) are structurally matched.
-* **Build Systems**: Configure build flags in `BoardConfig.mk` and device makefiles. Run build commands cleanly using standard wrappers (`source build/envsetup.sh && lunch <target> && mka bacon`).
+Managing Android source trees requires exact build environment variables and repo configurations.
 
-### 3. Bootstrap & Compilers
-* **Multi-stage Builds**: When building toolchains or compilers, use strict 3-stage bootstrapping to guarantee code generation validity.
-* **Memory Management**: When writing low-level systems, respect page sizes, physical/virtual address boundaries, and memory alignment constraints.
+```bash
+# 1. Initialize repository with clean thread depth
+repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --git-lfs --depth=1
+
+# 2. Sync sources restricting network overload
+repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+
+# 3. Setup caching to speed up successive builds
+export USE_CCACHE=1
+export CCACHE_EXEC=/usr/bin/ccache
+ccache -M 50G
+
+# 4. Initialize Android build environment
+source build/envsetup.sh
+lunch lineage_codename-userdebug
+
+# 5. Extract proprietary binaries directly from a connected device
+cd device/vendor/codename
+./extract-files.sh
+
+# 6. Execute full compilation
+mka bacon -j$(nproc)
+```
 
 ---
 
