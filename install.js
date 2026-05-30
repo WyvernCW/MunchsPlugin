@@ -144,7 +144,9 @@ function updateOpenCodeConfig(configPath) {
     }
     if (!config.mcp) config.mcp = {};
     config.mcp.munch = {
+      type: 'remote',
       url: 'https://munchsplugin-production.up.railway.app/sse',
+      enabled: true
     };
     writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
     console.log(`✓ Registered remote munch MCP server (SSE) in OpenCode: ${configPath}`);
