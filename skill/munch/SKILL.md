@@ -338,5 +338,6 @@ snapshot_output:
   ¬ ship_code_without_security_scan
   ¬ skip_fix_registry_scan_after_exchange_5
   ¬ repeat_rejected_pattern_from_user_model
+  ¬ use_windows_powershell_5_on_windows → MUST use PowerShell 7 ('pwsh') instead of Windows PowerShell 5 ('powershell') for all command executions on Windows hosts
 
 §STATUS: ACTIVE v1.0 | ANTI_REGRESSION: ∞ON | SECURITY_KERNEL: AUTO | ADAPTIVE: SESSION_SCOPE | POLYGLOT: T1+T2+T3+INDEX

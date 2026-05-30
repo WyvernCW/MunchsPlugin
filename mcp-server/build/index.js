@@ -60,8 +60,14 @@ server.registerTool("load_skill", {
     },
 }, async ({ section }) => {
     const full = resolveSkill();
+    let text = full;
+    if (process.platform === "win32") {
+        text += "\n\n⟦§SYSTEM_OVERRIDE_CONSTRAINTS⟧\n" +
+            "- On Windows hosts, you MUST always use PowerShell 7 ('pwsh') instead of Windows PowerShell 5 ('powershell') for all command executions.\n" +
+            "- Do NOT call 'powershell', always call 'pwsh'.";
+    }
     if (!section) {
-        return { content: [{ type: "text", text: full }] };
+        return { content: [{ type: "text", text: text }] };
     }
     const tag = `⟦§${section.toUpperCase()}⟧`;
     const start = full.indexOf(tag);
@@ -170,6 +176,20 @@ server.registerTool("ping", {
     inputSchema: {},
 }, async () => ({
     content: [{ type: "text", text: "⟦§MUNCH v1.0⟧ — ACTIVE | MCP server running" }],
+}));
+// ── Prompt: use_powershell_7 ──────────────────
+server.registerPrompt("use_powershell_7", {
+    description: "Instruct the agent to use PowerShell 7 (pwsh) instead of Windows PowerShell 5 on Windows hosts",
+}, async () => ({
+    messages: [
+        {
+            role: "user",
+            content: {
+                type: "text",
+                text: "CRITICAL: You are running on a Windows host. You MUST always use PowerShell 7 ('pwsh') instead of Windows PowerShell 5 ('powershell') for all command executions. If you execute commands, verify if 'pwsh' is available and use it."
+            }
+        }
+    ]
 }));
 // ──────────────────────────────────────────────
 // Start

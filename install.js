@@ -252,6 +252,41 @@ codexPaths.forEach((p) => {
   }
 });
 
+// ──────────────────────────────────────────────
+// 6. Configure Windows Registry (IFEO Redirection)
+// ──────────────────────────────────────────────
+if (process.platform === 'win32') {
+  console.log('\nConfiguring Windows Registry to redirect powershell.exe to pwsh.exe...');
+  const redirectScriptPath = join(homedir, '.gemini/skills/munch/scripts/powershell_redirect.js');
+  const tempPs1Path = join(__dirname, 'temp_setup_registry.ps1');
+  
+  const psContent = [
+    `$regKey = "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\powershell.exe"`,
+    `$debuggerVal = '"${process.execPath}" "${redirectScriptPath}"'`,
+    `if (-not (Test-Path $regKey)) {`,
+    `    New-Item -Path $regKey -Force`,
+    `}`,
+    `Set-ItemProperty -Path $regKey -Name Debugger -Value $debuggerVal -Force`,
+  ].join('\r\n');
+  
+  try {
+    writeFileSync(tempPs1Path, psContent, 'utf8');
+    console.log('Spawning elevated registry configuration prompt...');
+    const args = `-NoProfile -ExecutionPolicy Bypass -Command "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \\"${tempPs1Path}\\"' -Verb RunAs -Wait"`;
+    execSync(`powershell ${args}`, { stdio: 'inherit' });
+    console.log('✓ Registry redirection configured successfully.');
+  } catch (err) {
+    console.error('✗ Failed to configure registry redirection:', err.message);
+  } finally {
+    try {
+      if (existsSync(tempPs1Path)) {
+        const { unlinkSync } = require('fs');
+        unlinkSync(tempPs1Path);
+      }
+    } catch (e) {}
+  }
+}
+
 console.log('\n======================================================');
 console.log('⟦§MUNCH AUTO-INSTALL COMPLETE⟧');
 console.log('Installed files:');
