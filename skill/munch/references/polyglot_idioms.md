@@ -1,4 +1,4 @@
-# ⟦§POLYGLOT_IDIOMS v2.0⟧
+# ⟦§POLYGLOT_IDIOMS v2.1⟧
 > Clean coding paradigms, strict error handling, and type-safety rules for Tier 1 languages.
 
 ---
@@ -6,175 +6,49 @@
 ## 1. TypeScript & JavaScript (Advanced Paradigms)
 
 ### A. Type Assertions & Schema Validation
-* **Avoid `any` and `as any`**: Overusing `any` turns off TypeScript's compiler safety checks, leading to runtime failures. Use `unknown` for unchecked external inputs (like API responses).
-* **Guarding Types**: Enforce strict type predicates or parse runtime variables using validation schemas like **Zod**.
-
-```typescript
-import { z } from 'zod';
-
-// Define strict validation schemas
-export const UserSchema = z.object({
-  id: z.string().uuid(),
-  email: z.string().email(),
-  role: z.enum(['admin', 'user', 'guest']),
-  metadata: z.record(z.string()).optional()
-});
-
-export type User = z.infer<typeof UserSchema>;
-
-// Verify and assert unknown payloads
-export function validateAndLoadUser(payload: unknown): User {
-  const result = UserSchema.safeParse(payload);
-  if (!result.success) {
-    throw new Error(`Invalid user payload: ${result.error.message}`);
-  }
-  return result.data; // Safely typed as User
-}
-```
+* **Avoid `any` and `as any`**: Reject compile-time type-safety escapes. Use the `unknown` type for unverified external inputs (API payloads, user inputs, disk reads).
+* **Type Guarding & Narrowing**: Leverage user-defined type predicates (`is`) and runtime validation schemas (Zod or TypeBox) to parse and guarantee payload structures before execution.
+* **Structural Safety**: Map data records strictly. Validate nested objects recursively to protect the runtime environment from unexpected property access failures.
 
 ### B. Error Handling & Exception Flow
-* **Structured Exceptions**: Do not throw strings (e.g. `throw "Error"`). Always throw instantiated `Error` objects so stack traces are preserved.
-* **Context Preservation**: Wrap catch blocks to log exactly where the failure occurred and preserve the original error message.
-
-```typescript
-export async function fetchConfigFile(path: string): Promise<string> {
-  try {
-    return await fs.promises.readFile(path, 'utf-8');
-  } catch (error) {
-    const originalError = error instanceof Error ? error : new Error(String(error));
-    // Propagate context details
-    const wrappedError = new Error(`Failed to load configuration from ${path}: ${originalError.message}`);
-    wrappedError.stack = originalError.stack;
-    throw wrappedError;
-  }
-}
-```
+* **Exceptions as Objects**: Always throw standard instances of the `Error` class (or subclass thereof). Never throw strings or raw literals, which drop native stack traces.
+* **Chained Error Wrapping**: Wrap low-level exceptions (like database or filesystem errors) inside high-level context errors, retaining the original message and stack trace.
+* **Error Log Content**: Ensure error messages contain clear (`what`, `where`, `why`) structures without exposing sensitive database strings, user-identifiable information, or system keys.
 
 ---
 
 ## 2. Python (Type Hints & Resource Integrity)
 
 ### A. Strict Type Annotations
-* Explicitly annotate all variables, class attributes, function parameters, and return types.
-* Leverage typing utilities like `Optional`, `Union`, `Any`, `Callable`, and `Protocol` for structural typing.
-
-```python
-from typing import TypedDict, Optional, Union, Protocol
-
-class LogConfig(TypedDict):
-    level: str
-    format: str
-
-class Logger(Protocol):
-    def info(self, msg: str) -> None: ...
-    def error(self, msg: str) -> None: ...
-
-def initialize_system(
-    config: LogConfig, 
-    custom_logger: Optional[Logger] = None
-) -> Union[int, str]:
-    if custom_logger is not None:
-        custom_logger.info("Initializing systems...")
-    return "SUCCESS"
-```
+* **Function Signatures**: Annotate parameter names, default arguments, and return types explicitly for all functions, methods, and generators.
+* **Structural Typing**: Use typing protocols and structural definitions (like `typing.Protocol` or `typing.TypedDict`) to declare component expectations without concrete inheritance.
+* **Union & Optional Types**: Use explicit `Union` or `Optional` markers to manage conditional variable lifetimes, guarding against unexpected NoneType exceptions.
 
 ### B. Context Managers & Resource Management
-* Always use `with` statements when handling files, network sockets, DB connections, or thread locks.
-* If implementing custom resources, implement the `__enter__` and `__exit__` methods (or `@contextmanager` decorators).
-
-```python
-from contextlib import contextmanager
-import socket
-from typing import Generator
-
-@contextmanager
-def open_socket(host: str, port: int) -> Generator[socket.socket, None, None]:
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.connect((host, port))
-        yield s
-    finally:
-        s.close()
-
-# Safe usage guarantees closure even if an exception occurs
-with open_socket("127.0.0.1", 8080) as sock:
-    sock.sendall(b"PING")
-```
+* **Resource Scopes**: Wrap file streams, sockets, database transactions, and thread-locks inside `with` contexts to ensure deterministic cleanup.
+* **Custom Managers**: Enforce resource handling for custom elements by implementing enter and exit operations to guarantee memory and connection release even under exception scenarios.
 
 ---
 
 ## 3. Go (Error Wrapping & Concurrency Safety)
 
 ### A. Explicit Error Checking & Wrapping
-* Never ignore returned errors with `_`. Check them immediately.
-* Use `%w` within `fmt.Errorf` to wrap errors, preserving original context for error un-wrapping.
-
-```go
-package main
-
-import (
-	"fmt"
-	"os"
-)
-
-func ReadConfig(filePath string) ([]byte, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		// Wrap error to add context while retaining structural error details
-		return nil, fmt.Errorf("failed to open config file at %q: %w", filePath, err)
-	}
-	return data, nil
-}
-```
+* **Zero Ignored Errors**: Check all returned error variables immediately at the call site.
+* **Wrapping Semantics**: Combine custom context with error wrapping using `%w` to build traceable error chains while retaining the capability to assert original error instances.
+* **Failure Actions**: Explicitly clean up resources (closing files, releasing locks) before executing function returns on failure paths.
 
 ### B. Goroutine Lifetime & Timeout Orchestrations
-* Always specify the termination conditions of goroutines to prevent memory and channel leaks.
-* Manage timeouts using `context.Context` combined with select statements.
-
-```go
-package main
-
-import (
-	"context"
-	"time"
-)
-
-func ProcessAsync(ctx context.Context, data chan string) {
-	for {
-		select {
-		case <-ctx.Done():
-			// Exit goroutine safely when context times out or is canceled
-			return
-		case msg := <-data:
-			process(msg)
-		}
-	}
-}
-```
+* **Routine Lifetime Control**: Ensure every spawned goroutine has a guaranteed, clean exit path triggered by channel signals or context cancellations.
+* **Select Call Logic**: Coordinate multi-channel actions using select statements with explicit timeout cases to prevent deadlocks and blockages.
 
 ---
 
 ## 4. Rust (Memory Safety & Pattern Matching)
 
 ### A. Safe Match Chains
-* Avoid raw indexing and nested `if let` blocks. Use compile-time matched `match` chains or helper combinators (`map`, `and_then`).
-
-```rust
-#[derive(Debug)]
-pub enum ConfigError {
-    FileNotFound,
-    InvalidSyntax(String),
-}
-
-pub fn parse_config(content: Option<&str>) -> Result<u32, ConfigError> {
-    match content {
-        Some(text) if text.is_empty() => Err(ConfigError::InvalidSyntax("Empty string".into())),
-        Some(text) => text.parse::<u32>().map_err(|e| ConfigError::InvalidSyntax(e.to_string())),
-        None => Err(ConfigError::FileNotFound),
-    }
-}
-```
+* **Pattern Compilation**: Utilize match chains to handle options and results exhaustively, avoiding raw un-wrapping or unchecked indexing.
+* **Combinator Flow**: Chain calculations using monad operations (like `map`, `and_then`, and `map_err`) to avoid verbose conditional checks.
 
 ### B. Ownership, References, and Safe Slicing
-* Respect the borrow checker. Use slices (`&str`, `&[T]`) instead of consuming allocations (`String`, `Vec<T>`) when reading data.
-* Enforce explicit lifetimes when referencing data across structural boundaries.
+* **Borrowing Rules**: Enforce strict reference checks, preferring slices (`&str`, `&[T]`) over cloning heap allocations (`String`, `Vec<T>`).
+* **Lifetimes**: Declare variable references explicitly when crossing structural bounds to ensure compilation validity.

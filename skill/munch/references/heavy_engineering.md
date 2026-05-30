@@ -31,7 +31,7 @@ When executing tasks that require hours of work, massive compilations, or multi-
 
 ### 2. State & Context Anchoring
 * Because long tasks span multiple turns and risk context drift:
-  * Write progress files in the workspace (e.g. `scratch/build_status.json` or `.munch_checkpoint`) to track current step, environment variables, compiled modules, and next operations.
+  * Write progress files in the workspace to track current step, environment variables, compiled modules, and next operations.
   * Before every exchange, verify your active configuration path and toolchain state.
 
 ### 3. Incremental Compilation & Verification
@@ -43,63 +43,21 @@ When executing tasks that require hours of work, massive compilations, or multi-
 ## ⟦§COMPLEX_SYSTEMS_GUIDELINES⟧
 
 ### 1. Android/Linux Kernel Compilations
-Configure and build kernel modules cleanly using the following environment declarations:
-
-```bash
-# Set build architecture and target cross-compiler prefixes
-export ARCH=arm64
-export SUBARCH=arm64
-export CROSS_COMPILE=aarch64-linux-android-
-export CLANG_TRIPLE=aarch64-linux-gnu-
-
-# Define toolchain installation path (e.g., prebuilts/clang/host/linux-x86)
-export PATH="/path/to/clang/bin:$PATH"
-
-# 1. Clean the tree and load the default configuration (defconfig)
-make clean && make mrproper
-make vendor/codename_defconfig
-
-# 2. Compile kernel, modules, and Device Tree Blobs (DTB) using multi-threading
-make -j$(nproc) CC=clang CLANG_TRIPLE=$CLANG_TRIPLE
-```
-
-* **Symbol Checking**: Check `Module.symvers` to verify symbol compatibility across compile modules.
-* **DTB Compilation**: Compile device tree sources using `dtc` and verify device tree blobs before packing them into target boot images:
-  ```bash
-  dtc -I dts -O dtb -o arch/arm64/boot/dts/vendor/codename.dtb arch/arm64/boot/dts/vendor/codename.dts
-  ```
+* **Cross-Compiler Environments**: Enforce variables for target architectures and cross-compiler paths. Point build tools to targeted folders recursively.
+* **Defconfig Setup**: Clean the tree completely, then initialize configurations using targeted target defconfigs. Never mutate configs dynamically without tracking them in patch lists.
+* **Device Tree Blobs**: Compile Device Tree Sources into Device Tree Blobs utilizing device tree compilers. Validate inputs and compile structures before linking boot images.
+* **Symbol Compatibility**: Verify symbol references inside compilation outputs to guarantee cross-module compatibility.
 
 ### 2. Android Custom ROMs (AOSP / LineageOS)
-Managing Android source trees requires exact build environment variables and repo configurations.
-
-```bash
-# 1. Initialize repository with clean thread depth
-repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --git-lfs --depth=1
-
-# 2. Sync sources restricting network overload
-repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
-
-# 3. Setup caching to speed up successive builds
-export USE_CCACHE=1
-export CCACHE_EXEC=/usr/bin/ccache
-ccache -M 50G
-
-# 4. Initialize Android build environment
-source build/envsetup.sh
-lunch lineage_codename-userdebug
-
-# 5. Extract proprietary binaries directly from a connected device
-cd device/vendor/codename
-./extract-files.sh
-
-# 6. Execute full compilation
-mka bacon -j$(nproc)
-```
+* **Manifest Control**: Initialize source repositories using specific branch descriptors. Sync directories by using local manifests to resolve repository overlaps.
+* **Build Caching**: Enforce compile cache memory sizes to expedite successive rebuilds.
+* **Binary Extraction**: Extract proprietary vendor binaries directly from active target devices using extraction scripts, mapping them safely inside the vendor tree.
+* **Compilation Setup**: Initialize build environments, load target parameters (like userdebug configurations), and launch multi-threaded builders.
 
 ---
 
 ## ⟦§RESILIENCE_GATE⟧
 If a build or compilation fails:
 1. **Never Guess**: Do not modify random flags to "try and fix it". Read the compilation log from the last error line upward to identify the root cause (e.g. missing include, symbol collision, compiler mismatch).
-2. **Isolate Build Errors**: Run the exact failing compilation command in isolation with verbose flags (e.g., `make V=1` or `ninja -v`) to extract precise error reports.
-3. **Environment Audit**: Audit compiler versions, headers, and library search paths (`LD_LIBRARY_PATH`, `LIBRARY_PATH`) before attempting rebuilding.
+2. **Isolate Build Errors**: Run the exact failing compilation command in isolation with verbose flags to extract precise error reports.
+3. **Environment Audit**: Audit compiler versions, headers, and library search paths before attempting rebuilding.

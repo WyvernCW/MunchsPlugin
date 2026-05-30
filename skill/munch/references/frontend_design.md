@@ -93,100 +93,12 @@ Choose layouts intentionally based on the user's task and desired tone:
 
 ---
 
-## ⟦§LAYOUT_COMPOSITION_TEMPLATES⟧
+## ⟦§LAYOUT_COMPOSITION_PRINCIPLES⟧
 
-### 1. The Dynamic Dashboard & Sidebar (Vanilla CSS)
-Use this setup to create a structural 12-column dashboard layout with a responsive sidebar frame:
-
-```css
-:root {
-  /* System Design Tokens - HSL Tailored */
-  --bg-primary: hsl(220, 15%, 8%);
-  --bg-secondary: hsl(220, 15%, 12%);
-  --border-subtle: hsla(0, 0%, 100%, 0.08);
-  --text-main: hsl(0, 0%, 94%);
-  --text-muted: hsl(220, 10%, 65%);
-  --accent: hsl(190, 90%, 50%);
-  --font-family-display: 'Plus Jakarta Sans', sans-serif;
-  --font-family-body: 'DM Sans', sans-serif;
-  --spacing-base: 8px;
-}
-
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-main);
-  font-family: var(--font-family-body);
-  margin: 0;
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Sidebar Layout */
-.sidebar {
-  width: 260px;
-  background-color: var(--bg-secondary);
-  border-right: 1px solid var(--border-subtle);
-  display: flex;
-  flex-direction: column;
-  padding: calc(var(--spacing-base) * 3);
-  box-sizing: border-box;
-}
-
-.sidebar-title {
-  font-family: var(--font-family-display);
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin-bottom: calc(var(--spacing-base) * 4);
-}
-
-/* Dashboard Workspace Grid */
-.workspace {
-  flex: 1;
-  display: grid;
-  grid-template-rows: 70px 1fr;
-  overflow-y: auto;
-}
-
-.header {
-  border-bottom: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 calc(var(--spacing-base) * 4);
-}
-
-.grid-12 {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: calc(var(--spacing-base) * 3);
-  padding: calc(var(--spacing-base) * 4);
-}
-
-/* Card-Based Layout Items */
-.card {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: calc(var(--spacing-base) * 3);
-  grid-column: span 12;
-  transition: border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card:hover {
-  border-color: var(--accent);
-}
-
-@media (min-width: 768px) {
-  .card-medium-6 { grid-column: span 6; }
-}
-
-@media (min-width: 1200px) {
-  .card-large-4 { grid-column: span 4; }
-  .card-large-8 { grid-column: span 8; }
-}
-```
+### 1. Structural Sidebar & 12-Column Grid
+* Use a sidebar layout with a fixed, constrained width (e.g. 260px) utilizing high-contrast, sub-surface container boundaries (`border-right`) rather than heavy drop-shadows.
+* Arrange the primary dashboard container as a 12-column template (`grid-template-columns: repeat(12, 1fr)`) with explicit horizontal margin gaps based on an 8px spacing system.
+* Configure grid span distributions responsively (e.g. span 12 for mobile viewports, span 6 for tablet/medium containers, and span 4 or 8 for desktop viewports).
 
 ---
 
@@ -204,33 +116,9 @@ Avoid "AI Slop" — standard templates, purple gradient overlays, default Inter 
 ### 2. Colors & Contrast
 * **DO NOT** use generic gradients, neon purples, or uncalibrated dark modes.
 * **DO** design a focused palette with HSL. Match theme with intention:
-  * *High Contrast Dark*: Deep charcoal (`#121212`), crisp white, and a single neon accent.
-  * *Earth Tone*: Warm sand background (`#F5F2EB`), olive highlights, charcoal text.
+  * *High Contrast Dark*: Deep charcoal background, crisp white text, and a single neon accent.
+  * *Earth Tone*: Warm sand background, olive highlights, charcoal text.
 
 ### 3. Noise Overlay & Gradient Meshes
-Avoid flat solid colors by layering SVG noise filters inside backgrounds.
-
-```html
-<!-- SVG Grain Overlay Filter -->
-<svg style="display: none;">
-  <filter id="noise-overlay">
-    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/>
-    <feColorMatrix type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.04 0"/>
-  </filter>
-</svg>
-
-<style>
-.grain-bg {
-  position: relative;
-}
-.grain-bg::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%; height: 100%;
-  filter: url(#noise-overlay);
-  pointer-events: none;
-  z-index: 1;
-}
-</style>
-```
+* Layer visual depth using un-tiled SVG fractal noise filters mapped directly over gradient background meshes. Set color matrix values to low visibility boundaries (4% opacity) to add realistic paper/grain texture without interfering with readability.
+* Utilize thin, semi-transparent borders in place of visual dividers to frame content cleanly.

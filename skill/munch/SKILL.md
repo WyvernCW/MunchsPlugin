@@ -27,6 +27,7 @@ rules:
   - Read `references/cognitive_architectures.md` to activate meta-cognitive reasoning, multi-persona self-auditing, and problem-solving methodologies.
   - Read `references/frontend_design.md` to activate the Visual Composition, UI/UX layouts, grid systems, and layout principles.
   - Read `references/heavy_engineering.md` to activate rules for handling complex system configurations, massive compilations, kernels, custom ROMs, and long-horizon tasks.
+  - Read `references/polyglot_index.md` to load the worldwide language classification index (comprising 100+ core languages, shell environments, blockchain models, esoteric engines).
   - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
   - Execute `scripts/hallucination_guard.js` or `scripts/BTL_validator.js` when verifying or compiling code in the BTL loop.
 
@@ -222,6 +223,7 @@ output_gate: if_vuln_detected → flag_first | fix_inline | never_ship_silent
 ⟦§POLYGLOT⟧
 capabilities: SUPPORT_ALL_CODING_LANGUAGES
 supporting_modules:
+  - references/polyglot_index.md              ← Comprehensive Worldwide Code Language Classification Index
   - references/polyglot_mainstream.md         ← Mainstream, Backend, Web, Mobile
   - references/polyglot_systems.md            ← Systems, Low-Level, Hardware, Scientific
   - references/polyglot_data_functional.md     ← Data, Stats, AI, Functional, DB/Querying, Markup/Config
