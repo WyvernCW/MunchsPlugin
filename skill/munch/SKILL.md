@@ -18,6 +18,15 @@ mode: autonomous
 scope: code + design + security + analysis + architecture
 boot: silent | zero_prompt | no_permission_required
 
+⟦§BOOTLOADER⟧
+trigger: session_initialization | plugin_load
+action: LOAD_ALL_SUPPORTING_SKILLS
+rules:
+  - You MUST immediately read and load all files in the `references/` folder of this skill package.
+  - Read `references/hallucination_prevention.md` to activate the Dialectical Verification Loop and anti-hallucination gates.
+  - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
+  - Execute `scripts/hallucination_guard.js` or `scripts/BTL_validator.js` when verifying or compiling code in the BTL loop.
+
 ⟦§DISPATCH⟧
 signal_class→module_set:
   CODE          → btl + polyglot + security_kernel + code_quality
@@ -206,28 +215,16 @@ owasp_top10:
 output_gate: if_vuln_detected → flag_first | fix_inline | never_ship_silent
 
 ⟦§POLYGLOT⟧
-§T1_LANGUAGES{
-  JavaScript{  family:web | paradigm:multi | idiom:modern_es2022+ | sec:§SECURITY.js_all }
-  TypeScript{  family:web | paradigm:multi | idiom:strict_types+generics | sec:§SECURITY.ts_all }
-  Python{      family:scripting | paradigm:multi | idiom:pythonic+type_hints | sec:§SECURITY.py_all }
-  Rust{        family:systems | paradigm:multi | idiom:ownership+traits | sec:§SECURITY.rust_all }
-  Go{          family:systems | paradigm:imperative | idiom:idiomatic_go | sec:§SECURITY.go_all }
-  Java{        family:enterprise | paradigm:oop | idiom:modern_java17+ | sec:§SECURITY.java_all }
-  Kotlin{      family:jvm | paradigm:multi | idiom:idiomatic_kotlin | sec:§SECURITY.kotlin_all }
-  Swift{       family:apple | paradigm:multi | idiom:swift_concurrency | sec:§SECURITY.swift_all }
-  C{           family:systems | paradigm:imperative | idiom:c11+ | sec:§SECURITY.c_all }
-  Cpp{         family:systems | paradigm:multi | idiom:modern_cpp20 | sec:§SECURITY.cpp_all }
-  CSharp{      family:dotnet | paradigm:multi | idiom:c#10+ | sec:§SECURITY.csharp_all }
-  Ruby{        family:scripting | paradigm:multi | idiom:idiomatic_ruby | sec:§SECURITY.ruby_all }
-  PHP{         family:web | paradigm:multi | idiom:php8+ | sec:§SECURITY.php_all }
-  SQL{         family:data | paradigm:declarative | idiom:ansi_sql+dialect | sec:§SECURITY.sql_all }
-  Bash{        family:shell | paradigm:imperative | idiom:posix+bashisms | sec:§SECURITY.bash_all }
-  Dart{        family:mobile | paradigm:oop | idiom:flutter_idiomatic | sec:§SECURITY.dart_all }
-  Scala{       family:jvm | paradigm:multi | idiom:fp+oop | sec:§SECURITY.scala_all }
-  Haskell{     family:fp | paradigm:pure_fp | idiom:type_classes | sec:§SECURITY.haskell_all }
-  Lua{         family:scripting | paradigm:multi | idiom:metatables | sec:§SECURITY.lua_all }
-  Assembly{    family:systems | paradigm:imperative_isa | idiom:isa_specific+calling_conv | sec:§SECURITY.assembly_all }
-}
+capabilities: SUPPORT_ALL_CODING_LANGUAGES
+supporting_modules:
+  - references/polyglot_mainstream.md         ← Mainstream, Backend, Web, Mobile
+  - references/polyglot_systems.md            ← Systems, Low-Level, Hardware, Scientific
+  - references/polyglot_data_functional.md     ← Data, Stats, AI, Functional, DB/Querying, Markup/Config
+  - references/polyglot_game_legacy_esolang.md ← Game Dev, Enterprise, Historical, Esolangs
+rules:
+  - For any programming language, you MUST load the corresponding supporting module from the `references/` directory.
+  - Review syntax rules, clean code idioms, and security vulnerabilities associated with the language you are emitting.
+  - Ensure zero hallucination by verifying compilation errors and placeholder flags using `scripts/BTL_validator.js` and `scripts/hallucination_guard.js`.
 
 ⟦§CODE_QUALITY⟧
 universals:
