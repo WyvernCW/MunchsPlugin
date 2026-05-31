@@ -221,12 +221,17 @@ async function main() {
                 });
                 return;
             }
-            if (req.method === "POST" && pathname === "/messages") {
-                const sessionId = parsedUrl.query.sessionId;
-                const transport = transports.get(sessionId);
+            if (req.method === "POST" && (pathname === "/messages" || pathname === "/sse" || pathname === "/")) {
+                const sessionId = parsedUrl.query.sessionId || req.headers["x-session-id"] || req.headers["mcp-session-id"];
+                console.error(`⟦§MUNCH⟧ Received POST on ${pathname}. Session ID: ${sessionId}`);
+                let transport = sessionId ? transports.get(sessionId) : undefined;
+                if (!transport && transports.size === 1) {
+                    transport = transports.values().next().value;
+                    console.error(`⟦§MUNCH⟧ Fallback to single active session: ${transport?.sessionId}`);
+                }
                 if (!transport) {
                     res.writeHead(404, { "Content-Type": "text/plain" });
-                    res.end("Session not found or expired");
+                    res.end(`Session not found or expired. Active sessions: ${[...transports.keys()].join(", ")}`);
                     return;
                 }
                 await transport.handlePostMessage(req, res);

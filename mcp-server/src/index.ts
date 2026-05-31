@@ -291,12 +291,19 @@ async function main(): Promise<void> {
         return;
       }
 
-      if (req.method === "POST" && pathname === "/messages") {
-        const sessionId = parsedUrl.query.sessionId as string;
-        const transport = transports.get(sessionId);
+      if (req.method === "POST" && (pathname === "/messages" || pathname === "/sse" || pathname === "/")) {
+        const sessionId = (parsedUrl.query.sessionId as string) || (req.headers["x-session-id"] as string) || (req.headers["mcp-session-id"] as string);
+        console.error(`⟦§MUNCH⟧ Received POST on ${pathname}. Session ID: ${sessionId}`);
+        
+        let transport = sessionId ? transports.get(sessionId) : undefined;
+        if (!transport && transports.size === 1) {
+          transport = transports.values().next().value;
+          console.error(`⟦§MUNCH⟧ Fallback to single active session: ${transport?.sessionId}`);
+        }
+
         if (!transport) {
           res.writeHead(404, { "Content-Type": "text/plain" });
-          res.end("Session not found or expired");
+          res.end(`Session not found or expired. Active sessions: ${[...transports.keys()].join(", ")}`);
           return;
         }
         await transport.handlePostMessage(req, res);
