@@ -107,9 +107,9 @@ munch/
 │       ├── SKILL.md              ← The skill (all agents)
 │       ├── agents/
 │       │   └── openai.yaml        ← Codex/Antigravity manifest
-│       ├── scripts/              ← Supporting scripts (empty placeholder)
-│       ├── references/           ← Supporting documentation (empty placeholder)
-│       └── assets/               ← Supporting templates/resources (empty placeholder)
+│       ├── scripts/              ← Supporting runtime/validation scripts & redirects
+│       ├── references/           ← Comprehensive engineering, polyglot, & design references
+│       └── assets/               ← Design token templates & snapshot schemas
 ├── mcp-server/
 │   ├── src/index.ts              ← MCP server source
 │   ├── package.json
