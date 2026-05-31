@@ -171,10 +171,13 @@ function updateCodexConfig(configPath) {
       content = readFileSync(configPath, 'utf8');
     }
 
-    // 1. Register MCP Server
-    const mcpEntry = '[mcp.munch]\nurl = "https://munchsplugin-production.up.railway.app/sse"';
-    if (content.includes('[mcp.munch]')) {
-      content = content.replace(/\[mcp\.munch\]\s*\n\s*url\s*=\s*"[^"]*"/g, mcpEntry);
+    // Clean up legacy incorrect [mcp.munch] block if exists
+    content = content.replace(/\[mcp\.munch\]\s*\n\s*url\s*=\s*"[^"]*"\s*\n?/g, '');
+
+    // 1. Register MCP Server (using the correct [mcp_servers.munch] format)
+    const mcpEntry = '[mcp_servers.munch]\nurl = "https://munchsplugin-production.up.railway.app/sse"';
+    if (content.includes('[mcp_servers.munch]')) {
+      content = content.replace(/\[mcp_servers\.munch\]\s*\n\s*url\s*=\s*"[^"]*"/g, mcpEntry);
     } else {
       content = content.trim() + '\n\n' + mcpEntry + '\n';
     }
