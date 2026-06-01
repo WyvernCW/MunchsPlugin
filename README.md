@@ -24,16 +24,16 @@ kernel into any compatible AI coding agent. Once active it provides:
 
 ## Compatibility
 
-| Tool | Method | Location |
-|------|--------|----------|
-| **Claude Code** | Skill | `.claude/skills/munch/SKILL.md` or `~/.claude/skills/munch/SKILL.md` |
-| **Claude.ai** | Skill (Projects) | Upload `skill/munch/SKILL.md` as project knowledge |
-| **KiloCode** | Skill | `.kilocode/skills/munch/SKILL.md` or `~/.kilocode/skills/munch/SKILL.md` |
-| **OpenCode** | Skill + Plugin | `.opencode/skills/munch/SKILL.md` + `opencode-plugin/munch.plugin.ts` |
-| **Codex CLI** | Skill + Plugin | `~/.agents/skills/munch/SKILL.md` + `codex-plugin/` |
-| **Antigravity CLI** | Skill | `~/.gemini/skills/munch/SKILL.md` |
-| **Antigravity IDE** | Skill | `~/.gemini/skills/munch/SKILL.md` |
-| **Any MCP host** | MCP Server | See `mcp-server/` |
+| Tool                | Method           | Location                                                                 |
+| ------------------- | ---------------- | ------------------------------------------------------------------------ |
+| **Claude Code**     | Skill            | `.claude/skills/munch/SKILL.md` or `~/.claude/skills/munch/SKILL.md`     |
+| **Claude.ai**       | Skill (Projects) | Upload `skill/munch/SKILL.md` as project knowledge                       |
+| **KiloCode**        | Skill            | `.kilocode/skills/munch/SKILL.md` or `~/.kilocode/skills/munch/SKILL.md` |
+| **OpenCode**        | Skill + Plugin   | `.opencode/skills/munch/SKILL.md` + `opencode-plugin/munch.plugin.ts`    |
+| **Codex CLI**       | Skill + Plugin   | `~/.agents/skills/munch/SKILL.md` + `codex-plugin/`                      |
+| **Antigravity CLI** | Skill            | `~/.gemini/skills/munch/SKILL.md`                                        |
+| **Antigravity IDE** | Skill            | `~/.gemini/skills/munch/SKILL.md`                                        |
+| **Any MCP host**    | MCP Server       | See `mcp-server/`                                                        |
 
 ---
 
@@ -41,31 +41,36 @@ kernel into any compatible AI coding agent. Once active it provides:
 
 Clone the repository and run the automated installer:
 
-```bash
+````bash
 git clone https://github.com/WyvernCW/MunchsPlugin.git
 cd MunchsPlugin
 npm run setup
-```
+
+or
+
+```bash
+npm install -g --ignore-scripts git+https://github.com/WyvernCW/MunchsPlugin.git
+````
 
 The installer script will automatically:
+
 1. **Install Skills**: Copy `SKILL.md` to destination folders for **Claude Code**, **KiloCode**, **Codex**, **Antigravity**, and **OpenCode**.
 2. **Install Plugins**: Copy plugin modules for **OpenCode**, **Codex**, and **Antigravity**.
 3. **Compile MCP Server**: Run `npm install` and compile typescript in the `mcp-server` directory.
 4. **Configure Host Files**: Auto-register your remote Railway SSE URL (`https://munchsplugin-production.up.railway.app/sse`) inside configuration files such as `~/.claude/settings.json` and `~/.gemini/config/mcp_config.json`.
 
-
 ---
 
 ## MCP Tools
 
-| Tool | Description |
-|------|-------------|
-| `load_skill` | Load full SKILL.md or a named section into context |
-| `list_sections` | List all sections in the skill |
-| `save_snapshot` | Persist a §MEMORY snapshot for later restore |
-| `restore_snapshot` | Restore a saved snapshot by id |
-| `list_snapshots` | Show all snapshots saved this session |
-| `ping` | Health check |
+| Tool               | Description                                        |
+| ------------------ | -------------------------------------------------- |
+| `load_skill`       | Load full SKILL.md or a named section into context |
+| `list_sections`    | List all sections in the skill                     |
+| `save_snapshot`    | Persist a §MEMORY snapshot for later restore       |
+| `restore_snapshot` | Restore a saved snapshot by id                     |
+| `list_snapshots`   | Show all snapshots saved this session              |
+| `ping`             | Health check                                       |
 
 ---
 
