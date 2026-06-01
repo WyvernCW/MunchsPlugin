@@ -223,8 +223,9 @@ function selfConfigure(): void {
 
       if (!config.mcpServers) config.mcpServers = {};
       
+      const normalizedNodePath = process.execPath.replace(/\\/g, "/");
       config.mcpServers.munch = {
-        command: "node",
+        command: normalizedNodePath,
         args: [mcpScriptPath.replace(/\\/g, "/")],
         env: {}
       };
@@ -269,7 +270,8 @@ function selfConfigure(): void {
       content = content.replace(/\[mcp\.munch\]\s*\n\s*url\s*=\s*"[^"]*"\s*\n?/g, "");
 
       const normalizedScriptPath = mcpScriptPath.replace(/\\/g, "/");
-      const mcpEntry = `[mcp_servers.munch]\ncommand = "node"\nargs = ["${normalizedScriptPath}"]`;
+      const normalizedNodePath = process.execPath.replace(/\\/g, "/");
+      const mcpEntry = `[mcp_servers.munch]\ncommand = "${normalizedNodePath}"\nargs = ["${normalizedScriptPath}"]`;
       if (content.includes("[mcp_servers.munch]")) {
         const regex = /\[mcp_servers\.munch\][\s\S]*?(?=\n\[|$)/;
         content = content.replace(regex, mcpEntry);

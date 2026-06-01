@@ -202,8 +202,9 @@ function updateJsonConfig(configPath, key) {
       config.mcpServers = {};
     }
 
+    const normalizedNodePath = process.execPath.replace(/\\/g, '/');
     config.mcpServers.munch = {
-      command: 'node',
+      command: normalizedNodePath,
       args: [mcpScriptPath.replace(/\\/g, '/')],
       env: {}
     };
@@ -257,7 +258,8 @@ function updateCodexConfig(configPath) {
 
     // 1. Register MCP Server (using the correct [mcp_servers.munch] local format)
     const normalizedScriptPath = mcpScriptPath.replace(/\\/g, '/');
-    const mcpEntry = `[mcp_servers.munch]\ncommand = "node"\nargs = ["${normalizedScriptPath}"]`;
+    const normalizedNodePath = process.execPath.replace(/\\/g, '/');
+    const mcpEntry = `[mcp_servers.munch]\ncommand = "${normalizedNodePath}"\nargs = ["${normalizedScriptPath}"]`;
     if (content.includes('[mcp_servers.munch]')) {
       const regex = /\[mcp_servers\.munch\][\s\S]*?(?=\n\n\[|\n\[(?!mcp_servers\.munch)|$)/;
       content = content.replace(regex, mcpEntry);
