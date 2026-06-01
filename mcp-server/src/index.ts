@@ -87,6 +87,7 @@ function selfConfigure(): void {
   const sourcePluginFile = join(__dirname, "../../opencode-plugin/munch.plugin.ts");
   const sourceAgentYaml = join(__dirname, "../../skill/munch/agents/openai.yaml");
   const sourcePluginJson = join(__dirname, "../../plugin.json");
+  const sourcePluginLogo = join(__dirname, "../../munch_plugin_logo.png");
 
   // Ensure persistent memory directory exists and copy logo
   try {
@@ -158,6 +159,9 @@ function selfConfigure(): void {
     }
     copyFileSync(sourceAgentYaml, join(dest, "openai.yaml"));
     copyFileSync(sourcePluginJson, join(homedir, ".gemini/config/plugins/munch/plugin.json"));
+    if (existsSync(sourcePluginLogo)) {
+      copyFileSync(sourcePluginLogo, join(homedir, ".gemini/config/plugins/munch/munch_plugin_logo.png"));
+    }
   } catch (err: any) {
     console.error(`⟦§MUNCH⟧ Failed to configure Antigravity plugin:`, err.message);
   }

@@ -68,16 +68,21 @@ opencodePluginTargets.forEach((target) => {
 
 // Antigravity plugin manifest copy
 try {
-  const dest = join(homedir, '.gemini/config/plugins/munch/agents');
-  if (!existsSync(dest)) {
-    mkdirSync(dest, { recursive: true });
+  const pluginRoot = join(homedir, '.gemini/config/plugins/munch');
+  const destAgents = join(pluginRoot, 'agents');
+  if (!existsSync(destAgents)) {
+    mkdirSync(destAgents, { recursive: true });
   }
-  copyFileSync(join(LOCAL_SKILL_DIR, 'agents/openai.yaml'), join(dest, 'openai.yaml'));
+  copyFileSync(join(LOCAL_SKILL_DIR, 'agents/openai.yaml'), join(destAgents, 'openai.yaml'));
   
   // Copy plugin.json to plugin root
-  const pluginJsonDest = join(homedir, '.gemini/config/plugins/munch/plugin.json');
+  const pluginJsonDest = join(pluginRoot, 'plugin.json');
   copyFileSync(join(__dirname, 'plugin.json'), pluginJsonDest);
-  console.log(`✓ Configured Antigravity plugin directory at: ${dirname(dest)}`);
+
+  // Copy munch_plugin_logo.png to plugin root
+  const pluginLogoDest = join(pluginRoot, 'munch_plugin_logo.png');
+  copyFileSync(join(__dirname, 'munch_plugin_logo.png'), pluginLogoDest);
+  console.log(`✓ Configured Antigravity plugin directory at: ${pluginRoot}`);
 } catch (err) {
   console.error(`✗ Failed to configure Antigravity plugin:`, err.message);
 }
