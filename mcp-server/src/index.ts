@@ -1053,13 +1053,17 @@ async function checkForUpdates(): Promise<void> {
 // Start
 // ──────────────────────────────────────────────
 async function main(): Promise<void> {
-  // Run self-configuration to ensure all AI agents have matching skills and plugins
-  selfConfigure();
-
-  showNotification("Munch MCP Server Active", "The cognitive agent framework is online and ready.");
-
   const isSseMode = process.argv.includes("--sse") || process.env.MUNCH_SSE === "true" || process.env.PORT !== undefined;
   const port = parseInt(process.env.PORT || "8080", 10);
+
+  // Run self-configuration asynchronously to prevent blocking the MCP handshake
+  setTimeout(() => {
+    try {
+      selfConfigure();
+    } catch (e) {
+      console.error("⟦§MUNCH⟧ Background self-configuration check failed:", e);
+    }
+  }, 1000);
 
   if (isSseMode) {
     const transports = new Map<string, SSEServerTransport>();
