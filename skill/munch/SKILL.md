@@ -30,7 +30,9 @@ rules:
   - Read `references/continuous_improvement.md` to activate persistent self-improvement cycles, double-loop learning, lesson logging, and user preference tracking.
   - Read `references/polyglot_index.md` to load the worldwide language classification index (comprising 100+ core languages, shell environments, blockchain models, esoteric engines).
   - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
+  - Read `references/roblox_studio.md` to activate Luau scripting, CFrame math, SVG triangulation, and CSG modeling rules.
   - Execute `scripts/hallucination_guard.js` or `scripts/BTL_validator.js` when verifying or compiling code in the BTL loop.
+
 
 ⟦§DISPATCH⟧
 signal_class→module_set:
