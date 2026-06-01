@@ -493,10 +493,11 @@ const snapshots: Map<string, Snapshot> = new Map();
 // ──────────────────────────────────────────────
 // MCP Server definition
 // ──────────────────────────────────────────────
-const server = new McpServer({
-  name: "munch",
-  version: "1.0.0",
-});
+function createMcpServer(): McpServer {
+  const server = new McpServer({
+    name: "munch",
+    version: "1.0.0",
+  });
 
 // ── Tool: load_skill ──────────────────────────
 server.registerTool(
@@ -959,6 +960,9 @@ server.registerPrompt(
   })
 );
 
+  return server;
+}
+
 // Background update checker from GitHub (WyvernCW/MunchsPlugin)
 async function checkForUpdates(): Promise<void> {
   console.error("⟦§MUNCH⟧ Checking for updates from GitHub (WyvernCW/MunchsPlugin)...");
@@ -1089,7 +1093,8 @@ async function main(): Promise<void> {
         const transport = new SSEServerTransport("/messages", res);
         transports.set(transport.sessionId, transport);
         
-        await server.connect(transport);
+        const sessionServer = createMcpServer();
+        await sessionServer.connect(transport);
         console.error(`⟦§MUNCH⟧ SSE Client connected. Session: ${transport.sessionId}`);
 
         req.on("close", () => {
@@ -1138,7 +1143,8 @@ async function main(): Promise<void> {
     });
   } else {
     const transport = new StdioServerTransport();
-    await server.connect(transport);
+    const stdioServer = createMcpServer();
+    await stdioServer.connect(transport);
     console.error("⟦§MUNCH⟧ MCP server v1.0 running on stdio");
   }
 
