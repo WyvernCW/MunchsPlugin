@@ -166,6 +166,44 @@ function selfConfigure(): void {
     console.error(`⟦§MUNCH⟧ Failed to configure Antigravity plugin:`, err.message);
   }
 
+  // Codex Local-Plugins Marketplace copy
+  try {
+    const localMarketplaceRoot = join(homedir, ".codex/local-plugins");
+    const agentsPluginsDir = join(localMarketplaceRoot, ".agents/plugins");
+    const pluginDir = join(localMarketplaceRoot, "plugins/munch");
+    const pluginCodexPluginDir = join(pluginDir, ".codex-plugin");
+    const pluginAssetsDir = join(pluginDir, "assets");
+    const pluginSkillsDir = join(pluginDir, "skills/munch");
+
+    // Create directories
+    mkdirSync(agentsPluginsDir, { recursive: true });
+    mkdirSync(pluginCodexPluginDir, { recursive: true });
+    mkdirSync(pluginAssetsDir, { recursive: true });
+    mkdirSync(pluginSkillsDir, { recursive: true });
+
+    // Copy files from repository relative paths
+    const sourceMarketplaceJson = join(__dirname, "../../marketplace.json");
+    const sourceCodexPluginJson = join(__dirname, "../../.codex-plugin/plugin.json");
+    const sourceLogoSvg = join(sourceSkillDir, "assets/munch_plugin_logo.svg");
+
+    if (existsSync(sourceMarketplaceJson)) {
+      copyFileSync(sourceMarketplaceJson, join(agentsPluginsDir, "marketplace.json"));
+    }
+    if (existsSync(sourceCodexPluginJson)) {
+      copyFileSync(sourceCodexPluginJson, join(pluginCodexPluginDir, "plugin.json"));
+    }
+    if (existsSync(sourcePluginLogo)) {
+      copyFileSync(sourcePluginLogo, join(pluginAssetsDir, "munch_plugin_logo.png"));
+    }
+    if (existsSync(sourceLogoSvg)) {
+      copyFileSync(sourceLogoSvg, join(pluginAssetsDir, "munch_plugin_logo.svg"));
+    }
+    
+    cpSync(sourceSkillDir, pluginSkillsDir, { recursive: true });
+  } catch (err: any) {
+    console.error(`⟦§MUNCH⟧ Failed to configure Codex Local-Plugins Marketplace:`, err.message);
+  }
+
   // 3. Register MCP configurations
   const mcpScriptPath = resolve(__dirname, "index.js");
 
@@ -251,6 +289,25 @@ function selfConfigure(): void {
         content = content.replace(skillRegex, `[[skills.config]]\npath = "${skillFilePath}"\nenabled = true`);
       }
 
+      // 3. Register local-plugins marketplace
+      const localMarketplaceRoot = join(homedir, ".codex/local-plugins").replace(/\\/g, "/");
+      const marketplaceEntry = `[marketplaces.local-plugins]\nsource_type = "local"\nsource = "${localMarketplaceRoot}"`;
+      if (content.includes("[marketplaces.local-plugins]")) {
+        const regex = /\[marketplaces\.local-plugins\][\s\S]*?(?=\n\[|$)/;
+        content = content.replace(regex, marketplaceEntry);
+      } else {
+        content = content.trim() + "\n\n" + marketplaceEntry + "\n";
+      }
+
+      // 4. Enable the munch plugin
+      const enablePluginEntry = `[plugins."munch@local-plugins"]\nenabled = true`;
+      if (content.includes('[plugins."munch@local-plugins"]')) {
+        const regex = /\[plugins\."munch@local-plugins"\][\s\S]*?(?=\n\[|$)/;
+        content = content.replace(regex, enablePluginEntry);
+      } else {
+        content = content.trim() + "\n\n" + enablePluginEntry + "\n";
+      }
+
       writeFileSync(configPath, content.trim() + "\n", "utf8");
     } catch (err: any) {
       console.error(`⟦§MUNCH⟧ Failed to write Codex config ${configPath}:`, err.message);
@@ -277,6 +334,19 @@ function selfConfigure(): void {
   updateOpenCodeConfig(join(homedir, ".config/opencode/opencode.json"));
   updateOpenCodeConfig(join(homedir, ".opencode/opencode.json"));
   updateCodexConfig(join(homedir, ".codex/config.toml"));
+
+  // Install Codex plugin from the local-plugins marketplace
+  try {
+    exec("codex plugin add munch@local-plugins", (err) => {
+      if (err) {
+        console.error("⟦§MUNCH⟧ Failed to auto-install Codex plugin:", err.message);
+      } else {
+        console.error("⟦§MUNCH⟧ Auto-installed Codex plugin successfully.");
+      }
+    });
+  } catch (e: any) {
+    console.error("⟦§MUNCH⟧ Failed to spawn Codex plugin install:", e.message);
+  }
 
   console.error("⟦§MUNCH⟧ Self-configuration check complete.");
 }

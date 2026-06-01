@@ -1,0 +1,34 @@
+{
+  "name": "munch",
+  "version": "1.0.0",
+  "description": "Augmented cognitive agent plugin with full-stack, design, engineering, and polyglot capabilities.",
+  "author": {
+    "name": "cika"
+  },
+  "homepage": "https://github.com/WyvernCW/MunchsPlugin",
+  "repository": "https://github.com/WyvernCW/MunchsPlugin",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "munch",
+    "agent",
+    "skill"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Munch",
+    "shortDescription": "Augmented cognitive agent — full-stack coding, UI/UX, architecture, security, analysis.",
+    "longDescription": "Munch is an augmented cognitive agent that integrates anti-regression tracking, adaptive user modeling, BTL build loop, OWASP security scanning, and polyglot code generation.",
+    "developerName": "cika",
+    "category": "Development",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "brandColor": "#0ea5e9",
+    "logo": "./assets/munch_plugin_logo.png",
+    "composerIcon": "./assets/munch_plugin_logo.svg",
+    "screenshots": []
+  }
+}

@@ -104,6 +104,41 @@ try {
 }
 
 // ──────────────────────────────────────────────
+// 2b. Copy Codex Local-Plugins Marketplace Files
+// ──────────────────────────────────────────────
+try {
+  const localMarketplaceRoot = join(homedir, '.codex/local-plugins');
+  const agentsPluginsDir = join(localMarketplaceRoot, '.agents/plugins');
+  const pluginDir = join(localMarketplaceRoot, 'plugins/munch');
+  const pluginCodexPluginDir = join(pluginDir, '.codex-plugin');
+  const pluginAssetsDir = join(pluginDir, 'assets');
+  const pluginSkillsDir = join(pluginDir, 'skills/munch');
+
+  // Create directories
+  mkdirSync(agentsPluginsDir, { recursive: true });
+  mkdirSync(pluginCodexPluginDir, { recursive: true });
+  mkdirSync(pluginAssetsDir, { recursive: true });
+  mkdirSync(pluginSkillsDir, { recursive: true });
+
+  // Copy marketplace.json
+  copyFileSync(join(__dirname, 'marketplace.json'), join(agentsPluginsDir, 'marketplace.json'));
+
+  // Copy .codex-plugin/plugin.json
+  copyFileSync(join(__dirname, '.codex-plugin/plugin.json'), join(pluginCodexPluginDir, 'plugin.json'));
+
+  // Copy assets
+  copyFileSync(join(__dirname, 'munch_plugin_logo.png'), join(pluginAssetsDir, 'munch_plugin_logo.png'));
+  copyFileSync(join(__dirname, 'skill/munch/assets/munch_plugin_logo.svg'), join(pluginAssetsDir, 'munch_plugin_logo.svg'));
+
+  // Copy skills recursively
+  cpSync(LOCAL_SKILL_DIR, pluginSkillsDir, { recursive: true });
+
+  console.log(`✓ Configured Codex Local-Plugins Marketplace at: ${localMarketplaceRoot}`);
+} catch (err) {
+  console.error(`✗ Failed to configure Codex Local-Plugins Marketplace:`, err.message);
+}
+
+// ──────────────────────────────────────────────
 // 3. Compile MCP Server
 // ──────────────────────────────────────────────
 console.log('Building MCP Server in mcp-server/ directory...');
@@ -220,8 +255,27 @@ function updateCodexConfig(configPath) {
       content = content.replace(skillRegex, `[[skills.config]]\npath = "${skillFilePath}"\nenabled = true`);
     }
 
+    // 3. Register local-plugins marketplace
+    const localMarketplaceRoot = join(homedir, '.codex/local-plugins').replace(/\\/g, '/');
+    const marketplaceEntry = `[marketplaces.local-plugins]\nsource_type = "local"\nsource = "${localMarketplaceRoot}"`;
+    if (content.includes('[marketplaces.local-plugins]')) {
+      const regex = /\[marketplaces\.local-plugins\][\s\S]*?(?=\n\[|$)/;
+      content = content.replace(regex, marketplaceEntry);
+    } else {
+      content = content.trim() + '\n\n' + marketplaceEntry + '\n';
+    }
+
+    // 4. Enable the munch plugin
+    const enablePluginEntry = `[plugins."munch@local-plugins"]\nenabled = true`;
+    if (content.includes('[plugins."munch@local-plugins"]')) {
+      const regex = /\[plugins\."munch@local-plugins"\][\s\S]*?(?=\n\[|$)/;
+      content = content.replace(regex, enablePluginEntry);
+    } else {
+      content = content.trim() + '\n\n' + enablePluginEntry + '\n';
+    }
+
     writeFileSync(configPath, content.trim() + '\n', 'utf8');
-    console.log(`✓ Registered local munch MCP server & enabled skill in Codex: ${configPath}`);
+    console.log(`✓ Registered local munch MCP server, enabled skill, and registered plugin in Codex: ${configPath}`);
   } catch (err) {
     console.error(`✗ Failed to write Codex config ${configPath}:`, err.message);
   }
@@ -284,6 +338,15 @@ codexPaths.forEach((p) => {
     updateCodexConfig(p);
   }
 });
+
+// Install Codex plugin from the local-plugins marketplace
+try {
+  console.log('\nInstalling Munch plugin in Codex...');
+  execSync('codex plugin add munch@local-plugins', { stdio: 'inherit' });
+  console.log('✓ Munch plugin installed in Codex successfully.');
+} catch (err) {
+  console.warn('! Failed to install Munch plugin in Codex:', err.message);
+}
 
 // ──────────────────────────────────────────────
 // 6. Configure Windows Registry (IFEO Redirection)
