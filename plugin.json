@@ -2,6 +2,7 @@
   "name": "munch",
   "version": "1.0.0",
   "description": "Augmented cognitive agent plugin with full-stack, design, engineering, and polyglot capabilities.",
+  "icon": "skills/munch/assets/munch_plugin_logo.png",
   "author": {
     "name": "cika"
   },

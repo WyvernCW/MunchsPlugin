@@ -34,11 +34,25 @@ function showNotification(title: string, message: string) {
   const cleanMessage = message.replace(/"/g, '\\"').replace(/'/g, "'");
 
   if (process.platform === "win32") {
+    const logoPath = join(os.homedir(), ".munchmemory/munch_plugin_logo.png").replace(/\\/g, "/");
     const psScript = `
       Add-Type -AssemblyName System.Windows.Forms, System.Drawing
       $icon = New-Object System.Windows.Forms.NotifyIcon
-      $icon.Icon = [System.Drawing.SystemIcons]::Information
-      $icon.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Info
+      if (Test-Path "${logoPath}") {
+        try {
+          $image = [System.Drawing.Image]::FromFile("${logoPath}")
+          $bitmap = New-Object System.Drawing.Bitmap $image
+          $hIcon = $bitmap.GetHicon()
+          $icon.Icon = [System.Drawing.Icon]::FromHandle($hIcon)
+          $icon.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::None
+        } catch {
+          $icon.Icon = [System.Drawing.SystemIcons]::Information
+          $icon.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Info
+        }
+      } else {
+        $icon.Icon = [System.Drawing.SystemIcons]::Information
+        $icon.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Info
+      }
       $icon.BalloonTipTitle = "${cleanTitle}"
       $icon.BalloonTipText = "${cleanMessage}"
       $icon.Visible = $true
@@ -73,6 +87,21 @@ function selfConfigure(): void {
   const sourcePluginFile = join(__dirname, "../../opencode-plugin/munch.plugin.ts");
   const sourceAgentYaml = join(__dirname, "../../skill/munch/agents/openai.yaml");
   const sourcePluginJson = join(__dirname, "../../plugin.json");
+
+  // Ensure persistent memory directory exists and copy logo
+  try {
+    const memoryDir = join(homedir, ".munchmemory");
+    if (!existsSync(memoryDir)) {
+      mkdirSync(memoryDir, { recursive: true });
+    }
+    const sourceLogo = join(sourceSkillDir, "assets/munch_plugin_logo.png");
+    const destLogo = join(memoryDir, "munch_plugin_logo.png");
+    if (existsSync(sourceLogo)) {
+      copyFileSync(sourceLogo, destLogo);
+    }
+  } catch (err: any) {
+    console.error("⟦§MUNCH⟧ Failed to copy logo to memory directory:", err.message);
+  }
 
   // Check if source skill directory exists
   if (!existsSync(sourceSkillDir)) {

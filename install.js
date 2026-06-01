@@ -82,6 +82,22 @@ try {
   console.error(`✗ Failed to configure Antigravity plugin:`, err.message);
 }
 
+// Copy logo to .munchmemory for global notifications
+try {
+  const memoryDir = join(homedir, '.munchmemory');
+  if (!existsSync(memoryDir)) {
+    mkdirSync(memoryDir, { recursive: true });
+  }
+  const sourceLogo = join(LOCAL_SKILL_DIR, 'assets/munch_plugin_logo.png');
+  const destLogo = join(memoryDir, 'munch_plugin_logo.png');
+  if (existsSync(sourceLogo)) {
+    copyFileSync(sourceLogo, destLogo);
+    console.log(`✓ Copied logo to persistent memory path: ${destLogo}`);
+  }
+} catch (err) {
+  console.error(`✗ Failed to copy logo to persistent memory:`, err.message);
+}
+
 // ──────────────────────────────────────────────
 // 3. Compile MCP Server
 // ──────────────────────────────────────────────

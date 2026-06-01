@@ -8,6 +8,7 @@ description: >
 version: 1.0
 author: cika
 license: MIT
+icon: assets/munch_plugin_logo.png
 tags: [coding, architecture, security, frontend, polyglot, analysis]
 ---
 
