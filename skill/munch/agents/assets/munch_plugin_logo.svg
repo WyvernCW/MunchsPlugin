@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Left Ear -->
+  <path d="M 28 36 L 10 10 L 40 26 Z" fill="#ffffff" />
+  <!-- Right Ear -->
+  <path d="M 72 36 L 90 10 L 60 26 Z" fill="#ffffff" />
+  <!-- Head Base -->
+  <path d="M 50 25 C 28 25 15 42 15 58 C 15 74 28 85 50 85 C 72 85 85 74 85 58 C 85 42 72 25 50 25 Z" fill="#ffffff" />
+  <!-- Inner Ear left detail -->
+  <path d="M 26 31 L 16 16 L 33 25 Z" fill="#0ea5e9" />
+  <!-- Left Eye -->
+  <circle cx="37" cy="55" r="9" fill="#000000" />
+  <circle cx="39" cy="53" r="3" fill="#ffffff" />
+  <!-- Right Eye -->
+  <circle cx="63" cy="55" r="9" fill="#000000" />
+  <circle cx="65" cy="53" r="3" fill="#ffffff" />
+  <!-- Nose/mouth -->
+  <path d="M 47 62 L 53 62 L 50 65 Z" fill="#000000" />
+  <!-- Left Whiskers -->
+  <path d="M 12 55 L 2 55 M 13 61 L 3 63 M 15 67 L 5 71" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+  <!-- Right Whiskers -->
+  <path d="M 88 55 L 98 55 M 87 61 L 97 63 M 85 67 L 95 71" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+</svg>
