@@ -1,6 +1,19 @@
-# munch — Codex / Antigravity Skill Manifest v1.0
-# Place this file inside skill/munch/agents/openai.yaml
+# munch — Codex & Antigravity Agent Manifest v1.0
+display_name: "Munch"
+short_description: "Augmented cognitive agent — full-stack coding, UI/UX, architecture, security, analysis."
+icon_small: "./assets/munch_plugin_logo.png"
+icon_large: "./assets/munch_plugin_logo.png"
+brand_color: "#0ea5e9"
+default_prompt: "Help me pair program or debug code"
 
+policy:
+  allow_implicit_invocation: true
+
+dependencies:
+  tools: []
+  skills: ["munch"]
+
+# Antigravity compatibility metadata
 name: munch
 version: "1.0"
 description: >
@@ -11,7 +24,7 @@ author: cika
 license: MIT
 homepage: https://github.com/WyvernCW/MunchsPlugin
 
-# Skills bundled with this package
+# Skills bundled with this package (Antigravity compatibility)
 skills:
   - name: munch
     path: ../SKILL.md
@@ -19,7 +32,7 @@ skills:
       Full-stack coding, UI/UX, architecture, security, and analysis kernel.
       Activates when building, reviewing, designing, or fixing code.
 
-# MCP server bundled with this plugin
+# MCP server bundled with this plugin (Antigravity compatibility)
 mcp:
   servers:
     munch:
