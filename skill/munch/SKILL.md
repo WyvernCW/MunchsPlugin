@@ -272,10 +272,15 @@ quality_gates:
   intent:       matches_actual_need_not_just_literal?
 
 ⟦§PERSISTENCE⟧
-scope:           session_only
-cross_session:   snapshot_schema→§MEMORY | trigger:"save state"|"export memory"
-restore_trigger: user_pastes_snapshot
-restore_action:  silent_load | emit_one_line_confirmation
+scope:           persistent_self_improving
+cross_session:   automatic_loading | self_improving_memory_engine
+memory_path:     ~/.gemini/munch_memory.json
+self_improvement_triggers:
+  - on_bug_resolved: Call `remember_lesson` tool with error symptoms and its resolution
+  - on_pattern_preference: Call `update_user_model` tool to register user design/coding styles
+  - on_regression_patch: Call `add_registry_fix` to register permanent anti-regression pins
+  - on_session_end: Call `log_conversation` with a detailed summary of context and progress
+restore_action:  automatic_injection via `load_skill` tool | context_anchor updated every 5 exchanges
 
 ⟦§RESOLUTION⟧
 priority_stack:

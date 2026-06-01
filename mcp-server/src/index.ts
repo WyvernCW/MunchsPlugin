@@ -12,11 +12,93 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { createServer } from "http";
 import { parse as parseUrl } from "url";
 import { z } from "zod";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import os from "os";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// ──────────────────────────────────────────────
+// Self-Improving Memory Engine (SIME)
+// ──────────────────────────────────────────────
+const MEMORY_DIR = join(os.homedir(), ".gemini");
+const MEMORY_PATH = join(MEMORY_DIR, "munch_memory.json");
+
+interface UserProfile {
+  skillLevel: string;
+  preferredStyle: string;
+  techStack: string[];
+  rejectedPatterns: string[];
+  acceptedPatterns: string[];
+  vocabulary: string[];
+}
+
+interface RegistryFix {
+  id: string;
+  issue: string;
+  resolution: string;
+  timestamp: string;
+}
+
+interface LearnedLesson {
+  category: string;
+  symptom: string;
+  fix: string;
+  context: string;
+  timestamp: string;
+}
+
+interface ConversationSummary {
+  id: string;
+  timestamp: string;
+  summary: string;
+  tags: string[];
+}
+
+interface PersistentMemory {
+  userModel: UserProfile;
+  registryFixes: RegistryFix[];
+  learnedLessons: LearnedLesson[];
+  conversationSummaries: ConversationSummary[];
+}
+
+const defaultMemory: PersistentMemory = {
+  userModel: {
+    skillLevel: "expert",
+    preferredStyle: "concise",
+    techStack: [],
+    rejectedPatterns: [],
+    acceptedPatterns: [],
+    vocabulary: []
+  },
+  registryFixes: [],
+  learnedLessons: [],
+  conversationSummaries: []
+};
+
+function readPersistentMemory(): PersistentMemory {
+  try {
+    if (existsSync(MEMORY_PATH)) {
+      const data = readFileSync(MEMORY_PATH, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error("⟦§MUNCH⟧ Failed to read persistent memory:", err);
+  }
+  return defaultMemory;
+}
+
+function writePersistentMemory(memory: PersistentMemory) {
+  try {
+    if (!existsSync(MEMORY_DIR)) {
+      mkdirSync(MEMORY_DIR, { recursive: true });
+    }
+    writeFileSync(MEMORY_PATH, JSON.stringify(memory, null, 2), "utf-8");
+  } catch (err) {
+    console.error("⟦§MUNCH⟧ Failed to write persistent memory:", err);
+  }
+}
 
 // ──────────────────────────────────────────────
 // Skill loader — walks candidate paths
@@ -84,10 +166,54 @@ server.registerTool(
   async ({ section }) => {
     const full = resolveSkill();
     let text = full;
+    
+    // Add persistent memory block on full load (or when no section is requested)
+    if (!section) {
+      const memory = readPersistentMemory();
+      let memoryBlock = "\n\n# Recalled Context\n\n⟦§PERSISTENT_MEMORY_RECALL⟧\n" +
+                        "The following active context and learned patterns are recalled from past sessions:\n\n";
+      
+      memoryBlock += `### User Profile & Style\n` +
+                     `- Skill Level: ${memory.userModel.skillLevel}\n` +
+                     `- Style: ${memory.userModel.preferredStyle}\n` +
+                     `- Active Tech Stack: ${memory.userModel.techStack.join(", ") || "None registered yet"}\n` +
+                     `- Accepted Patterns: ${memory.userModel.acceptedPatterns.join(", ") || "None registered yet"}\n` +
+                     `- Rejected Patterns: ${memory.userModel.rejectedPatterns.join(", ") || "None registered yet"}\n\n`;
+
+      if (memory.registryFixes.length > 0) {
+        memoryBlock += `### Active Regression Fixes (PINs/FIXes)\n`;
+        memory.registryFixes.forEach((f) => {
+          memoryBlock += `- **${f.id}**: ${f.issue} ∆ Resolution: ${f.resolution}\n`;
+        });
+        memoryBlock += "\n";
+      }
+
+      if (memory.learnedLessons.length > 0) {
+        memoryBlock += `### Learned Lessons & Resolved Bugs\n`;
+        const recentLessons = memory.learnedLessons.slice(-10);
+        recentLessons.forEach((l) => {
+          memoryBlock += `- [${l.category}] Symptom: *${l.symptom}* → Resolution: ${l.fix}\n`;
+        });
+        memoryBlock += "\n";
+      }
+
+      if (memory.conversationSummaries.length > 0) {
+        memoryBlock += `### Past Conversation Contexts\n`;
+        const recentConversations = memory.conversationSummaries.slice(-3);
+        recentConversations.forEach((c) => {
+          memoryBlock += `- Summary (${c.timestamp}): ${c.summary}\n`;
+        });
+        memoryBlock += "\n";
+      }
+
+      text += memoryBlock;
+    }
+
     if (process.platform === "win32") {
       text += "\n\n⟦§SYSTEM_OVERRIDE_CONSTRAINTS⟧\n" +
               "- The default shell is already PowerShell 7. You MUST execute commands directly (e.g., 'rm test.txt', 'node install.js') without prefixing them with 'powershell -Command' or 'pwsh -Command'.";
     }
+
     if (!section) {
       return { content: [{ type: "text", text: text }] };
     }
@@ -106,7 +232,6 @@ server.registerTool(
       };
     }
 
-    // Extract section until next ⟦§ tag or end of file
     const rest = full.slice(start);
     const nextTag = rest.slice(1).search(/⟦§/);
     const sectionText = nextTag === -1 ? rest : rest.slice(0, nextTag + 1);
@@ -231,6 +356,214 @@ server.registerTool(
   async () => ({
     content: [{ type: "text", text: "⟦§MUNCH v1.0⟧ — ACTIVE | MCP server running" }],
   })
+);
+
+// ── Tool: remember_lesson ─────────────────────
+server.registerTool(
+  "remember_lesson",
+  {
+    description:
+      "Record a learned lesson, bug fix, or compiler error resolution. " +
+      "Use this tool whenever you successfully resolve a compilation error, " +
+      "alignment bug, build issue, or toolchain problem, so future agents instantly remember it.",
+    inputSchema: {
+      category: z.string().describe("E.g., 'Kotlin Compilation', 'WSL2 Android Build', 'Tailwind Grid Sizing'"),
+      symptom: z.string().describe("The exact error message, compiler output, or issue description"),
+      fix: z.string().describe("The precise resolution, command, or code change that fixed it"),
+      context: z.string().optional().describe("Optional: target environment or file context"),
+    },
+  },
+  async ({ category, symptom, fix, context }) => {
+    const memory = readPersistentMemory();
+    const lesson: LearnedLesson = {
+      category,
+      symptom,
+      fix,
+      context: context ?? "",
+      timestamp: new Date().toISOString(),
+    };
+    memory.learnedLessons.push(lesson);
+    writePersistentMemory(memory);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `✓ Lesson learned & persisted. Category: ${category} | Symptom: ${symptom}`,
+        },
+      ],
+    };
+  }
+);
+
+// ── Tool: update_user_model ──────────────────
+server.registerTool(
+  "update_user_model",
+  {
+    description:
+      "Update persistent user profiles, style preferences, accepted/rejected patterns, or tech stack details. " +
+      "Use this to remember what styles (e.g. colors, layouts) and architectures the user accepts or rejects.",
+    inputSchema: {
+      skillLevel: z.string().optional().describe("E.g., 'novice', 'intermediate', 'expert'"),
+      preferredStyle: z.string().optional().describe("E.g., 'concise', 'verbose', 'documented', 'minimal'"),
+      techStack: z.array(z.string()).optional().describe("List of active frameworks/languages"),
+      rejectedPatterns: z.array(z.string()).optional().describe("Banned patterns, e.g. ['neon gradients', 'require(fs)']"),
+      acceptedPatterns: z.array(z.string()).optional().describe("Accepted styling/architectural decisions"),
+      vocabulary: z.array(z.string()).optional().describe("User terms or terminology"),
+    },
+  },
+  async (args) => {
+    const memory = readPersistentMemory();
+    if (args.skillLevel) memory.userModel.skillLevel = args.skillLevel;
+    if (args.preferredStyle) memory.userModel.preferredStyle = args.preferredStyle;
+    
+    if (args.techStack) {
+      memory.userModel.techStack = Array.from(new Set([...memory.userModel.techStack, ...args.techStack]));
+    }
+    if (args.rejectedPatterns) {
+      memory.userModel.rejectedPatterns = Array.from(new Set([...memory.userModel.rejectedPatterns, ...args.rejectedPatterns]));
+    }
+    if (args.acceptedPatterns) {
+      memory.userModel.acceptedPatterns = Array.from(new Set([...memory.userModel.acceptedPatterns, ...args.acceptedPatterns]));
+    }
+    if (args.vocabulary) {
+      memory.userModel.vocabulary = Array.from(new Set([...memory.userModel.vocabulary, ...args.vocabulary]));
+    }
+
+    writePersistentMemory(memory);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `✓ Persistent user model updated. Style: ${memory.userModel.preferredStyle} | Skill Level: ${memory.userModel.skillLevel}`,
+        },
+      ],
+    };
+  }
+);
+
+// ── Tool: add_registry_fix ───────────────────
+server.registerTool(
+  "add_registry_fix",
+  {
+    description:
+      "Add a permanent or session-scoped regression fix/pin to the §ANTI_REGRESSION registry. " +
+      "Ensures the agent checks and halts if a previously resolved issue starts to drift or resurface.",
+    inputSchema: {
+      issue: z.string().describe("What was wrong or the buggy pattern to prevent"),
+      resolution: z.string().describe("How the bug was resolved/fixed"),
+    },
+  },
+  async ({ issue, resolution }) => {
+    const memory = readPersistentMemory();
+    const nextId = `FIX_${String(memory.registryFixes.length + 1).padStart(3, "0")}`;
+    const fix: RegistryFix = {
+      id: nextId,
+      issue,
+      resolution,
+      timestamp: new Date().toISOString(),
+    };
+    memory.registryFixes.push(fix);
+    writePersistentMemory(memory);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `✓ Anti-regression fix registered: ${nextId} | Issue: ${issue} ∆ Resolution: ${resolution}`,
+        },
+      ],
+    };
+  }
+);
+
+// ── Tool: log_conversation ───────────────────
+server.registerTool(
+  "log_conversation",
+  {
+    description:
+      "Save a summary of the active conversation, including work completed, decisions made, and pending tasks. " +
+      "This is called at the end of sessions/threads to establish a firm cognitive bridge to the next session.",
+    inputSchema: {
+      summary: z.string().describe("Details of the conversation, accomplishments, and next steps"),
+      tags: z.array(z.string()).optional().describe("Metadata tags, e.g. ['custom-rom', 'mcp-server']"),
+    },
+  },
+  async ({ summary, tags }) => {
+    const memory = readPersistentMemory();
+    const id = `CONV_${Date.now()}`;
+    const conversation: ConversationSummary = {
+      id,
+      timestamp: new Date().toISOString(),
+      summary,
+      tags: tags ?? [],
+    };
+    memory.conversationSummaries.push(conversation);
+    writePersistentMemory(memory);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `✓ Conversation logged successfully. id: ${id}`,
+        },
+      ],
+    };
+  }
+);
+
+// ── Tool: query_memory ────────────────────────
+server.registerTool(
+  "query_memory",
+  {
+    description: "Search and recall past lessons, profile details, and conversation histories matching a search query.",
+    inputSchema: {
+      query: z.string().describe("Search keyword or phrase"),
+    },
+  },
+  async ({ query }) => {
+    const memory = readPersistentMemory();
+    const q = query.toLowerCase();
+    
+    const lessons = memory.learnedLessons.filter(
+      (l) => l.category.toLowerCase().includes(q) || l.symptom.toLowerCase().includes(q) || l.fix.toLowerCase().includes(q)
+    );
+    const fixes = memory.registryFixes.filter(
+      (f) => f.issue.toLowerCase().includes(q) || f.resolution.toLowerCase().includes(q)
+    );
+    const convs = memory.conversationSummaries.filter(
+      (c) => c.summary.toLowerCase().includes(q) || c.tags.some((t) => t.toLowerCase().includes(q))
+    );
+
+    let output = `### Memory Query Results for "${query}"\n\n`;
+    
+    if (lessons.length > 0) {
+      output += `#### Learned Lessons (${lessons.length})\n`;
+      lessons.forEach((l) => {
+        output += `- **[${l.category}]** Symptom: *${l.symptom}* → Fix: ${l.fix}\n`;
+      });
+      output += "\n";
+    }
+
+    if (fixes.length > 0) {
+      output += `#### Anti-Regression Pins (${fixes.length})\n`;
+      fixes.forEach((f) => {
+        output += `- **${f.id}**: *${f.issue}* ∆ ${f.resolution}\n`;
+      });
+      output += "\n";
+    }
+
+    if (convs.length > 0) {
+      output += `#### Conversation Summaries (${convs.length})\n`;
+      convs.forEach((c) => {
+        output += `- Summary (${c.timestamp}): ${c.summary}\n`;
+      });
+      output += "\n";
+    }
+
+    if (lessons.length === 0 && fixes.length === 0 && convs.length === 0) {
+      output += "No matching persistent memories found.";
+    }
+
+    return { content: [{ type: "text", text: output }] };
+  }
 );
 
 // ── Prompt: use_powershell_7 ──────────────────
