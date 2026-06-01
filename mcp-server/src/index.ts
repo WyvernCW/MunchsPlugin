@@ -35,16 +35,16 @@ function showNotification(title: string, message: string) {
 
   if (process.platform === "win32") {
     const psScript = `
-      [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-      $Template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
-      $Xml = [xml]$Template.GetXml()
-      $Xml.toast.visual.binding.text[0].InnerText = "${cleanTitle}"
-      $Xml.toast.visual.binding.text[1].InnerText = "${cleanMessage}"
-      $ToastXml = New-Object Windows.Data.Xml.Dom.XmlDocument
-      $ToastXml.LoadXml($Xml.OuterXml)
-      $Toast = [Windows.UI.Notifications.ToastNotification]::new($ToastXml)
-      $Notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Munch Plugin")
-      $Notifier.Show($Toast)
+      Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+      $icon = New-Object System.Windows.Forms.NotifyIcon
+      $icon.Icon = [System.Drawing.SystemIcons]::Information
+      $icon.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Info
+      $icon.BalloonTipTitle = "${cleanTitle}"
+      $icon.BalloonTipText = "${cleanMessage}"
+      $icon.Visible = $true
+      $icon.ShowBalloonTip(5000)
+      Start-Sleep -Seconds 1
+      $icon.Dispose()
     `.trim();
 
     const buffer = Buffer.from(psScript, "utf16le");
@@ -952,6 +952,8 @@ async function checkForUpdates(): Promise<void> {
 async function main(): Promise<void> {
   // Run self-configuration to ensure all AI agents have matching skills and plugins
   selfConfigure();
+
+  showNotification("Munch MCP Server Active", "The cognitive agent framework is online and ready.");
 
   const isSseMode = process.argv.includes("--sse") || process.env.MUNCH_SSE === "true" || process.env.PORT !== undefined;
   const port = parseInt(process.env.PORT || "8080", 10);
