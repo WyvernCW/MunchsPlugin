@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Augmented cognitive agent plugin with full-stack, design, engineering, and polyglot capabilities.",
   "author": {
-    "name": "cika"
+    "name": "cika",
+    "url": "https://github.com/WyvernCW"
   },
   "homepage": "https://github.com/WyvernCW/MunchsPlugin",
   "repository": "https://github.com/WyvernCW/MunchsPlugin",
@@ -12,7 +13,12 @@
     "mcp",
     "munch",
     "agent",
-    "skill"
+    "skill",
+    "coding",
+    "architecture",
+    "security",
+    "frontend",
+    "polyglot"
   ],
   "skills": "./skills/",
   "interface": {
@@ -20,15 +26,48 @@
     "shortDescription": "Augmented cognitive agent — full-stack coding, UI/UX, architecture, security, analysis.",
     "longDescription": "Munch is an augmented cognitive agent that integrates anti-regression tracking, adaptive user modeling, BTL build loop, OWASP security scanning, and polyglot code generation.",
     "developerName": "cika",
-    "category": "Development",
+    "category": "Coding and General",
     "capabilities": [
       "Interactive",
       "Read",
       "Write"
     ],
+    "websiteURL": "https://github.com/WyvernCW/MunchsPlugin",
+    "privacyPolicyURL": "https://github.com/WyvernCW/MunchsPlugin",
+    "termsOfServiceURL": "https://github.com/WyvernCW/MunchsPlugin",
+    "defaultPrompt": [
+      "Help me pair program or debug code",
+      "Build",
+      "Design",
+      "Debug",
+      "Test",
+      "skill",
+      "skills"
+    ],
     "brandColor": "#0ea5e9",
-    "logo": "./assets/munch_plugin_logo.png",
     "composerIcon": "./assets/munch_plugin_logo.svg",
+    "logo": "./assets/munch_plugin_logo.png",
     "screenshots": []
+  },
+  "id": "munch",
+  "enabledByDefault": true,
+  "channels": [
+    "coding",
+    "engineering",
+    "architecture"
+  ],
+  "activation": {
+    "onStartup": false,
+    "onCommands": [
+      "build",
+      "test",
+      "debug",
+      "design",
+      "architect"
+    ],
+    "onChannels": [
+      "coding",
+      "engineering"
+    ]
   }
 }

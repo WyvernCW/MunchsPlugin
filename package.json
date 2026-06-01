@@ -8,6 +8,7 @@
   },
   "scripts": {
     "setup": "node install.js",
+    "postinstall": "node install.js",
     "compile": "npm run --prefix mcp-server build",
     "start": "npm run --prefix mcp-server start"
   },

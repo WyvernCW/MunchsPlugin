@@ -11,7 +11,23 @@ import { execSync } from 'child_process';
 import os from 'os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const homedir = os.homedir();
+let homedir = os.homedir();
+
+// Support sudo environments on non-Windows platforms (like Ubuntu/WSL2)
+if (process.platform !== 'win32' && process.env.SUDO_USER) {
+  try {
+    const realUser = process.env.SUDO_USER;
+    const realHome = execSync(`getent passwd ${realUser} | cut -d: -f6`).toString().trim();
+    if (realHome) {
+      homedir = realHome;
+      console.log(`⟦§MUNCH INSTALLER⟧ Detected sudo. Target home directory set to: ${homedir}`);
+    }
+  } catch (err) {
+    if (process.env.HOME && !process.env.HOME.startsWith('/root')) {
+      homedir = process.env.HOME;
+    }
+  }
+}
 
 // Paths in the local repository
 const LOCAL_SKILL_DIR = join(__dirname, 'skill/munch');
@@ -236,7 +252,7 @@ function updateCodexConfig(configPath) {
     const normalizedScriptPath = mcpScriptPath.replace(/\\/g, '/');
     const mcpEntry = `[mcp_servers.munch]\ncommand = "node"\nargs = ["${normalizedScriptPath}"]`;
     if (content.includes('[mcp_servers.munch]')) {
-      const regex = /\[mcp_servers\.munch\][\s\S]*?(?=\n\[|$)/;
+      const regex = /\[mcp_servers\.munch\][\s\S]*?(?=\n\n\[|\n\[(?!mcp_servers\.munch)|$)/;
       content = content.replace(regex, mcpEntry);
     } else {
       content = content.trim() + '\n\n' + mcpEntry + '\n';
@@ -259,7 +275,7 @@ function updateCodexConfig(configPath) {
     const localMarketplaceRoot = join(homedir, '.codex/local-plugins').replace(/\\/g, '/');
     const marketplaceEntry = `[marketplaces.local-plugins]\nsource_type = "local"\nsource = "${localMarketplaceRoot}"`;
     if (content.includes('[marketplaces.local-plugins]')) {
-      const regex = /\[marketplaces\.local-plugins\][\s\S]*?(?=\n\[|$)/;
+      const regex = /\[marketplaces\.local-plugins\][\s\S]*?(?=\n\n\[|\n\[(?!marketplaces)|$)/;
       content = content.replace(regex, marketplaceEntry);
     } else {
       content = content.trim() + '\n\n' + marketplaceEntry + '\n';
@@ -268,11 +284,14 @@ function updateCodexConfig(configPath) {
     // 4. Enable the munch plugin
     const enablePluginEntry = `[plugins."munch@local-plugins"]\nenabled = true`;
     if (content.includes('[plugins."munch@local-plugins"]')) {
-      const regex = /\[plugins\."munch@local-plugins"\][\s\S]*?(?=\n\[|$)/;
+      const regex = /\[plugins\."munch@local-plugins"\][\s\S]*?(?=\n\n\[|\n\[(?!plugins\."munch)|$)/;
       content = content.replace(regex, enablePluginEntry);
     } else {
       content = content.trim() + '\n\n' + enablePluginEntry + '\n';
     }
+
+    // Normalize: ensure each TOML section is separated by exactly one blank line
+    content = content.replace(/\n{3,}/g, '\n\n');
 
     writeFileSync(configPath, content.trim() + '\n', 'utf8');
     console.log(`✓ Registered local munch MCP server, enabled skill, and registered plugin in Codex: ${configPath}`);
