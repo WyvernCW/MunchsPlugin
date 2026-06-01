@@ -19,7 +19,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // ──────────────────────────────────────────────
 // Self-Improving Memory Engine (SIME)
 // ──────────────────────────────────────────────
-const MEMORY_DIR = join(os.homedir(), ".gemini");
+const MEMORY_DIR = join(os.homedir(), ".munchmemory");
 const MEMORY_PATH = join(MEMORY_DIR, "munch_memory.json");
 const defaultMemory = {
     userModel: {
