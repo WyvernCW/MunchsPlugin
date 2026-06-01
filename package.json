@@ -4,7 +4,8 @@
   "description": "Augmented cognitive agent skill & MCP server",
   "type": "module",
   "bin": {
-    "munch": "./mcp-server/build/index.js"
+    "munch": "./mcp-server/build/index.js",
+    "munch-setup": "./install.js"
   },
   "scripts": {
     "setup": "node install.js",
