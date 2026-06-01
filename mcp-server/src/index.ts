@@ -17,6 +17,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import os from "os";
 import { exec } from "child_process";
+import https from "https";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -670,6 +671,98 @@ server.registerPrompt(
   })
 );
 
+// Background update checker from GitHub (WyvernCW/MunchsPlugin)
+async function checkForUpdates(): Promise<void> {
+  console.error("⟦§MUNCH⟧ Checking for updates from GitHub (WyvernCW/MunchsPlugin)...");
+  
+  const gitDir = join(__dirname, "../.git");
+  const isGitRepo = existsSync(gitDir) || existsSync(join(__dirname, "../../.git"));
+  
+  if (isGitRepo) {
+    const cwd = existsSync(gitDir) ? join(__dirname, "..") : join(__dirname, "../..");
+    
+    exec("git fetch origin main", { cwd }, (fetchErr) => {
+      if (fetchErr) {
+        console.error("⟦§MUNCH UPDATE CHECK⟧ git fetch failed:", fetchErr.message);
+        return;
+      }
+      
+      exec("git rev-list HEAD...origin/main --count", { cwd }, (countErr, stdout) => {
+        if (countErr) {
+          console.error("⟦§MUNCH UPDATE CHECK⟧ git rev-list failed:", countErr.message);
+          return;
+        }
+        
+        const count = parseInt(stdout.trim(), 10);
+        if (count > 0) {
+          console.error(`⟦§MUNCH UPDATE⟧ New updates found: ${count} commits behind origin/main. Auto-updating...`);
+          showNotification("Munch Auto-Update", `Found ${count} new commits. Downloading updates...`);
+          
+          exec("git pull && node install.js", { cwd }, (pullErr) => {
+            if (pullErr) {
+              console.error("⟦§MUNCH UPDATE⟧ Auto-update pull/install failed:", pullErr.message);
+              showNotification("Munch Update Failed", "Failed to pull and compile latest changes.");
+            } else {
+              console.error("⟦§MUNCH UPDATE⟧ Auto-update completed successfully.");
+              showNotification("Munch Update Successful", "The plugin and skills have been automatically updated and recompiled.");
+            }
+          });
+        } else {
+          console.error("⟦§MUNCH UPDATE CHECK⟧ Munch is up to date.");
+        }
+      });
+    });
+  } else {
+    const options = {
+      hostname: "api.github.com",
+      path: "/repos/WyvernCW/MunchsPlugin/commits/main",
+      headers: {
+        "User-Agent": "Munch-MCP-Server-AutoUpdater"
+      }
+    };
+    
+    https.get(options, (res) => {
+      let body = "";
+      res.on("data", chunk => body += chunk);
+      res.on("end", () => {
+        try {
+          const commitData = JSON.parse(body);
+          const latestSha = commitData.sha;
+          if (!latestSha) return;
+          
+          const shaPath = join(MEMORY_DIR, "last_commit_sha.txt");
+          let localSha = "";
+          if (existsSync(shaPath)) {
+            localSha = readFileSync(shaPath, "utf8").trim();
+          }
+          
+          if (latestSha !== localSha) {
+            console.error(`⟦§MUNCH UPDATE⟧ New updates found on GitHub. Auto-updating npm package...`);
+            showNotification("Munch Auto-Update", "New version detected on GitHub. Installing updates...");
+            
+            exec("npm install -g git+https://github.com/WyvernCW/MunchsPlugin.git", (npmErr) => {
+              if (npmErr) {
+                console.error("⟦§MUNCH UPDATE⟧ npm update failed:", npmErr.message);
+                showNotification("Munch Update Failed", "Failed to install latest npm package from GitHub.");
+              } else {
+                writeFileSync(shaPath, latestSha, "utf8");
+                console.error("⟦§MUNCH UPDATE⟧ npm auto-update completed successfully.");
+                showNotification("Munch Update Successful", "The global npm package has been updated.");
+              }
+            });
+          } else {
+            console.error("⟦§MUNCH UPDATE CHECK⟧ Munch npm package is up to date.");
+          }
+        } catch (e) {
+          console.error("⟦§MUNCH UPDATE CHECK⟧ Failed to parse GitHub API response:", e);
+        }
+      });
+    }).on("error", (err) => {
+      console.error("⟦§MUNCH UPDATE CHECK⟧ GitHub API request failed:", err.message);
+    });
+  }
+}
+
 // ──────────────────────────────────────────────
 // Start
 // ──────────────────────────────────────────────
@@ -751,6 +844,11 @@ async function main(): Promise<void> {
     await server.connect(transport);
     console.error("⟦§MUNCH⟧ MCP server v1.0 running on stdio");
   }
+
+  // Start background auto-updater check
+  checkForUpdates().catch((err) => {
+    console.error("⟦§MUNCH UPDATE CHECK⟧ Failed to execute update check:", err);
+  });
 }
 
 main().catch((err) => {
