@@ -41,16 +41,16 @@ kernel into any compatible AI coding agent. Once active it provides:
 
 Clone the repository and run the automated installer:
 
-````bash
+```bash
 git clone https://github.com/WyvernCW/MunchsPlugin.git
 cd MunchsPlugin
 npm run setup
 
 or
 
-```bash
+
 npm install -g --ignore-scripts git+https://github.com/WyvernCW/MunchsPlugin.git
-````
+```
 
 The installer script will automatically:
 
