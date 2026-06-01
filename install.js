@@ -155,18 +155,25 @@ try {
 }
 
 // ──────────────────────────────────────────────
-// 3. Compile MCP Server
+// 3. Compile MCP Server (Skip if already built or running from node_modules)
 // ──────────────────────────────────────────────
-console.log('Building MCP Server in mcp-server/ directory...');
-try {
-  const mcpServerPath = join(__dirname, 'mcp-server');
-  console.log('Running npm install...');
-  execSync('npm install', { cwd: mcpServerPath, stdio: 'inherit' });
-  console.log('Running npm run build...');
-  execSync('npm run build', { cwd: mcpServerPath, stdio: 'inherit' });
-  console.log('✓ Compiled MCP Server successfully.');
-} catch (err) {
-  console.error('✗ Failed to compile MCP Server:', err.message);
+const mcpBuiltPath = join(__dirname, 'mcp-server/build/index.js');
+const isInstalledPkg = __dirname.includes('node_modules');
+
+if (isInstalledPkg && existsSync(mcpBuiltPath)) {
+  console.log('✓ MCP Server is pre-compiled. Skipping build step.');
+} else {
+  console.log('Building MCP Server in mcp-server/ directory...');
+  try {
+    const mcpServerPath = join(__dirname, 'mcp-server');
+    console.log('Running npm install...');
+    execSync('npm install', { cwd: mcpServerPath, stdio: 'inherit' });
+    console.log('Running npm run build...');
+    execSync('npm run build', { cwd: mcpServerPath, stdio: 'inherit' });
+    console.log('✓ Compiled MCP Server successfully.');
+  } catch (err) {
+    console.error('✗ Failed to compile MCP Server:', err.message);
+  }
 }
 
 // ──────────────────────────────────────────────
