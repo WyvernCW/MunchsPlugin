@@ -124,11 +124,13 @@ function updateJsonConfig(configPath, key) {
     }
 
     config.mcpServers.munch = {
-      url: 'https://munchsplugin-production.up.railway.app/sse',
+      command: 'node',
+      args: [mcpScriptPath.replace(/\\/g, '/')],
+      env: {}
     };
 
     writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
-    console.log(`✓ Registered remote munch MCP server (SSE) in: ${configPath}`);
+    console.log(`✓ Registered local munch MCP server in: ${configPath}`);
   } catch (err) {
     console.error(`✗ Failed to write config ${configPath}:`, err.message);
   }
@@ -174,10 +176,12 @@ function updateCodexConfig(configPath) {
     // Clean up legacy incorrect [mcp.munch] block if exists
     content = content.replace(/\[mcp\.munch\]\s*\n\s*url\s*=\s*"[^"]*"\s*\n?/g, '');
 
-    // 1. Register MCP Server (using the correct [mcp_servers.munch] format)
-    const mcpEntry = '[mcp_servers.munch]\nurl = "https://munchsplugin-production.up.railway.app/sse"';
+    // 1. Register MCP Server (using the correct [mcp_servers.munch] local format)
+    const normalizedScriptPath = mcpScriptPath.replace(/\\/g, '/');
+    const mcpEntry = `[mcp_servers.munch]\ncommand = "node"\nargs = ["${normalizedScriptPath}"]`;
     if (content.includes('[mcp_servers.munch]')) {
-      content = content.replace(/\[mcp_servers\.munch\]\s*\n\s*url\s*=\s*"[^"]*"/g, mcpEntry);
+      const regex = /\[mcp_servers\.munch\][\s\S]*?(?=\n\[|$)/;
+      content = content.replace(regex, mcpEntry);
     } else {
       content = content.trim() + '\n\n' + mcpEntry + '\n';
     }
@@ -196,7 +200,7 @@ function updateCodexConfig(configPath) {
     }
 
     writeFileSync(configPath, content.trim() + '\n', 'utf8');
-    console.log(`✓ Registered remote munch MCP server & enabled skill in Codex: ${configPath}`);
+    console.log(`✓ Registered local munch MCP server & enabled skill in Codex: ${configPath}`);
   } catch (err) {
     console.error(`✗ Failed to write Codex config ${configPath}:`, err.message);
   }
@@ -299,6 +303,6 @@ console.log('⟦§MUNCH AUTO-INSTALL COMPLETE⟧');
 console.log('Installed files:');
 console.log(`  • Skill: ~/.gemini/config/plugins/munch/skills/munch/SKILL.md`);
 console.log(`  • Skill: ~/.claude/skills/munch/SKILL.md`);
-console.log(`  • MCP server: Remote SSE via https://munchsplugin-production.up.railway.app/sse`);
+console.log(`  • MCP server: Local command running via node`);
 console.log('Restart your AI Agent to load the changes.');
 console.log('======================================================\n');
