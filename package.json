@@ -9,8 +9,7 @@
   "scripts": {
     "setup": "node install.js",
     "build": "npm run --prefix mcp-server build",
-    "start": "npm run --prefix mcp-server start",
-    "postinstall": "node install.js"
+    "start": "npm run --prefix mcp-server start"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
