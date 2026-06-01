@@ -16,6 +16,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import os from "os";
+import { exec } from "child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -24,6 +25,44 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // ──────────────────────────────────────────────
 const MEMORY_DIR = join(os.homedir(), ".munchmemory");
 const MEMORY_PATH = join(MEMORY_DIR, "munch_memory.json");
+
+function showNotification(title: string, message: string) {
+  console.error(`⟦§MUNCH NOTIFICATION⟧ ${title}: ${message}`);
+  
+  const cleanTitle = title.replace(/"/g, '\\"').replace(/'/g, "'");
+  const cleanMessage = message.replace(/"/g, '\\"').replace(/'/g, "'");
+
+  if (process.platform === "win32") {
+    const psScript = `
+      [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+      $Template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
+      $Xml = [xml]$Template.GetXml()
+      $Xml.toast.visual.binding.text[0].InnerText = "${cleanTitle}"
+      $Xml.toast.visual.binding.text[1].InnerText = "${cleanMessage}"
+      $ToastXml = New-Object Windows.Data.Xml.Dom.XmlDocument
+      $ToastXml.LoadXml($Xml.OuterXml)
+      $Toast = [Windows.UI.Notifications.ToastNotification]::new($ToastXml)
+      $Notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Munch Plugin")
+      $Notifier.Show($Toast)
+    `.trim();
+
+    const buffer = Buffer.from(psScript, "utf16le");
+    const base64 = buffer.toString("base64");
+    exec(`powershell -NoProfile -EncodedCommand ${base64}`, (err) => {
+      if (err) {
+        console.error("⟦§MUNCH⟧ Failed to send Windows notification:", err.message);
+      }
+    });
+  } else if (process.platform === "darwin") {
+    exec(`osascript -e 'display notification "${cleanMessage}" with title "${cleanTitle}"'`, (err) => {
+      if (err) console.error("⟦§MUNCH⟧ Failed to send macOS notification:", err.message);
+    });
+  } else if (process.platform === "linux") {
+    exec(`notify-send "${cleanTitle}" "${cleanMessage}"`, (err) => {
+      if (err) console.error("⟦§MUNCH⟧ Failed to send Linux notification:", err.message);
+    });
+  }
+}
 
 interface UserProfile {
   skillLevel: string;
@@ -246,6 +285,7 @@ server.registerTool(
       }
 
       text += memoryBlock;
+      showNotification("Munch Skill Loaded", `Recalled ${memory.learnedLessons.length} lessons and ${memory.registryFixes.length} regression fixes.`);
     }
 
     if (process.platform === "win32") {
@@ -317,6 +357,7 @@ server.registerTool(
   async ({ label, data }) => {
     const id = `${label}-${Date.now()}`;
     snapshots.set(id, { timestamp: new Date().toISOString(), label, data });
+    showNotification("Memory Snapshot Saved", `Label: ${label}`);
     return {
       content: [
         {
@@ -347,6 +388,7 @@ server.registerTool(
         ],
       };
     }
+    showNotification("Memory Snapshot Restored", `Label: ${snap.label}`);
     return {
       content: [
         {
@@ -423,6 +465,7 @@ server.registerTool(
     };
     memory.learnedLessons.push(lesson);
     writePersistentMemory(memory);
+    showNotification("New Lesson Learned", `Category: ${category}`);
     return {
       content: [
         {
@@ -469,6 +512,7 @@ server.registerTool(
     }
 
     writePersistentMemory(memory);
+    showNotification("User Profile Updated", `Preferred Style: ${memory.userModel.preferredStyle}`);
     return {
       content: [
         {
@@ -503,6 +547,7 @@ server.registerTool(
     };
     memory.registryFixes.push(fix);
     writePersistentMemory(memory);
+    showNotification("Regression Fix Stored", `${nextId}: ${issue.substring(0, 45)}...`);
     return {
       content: [
         {
@@ -537,6 +582,7 @@ server.registerTool(
     };
     memory.conversationSummaries.push(conversation);
     writePersistentMemory(memory);
+    showNotification("Conversation Logged", `Summary: ${summary.substring(0, 45)}...`);
     return {
       content: [
         {
