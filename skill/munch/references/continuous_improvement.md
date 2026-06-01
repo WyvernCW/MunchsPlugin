@@ -196,7 +196,17 @@ In rare cases of memory file corruption or serialization errors, apply the follo
 
 ---
 
-## 16. Dynamic Knowledge Synthesis Verification Checklist
+## 16. Cross-Project Path Mapping and Transfer Learning
+
+When the user moves the project workspace, clones it to a new path, or starts a different project directory:
+- **Immediate Analysis**: On session start, retrieve the persistent memory (`munch_memory.json`) and compare the current active directory (`CWD`) with the paths stored in past lessons or regression registry files.
+- **Dynamic Translation**: Translate all absolute paths referencing the old directory structure to match the corresponding files/subfolders in the new active project folder.
+- **Transfer Learning**: Do not discard past errors or fixes just because the project resides in a new directory. Apply the lessons, fixes, and style preferences from the previous project to the current active workspace, treating it as an analogical continuation.
+- **Self-Improving Memory Engine Strategy**: Map file patterns, language structures, and framework layouts. If a compilation bug was solved on `C:/example/src/main.rs`, and the current folder is `D:/work/new-project/src/main.rs`, translate the lessons and enforce the same fixes to prevent regression.
+
+---
+
+## 17. Dynamic Knowledge Synthesis Verification Checklist
 
 Before wrapping up a work cycle, the agent must run through these verification steps to guarantee memory synchronization:
 

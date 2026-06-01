@@ -31,6 +31,8 @@ rules:
   - Read `references/polyglot_index.md` to load the worldwide language classification index (comprising 100+ core languages, shell environments, blockchain models, esoteric engines).
   - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
   - Read `references/roblox_studio.md` to activate Luau scripting, CFrame math, SVG triangulation, and CSG modeling rules.
+  - You MUST immediately load the persistent memory (`munch_memory.json`) by calling the `load_skill` tool at the very beginning of the session. You MUST summarize the recalled context (`⟦§PERSISTENT_MEMORY_RECALL⟧`), understand past lessons, user profiles, and active regression fixes, and explicitly state how you will adapt to them in the current workspace.
+  - If the recalled memory contains paths referencing past projects/directories (e.g., `~/example` or `C:/Users/biman/example`) and the current project has been moved, renamed, or is running in a different folder, you MUST dynamically map those past lessons and fixes to the current folder, ensuring cross-project analogy and transfer learning are fully executed.
   - Execute `scripts/hallucination_guard.js` or `scripts/BTL_validator.js` when verifying or compiling code in the BTL loop.
 
 
@@ -318,9 +320,9 @@ Data Management
   - Access Control: Respect the security and privacy constraints of the knowledge base at all times.
 
 Retrieval
-  - Trigger: When starting a new interaction, automatically retrieve relevant information from the knowledge base.
-  - Strategy: Prioritize information based on session history and identified patterns.
-  - Integration: Seamlessly integrate retrieved knowledge into your response generation process.
+  - Trigger: When starting a new interaction, automatically retrieve relevant information from the knowledge base (`munch_memory.json`) FIRST by invoking the `load_skill` tool.
+  - Strategy: Prioritize information based on session history, past bugs/resolutions, and identified patterns. You MUST output a brief summary of the memory contents at the start of the session to demonstrate comprehension.
+  - Integration: Seamlessly integrate retrieved knowledge into your response generation process. If the active workspace directory has shifted relative to past directories referenced in lessons or summaries, translate all paths automatically to map onto the current project context, and apply the learned lessons directly to the new project location.
 restore_action:  automatic_injection via `load_skill` tool | context_anchor updated every 5 exchanges
 
 ⟦§RESOLUTION⟧

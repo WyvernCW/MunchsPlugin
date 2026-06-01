@@ -57,6 +57,31 @@ function writePersistentMemory(memory) {
         console.error("⟦§MUNCH⟧ Failed to write persistent memory:", err);
     }
 }
+// Helper to recursively extract absolute and relative paths from an object
+function extractPaths(obj) {
+    const paths = new Set();
+    const regex = /(?:[a-zA-Z]:[\\/][^:\s"'\n,;()\[\]{}]+|(?:\/|~[\\/]|\.\.?\/)[a-zA-Z0-9_\-\.\/]+[^:\s"'\n,;()\[\]{}]*)/g;
+    function recurse(value) {
+        if (typeof value === "string") {
+            let match;
+            while ((match = regex.exec(value)) !== null) {
+                let p = match[0].replace(/\\/g, "/");
+                p = p.replace(/[.,;!?"')\]]+$/, "");
+                if (p.includes("/") && p.length > 3 && !p.startsWith("http://") && !p.startsWith("https://")) {
+                    paths.add(p);
+                }
+            }
+        }
+        else if (Array.isArray(value)) {
+            value.forEach(recurse);
+        }
+        else if (value && typeof value === "object") {
+            Object.values(value).forEach(recurse);
+        }
+    }
+    recurse(obj);
+    return Array.from(paths);
+}
 // ──────────────────────────────────────────────
 // Skill loader — walks candidate paths
 // ──────────────────────────────────────────────
@@ -114,6 +139,18 @@ server.registerTool("load_skill", {
             `- Active Tech Stack: ${memory.userModel.techStack.join(", ") || "None registered yet"}\n` +
             `- Accepted Patterns: ${memory.userModel.acceptedPatterns.join(", ") || "None registered yet"}\n` +
             `- Rejected Patterns: ${memory.userModel.rejectedPatterns.join(", ") || "None registered yet"}\n\n`;
+        const currentCwd = process.cwd().replace(/\\/g, "/");
+        const pastPaths = extractPaths(memory);
+        memoryBlock += `### Cross-Project Path Mapping & Transfer Learning\n` +
+            `- Current Working Directory: \`${currentCwd}\`\n`;
+        if (pastPaths.length > 0) {
+            memoryBlock += `- Detected Past Workspace/Project Paths:\n` +
+                pastPaths.map(p => `  * \`${p}\``).join("\n") + "\n" +
+                `- **Transfer Instruction**: The active workspace has shifted or differs from previous folders. You MUST translate all absolute paths from the detected past paths to the current workspace path \`${currentCwd}\`. Apply all lessons, error resolutions, and bugs solved in those directories to their corresponding files in the current folder. Treat the current project as a continuation or evolution of the previous projects.\n\n`;
+        }
+        else {
+            memoryBlock += `- Detected Past Workspace/Project Paths: None registered yet.\n\n`;
+        }
         if (memory.registryFixes.length > 0) {
             memoryBlock += `### Active Regression Fixes (PINs/FIXes)\n`;
             memory.registryFixes.forEach((f) => {
