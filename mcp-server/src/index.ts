@@ -367,6 +367,8 @@ interface RegistryFix {
   issue: string;
   resolution: string;
   timestamp: string;
+  occurrences?: number;
+  lastSeen?: string;
 }
 
 interface LearnedLesson {
@@ -375,6 +377,8 @@ interface LearnedLesson {
   fix: string;
   context: string;
   timestamp: string;
+  occurrences?: number;
+  lastSeen?: string;
 }
 
 interface ConversationSummary {
@@ -746,12 +750,40 @@ server.registerTool(
   },
   async ({ category, symptom, fix, context }) => {
     const memory = readPersistentMemory();
+    const cleanSymptom = symptom.toLowerCase().trim();
+    
+    // Check for similar existing lesson
+    const existing = memory.learnedLessons.find(
+      (l) => l.symptom.toLowerCase().trim() === cleanSymptom || 
+             (cleanSymptom.includes(l.symptom.toLowerCase().trim()) && l.symptom.length > 10)
+    );
+
+    if (existing) {
+      existing.occurrences = (existing.occurrences ?? 1) + 1;
+      existing.lastSeen = new Date().toISOString();
+      existing.fix = fix;
+      existing.category = category;
+      existing.context = context ?? existing.context;
+      writePersistentMemory(memory);
+      showNotification("Lesson Re-learned", `Occurrences: ${existing.occurrences} | Category: ${category}`);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `✓ Lesson updated (seen ${existing.occurrences} times). Category: ${category} | Symptom: ${symptom}`,
+          },
+        ],
+      };
+    }
+
     const lesson: LearnedLesson = {
       category,
       symptom,
       fix,
       context: context ?? "",
       timestamp: new Date().toISOString(),
+      occurrences: 1,
+      lastSeen: new Date().toISOString(),
     };
     memory.learnedLessons.push(lesson);
     writePersistentMemory(memory);
@@ -828,12 +860,38 @@ server.registerTool(
   },
   async ({ issue, resolution }) => {
     const memory = readPersistentMemory();
+    const cleanIssue = issue.toLowerCase().trim();
+    
+    // Check for similar existing fix
+    const existing = memory.registryFixes.find(
+      (f) => f.issue.toLowerCase().trim() === cleanIssue || 
+             (cleanIssue.includes(f.issue.toLowerCase().trim()) && f.issue.length > 10)
+    );
+
+    if (existing) {
+      existing.occurrences = (existing.occurrences ?? 1) + 1;
+      existing.lastSeen = new Date().toISOString();
+      existing.resolution = resolution;
+      writePersistentMemory(memory);
+      showNotification("Regression Fix Stored", `${existing.id}: ${issue.substring(0, 45)}...`);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `✓ Anti-regression fix updated: ${existing.id} (seen ${existing.occurrences} times) | Issue: ${issue} ∆ Resolution: ${resolution}`,
+          },
+        ],
+      };
+    }
+
     const nextId = `FIX_${String(memory.registryFixes.length + 1).padStart(3, "0")}`;
     const fix: RegistryFix = {
       id: nextId,
       issue,
       resolution,
       timestamp: new Date().toISOString(),
+      occurrences: 1,
+      lastSeen: new Date().toISOString(),
     };
     memory.registryFixes.push(fix);
     writePersistentMemory(memory);
@@ -895,24 +953,60 @@ server.registerTool(
   },
   async ({ query }) => {
     const memory = readPersistentMemory();
-    const q = query.toLowerCase();
-    
-    const lessons = memory.learnedLessons.filter(
-      (l) => l.category.toLowerCase().includes(q) || l.symptom.toLowerCase().includes(q) || l.fix.toLowerCase().includes(q)
-    );
-    const fixes = memory.registryFixes.filter(
-      (f) => f.issue.toLowerCase().includes(q) || f.resolution.toLowerCase().includes(q)
-    );
-    const convs = memory.conversationSummaries.filter(
-      (c) => c.summary.toLowerCase().includes(q) || c.tags.some((t) => t.toLowerCase().includes(q))
-    );
+    const q = query.toLowerCase().trim();
+    const tokens = q.split(/\s+/).filter(Boolean);
+
+    if (tokens.length === 0) {
+      return { content: [{ type: "text", text: "Please enter a valid search query." }] };
+    }
+
+    const scoreText = (text: string): number => {
+      let score = 0;
+      const lower = text.toLowerCase();
+      for (const token of tokens) {
+        if (lower.includes(token)) score += 1;
+      }
+      return score;
+    };
+
+    // Query and rank lessons
+    const lessons = memory.learnedLessons
+      .map((l) => {
+        const score = scoreText(l.category) * 1.5 + scoreText(l.symptom) * 2 + scoreText(l.fix) * 2 + scoreText(l.context);
+        return { lesson: l, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || (b.lesson.occurrences ?? 1) - (a.lesson.occurrences ?? 1))
+      .map((item) => item.lesson);
+
+    // Query and rank fixes
+    const fixes = memory.registryFixes
+      .map((f) => {
+        const score = scoreText(f.issue) * 2 + scoreText(f.resolution) * 2;
+        return { fix: f, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || (b.fix.occurrences ?? 1) - (a.fix.occurrences ?? 1))
+      .map((item) => item.fix);
+
+    // Query and rank conversations
+    const convs = memory.conversationSummaries
+      .map((c) => {
+        const tagScore = c.tags.reduce((acc, tag) => acc + (scoreText(tag) * 2), 0);
+        const score = scoreText(c.summary) + tagScore;
+        return { conv: c, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((item) => item.conv);
 
     let output = `### Memory Query Results for "${query}"\n\n`;
     
     if (lessons.length > 0) {
       output += `#### Learned Lessons (${lessons.length})\n`;
       lessons.forEach((l) => {
-        output += `- **[${l.category}]** Symptom: *${l.symptom}* → Fix: ${l.fix}\n`;
+        const occStr = l.occurrences && l.occurrences > 1 ? ` (seen ${l.occurrences}x)` : "";
+        output += `- **[${l.category}]** Symptom: *${l.symptom}*${occStr} ➔ Fix: ${l.fix}\n`;
       });
       output += "\n";
     }
@@ -920,7 +1014,8 @@ server.registerTool(
     if (fixes.length > 0) {
       output += `#### Anti-Regression Pins (${fixes.length})\n`;
       fixes.forEach((f) => {
-        output += `- **${f.id}**: *${f.issue}* ∆ ${f.resolution}\n`;
+        const occStr = f.occurrences && f.occurrences > 1 ? ` (seen ${f.occurrences}x)` : "";
+        output += `- **${f.id}**: *${f.issue}*${occStr} ∆ ${f.resolution}\n`;
       });
       output += "\n";
     }
