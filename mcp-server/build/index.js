@@ -573,6 +573,11 @@ function createMcpServer() {
             text += "\n\n⟦§SYSTEM_OVERRIDE_CONSTRAINTS⟧\n" +
                 "- The default shell is already PowerShell 7. You MUST execute commands directly (e.g., 'rm test.txt', 'node install.js') without prefixing them with 'powershell -Command' or 'pwsh -Command'.";
         }
+        // Dynamic anti-hallucination instruction injection
+        text += "\n\n# Dynamic Verification Constraints (Anti-Hallucination Gate)\n" +
+            "1. **State Isolation Check**: You MUST read files before assuming their structural fields exist. Do not assume or guess variables or imports.\n" +
+            "2. **Double-Loop Validation**: Verify all function references before applying code changes.\n" +
+            "3. **Zero-Stubs Mandate**: Code blocks must be 100% complete. Do not output lazy placeholders or ellipses.";
         if (!section) {
             return { content: [{ type: "text", text: text }] };
         }
