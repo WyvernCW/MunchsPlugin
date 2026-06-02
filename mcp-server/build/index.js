@@ -364,6 +364,36 @@ function readPersistentMemory() {
 }
 function writePersistentMemory(memory) {
     try {
+        const MAX_LESSONS = 50;
+        const MAX_FIXES = 30;
+        const MAX_CONVERSATIONS = 10;
+        // Prune learned lessons (keep highest occurrences, then most recent)
+        if (memory.learnedLessons.length > MAX_LESSONS) {
+            memory.learnedLessons.sort((a, b) => {
+                const occA = a.occurrences ?? 1;
+                const occB = b.occurrences ?? 1;
+                if (occB !== occA)
+                    return occB - occA;
+                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+            });
+            memory.learnedLessons = memory.learnedLessons.slice(0, MAX_LESSONS);
+        }
+        // Prune registry fixes (keep highest occurrences, then most recent)
+        if (memory.registryFixes.length > MAX_FIXES) {
+            memory.registryFixes.sort((a, b) => {
+                const occA = a.occurrences ?? 1;
+                const occB = b.occurrences ?? 1;
+                if (occB !== occA)
+                    return occB - occA;
+                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+            });
+            memory.registryFixes = memory.registryFixes.slice(0, MAX_FIXES);
+        }
+        // Prune conversation summaries (FIFO)
+        if (memory.conversationSummaries.length > MAX_CONVERSATIONS) {
+            memory.conversationSummaries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            memory.conversationSummaries = memory.conversationSummaries.slice(0, MAX_CONVERSATIONS);
+        }
         if (!existsSync(MEMORY_DIR)) {
             mkdirSync(MEMORY_DIR, { recursive: true });
         }
@@ -372,6 +402,20 @@ function writePersistentMemory(memory) {
     catch (err) {
         console.error("⟦§MUNCH⟧ Failed to write persistent memory:", err);
     }
+}
+// Helper to calculate Jaccard similarity between two strings
+function getJaccardSimilarity(str1, str2) {
+    const words1 = new Set(str1.toLowerCase().match(/\w+/g) || []);
+    const words2 = new Set(str2.toLowerCase().match(/\w+/g) || []);
+    if (words1.size === 0 || words2.size === 0)
+        return 0;
+    let intersection = 0;
+    for (const word of words1) {
+        if (words2.has(word))
+            intersection++;
+    }
+    const union = new Set([...words1, ...words2]).size;
+    return intersection / union;
 }
 // Helper to recursively extract absolute and relative paths from an object
 function extractPaths(obj) {
@@ -624,9 +668,10 @@ function createMcpServer() {
     }, async ({ category, symptom, fix, context }) => {
         const memory = readPersistentMemory();
         const cleanSymptom = symptom.toLowerCase().trim();
-        // Check for similar existing lesson
+        // Check for similar existing lesson using Jaccard fuzzy token similarity
         const existing = memory.learnedLessons.find((l) => l.symptom.toLowerCase().trim() === cleanSymptom ||
-            (cleanSymptom.includes(l.symptom.toLowerCase().trim()) && l.symptom.length > 10));
+            (cleanSymptom.includes(l.symptom.toLowerCase().trim()) && l.symptom.length > 10) ||
+            getJaccardSimilarity(l.symptom, symptom) >= 0.65);
         if (existing) {
             existing.occurrences = (existing.occurrences ?? 1) + 1;
             existing.lastSeen = new Date().toISOString();
@@ -717,9 +762,10 @@ function createMcpServer() {
     }, async ({ issue, resolution }) => {
         const memory = readPersistentMemory();
         const cleanIssue = issue.toLowerCase().trim();
-        // Check for similar existing fix
+        // Check for similar existing fix using Jaccard fuzzy token similarity
         const existing = memory.registryFixes.find((f) => f.issue.toLowerCase().trim() === cleanIssue ||
-            (cleanIssue.includes(f.issue.toLowerCase().trim()) && f.issue.length > 10));
+            (cleanIssue.includes(f.issue.toLowerCase().trim()) && f.issue.length > 10) ||
+            getJaccardSimilarity(f.issue, issue) >= 0.65);
         if (existing) {
             existing.occurrences = (existing.occurrences ?? 1) + 1;
             existing.lastSeen = new Date().toISOString();
