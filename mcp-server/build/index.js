@@ -348,13 +348,18 @@ const defaultMemory = {
     },
     registryFixes: [],
     learnedLessons: [],
-    conversationSummaries: []
+    conversationSummaries: [],
+    recurrentMistakes: []
 };
 function readPersistentMemory() {
     try {
         if (existsSync(MEMORY_PATH)) {
             const data = readFileSync(MEMORY_PATH, "utf-8");
-            return JSON.parse(data);
+            const parsed = JSON.parse(data);
+            if (!parsed.recurrentMistakes) {
+                parsed.recurrentMistakes = [];
+            }
+            return parsed;
         }
     }
     catch (err) {
@@ -367,6 +372,7 @@ function writePersistentMemory(memory) {
         const MAX_LESSONS = 50;
         const MAX_FIXES = 30;
         const MAX_CONVERSATIONS = 10;
+        const MAX_MISTAKES = 15;
         // Prune learned lessons (keep highest occurrences, then most recent)
         if (memory.learnedLessons.length > MAX_LESSONS) {
             memory.learnedLessons.sort((a, b) => {
@@ -393,6 +399,11 @@ function writePersistentMemory(memory) {
         if (memory.conversationSummaries.length > MAX_CONVERSATIONS) {
             memory.conversationSummaries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
             memory.conversationSummaries = memory.conversationSummaries.slice(0, MAX_CONVERSATIONS);
+        }
+        // Prune recurrent mistakes
+        if (memory.recurrentMistakes && memory.recurrentMistakes.length > MAX_MISTAKES) {
+            memory.recurrentMistakes.sort((a, b) => b.recurrenceCount - a.recurrenceCount);
+            memory.recurrentMistakes = memory.recurrentMistakes.slice(0, MAX_MISTAKES);
         }
         if (!existsSync(MEMORY_DIR)) {
             mkdirSync(MEMORY_DIR, { recursive: true });
@@ -545,8 +556,18 @@ function createMcpServer() {
                 });
                 memoryBlock += "\n";
             }
+            if (memory.recurrentMistakes && memory.recurrentMistakes.length > 0) {
+                memoryBlock += `### Anti-Mistake Defenses & Critical Recurrent Pitfalls\n` +
+                    `*WARNING*: The following errors or pitfalls have occurred multiple times in past attempts. You MUST prioritize avoiding these patterns or applying these successful fixes immediately:\n\n`;
+                memory.recurrentMistakes.forEach((m) => {
+                    const attemptsStr = m.unsuccessfulAttempts.length > 0 ? ` (Failed attempts: ${m.unsuccessfulAttempts.join(" | ")})` : "";
+                    const fixStr = m.successfulFix ? ` ➔ Verified Resolution: **${translatePaths(m.successfulFix)}**` : " (Currently unresolved/ongoing struggle)";
+                    memoryBlock += `- Pitfall: *${translatePaths(m.symptom)}* (Occurred ${m.recurrenceCount} times)${attemptsStr}${fixStr}\n`;
+                });
+                memoryBlock += "\n";
+            }
             text += memoryBlock;
-            showNotification("Munch Skill Loaded", `Recalled ${memory.learnedLessons.length} lessons and ${memory.registryFixes.length} regression fixes.`);
+            showNotification("Munch Skill Loaded", `Recalled ${memory.learnedLessons.length} lessons, ${memory.registryFixes.length} regression fixes, and ${memory.recurrentMistakes?.length || 0} recurrent pitfalls.`);
         }
         if (process.platform === "win32") {
             text += "\n\n⟦§SYSTEM_OVERRIDE_CONSTRAINTS⟧\n" +
@@ -963,6 +984,55 @@ function createMcpServer() {
             output += "No matching persistent memories found.";
         }
         return { content: [{ type: "text", text: output }] };
+    });
+    // ── Tool: track_recurrent_mistake ─────────────
+    server.registerTool("track_recurrent_mistake", {
+        description: "Register or update a recurrent struggle, repeating compiler error, or command failure. " +
+            "Use this when a bug requires multiple attempts to fix, to record what failed and what ultimately worked.",
+        inputSchema: {
+            symptom: z.string().describe("The repeating error message, build failure log, or bug description"),
+            unsuccessfulAttempt: z.string().optional().describe("A solution attempt that did NOT work"),
+            successfulFix: z.string().optional().describe("The solution that ultimately succeeded"),
+        },
+    }, async ({ symptom, unsuccessfulAttempt, successfulFix }) => {
+        const memory = readPersistentMemory();
+        const cleanSymptom = symptom.toLowerCase().trim();
+        if (!memory.recurrentMistakes) {
+            memory.recurrentMistakes = [];
+        }
+        let existing = memory.recurrentMistakes.find((m) => m.symptom.toLowerCase().trim() === cleanSymptom ||
+            getJaccardSimilarity(m.symptom, symptom) >= 0.65);
+        if (existing) {
+            existing.recurrenceCount++;
+            existing.lastSeen = new Date().toISOString();
+            if (unsuccessfulAttempt && !existing.unsuccessfulAttempts.includes(unsuccessfulAttempt)) {
+                existing.unsuccessfulAttempts.push(unsuccessfulAttempt);
+            }
+            if (successfulFix) {
+                existing.successfulFix = successfulFix;
+            }
+        }
+        else {
+            existing = {
+                symptom,
+                firstSeen: new Date().toISOString(),
+                lastSeen: new Date().toISOString(),
+                recurrenceCount: 1,
+                unsuccessfulAttempts: unsuccessfulAttempt ? [unsuccessfulAttempt] : [],
+                successfulFix
+            };
+            memory.recurrentMistakes.push(existing);
+        }
+        writePersistentMemory(memory);
+        showNotification("Recurrent Pitfall Updated", `Symptom: ${symptom.substring(0, 45)}...`);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `✓ Recurrent pitfall recorded. Symptom: ${symptom}\nRecurrence Count: ${existing.recurrenceCount}\nSuccessful Fix: ${existing.successfulFix || "Unresolved"}`
+                }
+            ]
+        };
     });
     // ── Prompt: use_powershell_7 ──────────────────
     server.registerPrompt("use_powershell_7", {
