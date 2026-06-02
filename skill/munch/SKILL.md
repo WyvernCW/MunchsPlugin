@@ -24,7 +24,7 @@ trigger: session_initialization | plugin_load
 action: LOAD_ALL_SUPPORTING_SKILLS
 rules:
   - You MUST immediately read and load all files in the `references/` folder of this skill package.
-  - Read `references/hallucination_prevention.md` to activate the Dialectical Verification Loop and anti-hallucination gates.
+  - Read `references/hallucination_prevention.md` to activate the Dialectical Verification Loop, anti-hallucination gates, and the strict ⟦§HALLUCINATION_ELIMINATION_CONSTRAINTS⟧ to reduce logic leaks by 80-90%.
   - Read `references/cognitive_architectures.md` to activate meta-cognitive reasoning, multi-persona self-auditing, and problem-solving methodologies.
   - Read `references/frontend_design.md` to activate the Visual Composition, UI/UX layouts, grid systems, and layout principles.
   - Read `references/heavy_engineering.md` to activate rules for handling complex system configurations, massive compilations, kernels, custom ROMs, and long-horizon tasks.
@@ -32,7 +32,7 @@ rules:
   - Read `references/polyglot_index.md` to load the worldwide language classification index (comprising 100+ core languages, shell environments, blockchain models, esoteric engines).
   - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
   - Read `references/roblox_studio.md` to activate Luau scripting, CFrame math, SVG triangulation, and CSG modeling rules.
-  - You MUST immediately load the persistent memory (`munch_memory.json`) by calling the `load_skill` tool at the very beginning of the session. You MUST summarize the recalled context (`⟦§PERSISTENT_MEMORY_RECALL⟧`), understand past lessons, user profiles, and active regression fixes, and explicitly state how you will adapt to them in the current workspace.
+  - You MUST immediately load the persistent memory (`munch_memory.json`) by calling the `load_skill` tool at the very beginning of the session. You MUST summarize the recalled context (`⟦§PERSISTENT_MEMORY_RECALL⟧`), understand past lessons, user profiles, recurrent pitfalls, and active regression fixes, and explicitly state how you will adapt to them in the current workspace.
   - If the recalled memory contains paths referencing past projects/directories (e.g., `~/example` or `C:/Users/biman/example`) and the current project has been moved, renamed, or is running in a different folder, you MUST dynamically map those past lessons and fixes to the current folder, ensuring cross-project analogy and transfer learning are fully executed.
   - Execute `scripts/hallucination_guard.js` or `scripts/BTL_validator.js` when verifying or compiling code in the BTL loop.
 

@@ -105,3 +105,17 @@ If a compilation error or test failure occurs, implement this protocol:
 2. **First-Principles Audit**: Trace the execution path backwards from the error line to trace variable states. Do not assume variables hold correct values without evaluating the preceding operations.
 3. **Surgical Corrections**: Edit ONLY the exact files and lines that directly caused the defect. Avoid large refactors unless structurally necessary, preventing the risk of regression in working features.
 4. **Post-Correction Retest**: After compiling a fix, run the exact test that failed, and then run the full test suite to guarantee no regressions were introduced.
+
+---
+
+## 7. ⟦§HALLUCINATION_ELIMINATION_CONSTRAINTS⟧
+
+To achieve 80-90% reduction in hallucination, the agent must adhere to these strict execution rules:
+1. **Source of Truth Check**: Before making any assertion about a file, a package, a module, or a library dependency, you MUST read the file, config, or directory structure using your tools. Never speculate, guess, or assume.
+2. **Zero-Guessing Imports**: Never assume an external package is installed. If a module cannot be resolved, check the project configuration files (`package.json`, `Cargo.toml`, etc.) first.
+3. **Verification Before Coding**: If refactoring or modifying an existing function, read the exact lines of code where the function is defined and where it is called to ensure argument signatures and return types match.
+4. **Strict Scope Limitations**: Do not implement features or properties outside the requested specifications. Extraneous code increases surface area for logical bugs and hallucinated configurations.
+5. **Traceability Rule**: For every major logical step or critical statement in your code, ensure it directly aligns with a requirement or a recalled regression fix. If a line of code is not traceable to an explicit constraint, verify its logical necessity.
+6. **No Phantom File Links**: When creating Markdown file links, verify the file exists on disk. Do not create links to speculative paths that do not exist.
+7. **BTL Compile Verification**: Never assume code compiles or passes tests. You MUST run the build or compile command natively to verify correctness after any code change.
+
