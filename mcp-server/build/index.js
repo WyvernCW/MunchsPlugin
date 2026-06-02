@@ -709,6 +709,28 @@ function createMcpServer() {
             existing.fix = fix;
             existing.category = category;
             existing.context = context ?? existing.context;
+            // Auto-escalate to recurrent pitfall logs if symptom keeps resurfacing (threshold: 3 times)
+            if (existing.occurrences >= 3) {
+                if (!memory.recurrentMistakes)
+                    memory.recurrentMistakes = [];
+                let mistake = memory.recurrentMistakes.find((m) => m.symptom.toLowerCase().trim() === cleanSymptom ||
+                    getJaccardSimilarity(m.symptom, symptom) >= 0.65);
+                if (mistake) {
+                    mistake.recurrenceCount = existing.occurrences;
+                    mistake.lastSeen = new Date().toISOString();
+                    mistake.successfulFix = fix;
+                }
+                else {
+                    memory.recurrentMistakes.push({
+                        symptom: symptom,
+                        firstSeen: existing.timestamp,
+                        lastSeen: new Date().toISOString(),
+                        recurrenceCount: existing.occurrences,
+                        unsuccessfulAttempts: [],
+                        successfulFix: fix
+                    });
+                }
+            }
             writePersistentMemory(memory);
             showNotification("Lesson Re-learned", `Occurrences: ${existing.occurrences} | Category: ${category}`);
             return {
@@ -801,6 +823,28 @@ function createMcpServer() {
             existing.occurrences = (existing.occurrences ?? 1) + 1;
             existing.lastSeen = new Date().toISOString();
             existing.resolution = resolution;
+            // Auto-escalate to recurrent pitfall logs if issue keeps resurfacing
+            if (existing.occurrences >= 3) {
+                if (!memory.recurrentMistakes)
+                    memory.recurrentMistakes = [];
+                let mistake = memory.recurrentMistakes.find((m) => m.symptom.toLowerCase().trim() === cleanIssue ||
+                    getJaccardSimilarity(m.symptom, issue) >= 0.65);
+                if (mistake) {
+                    mistake.recurrenceCount = existing.occurrences;
+                    mistake.lastSeen = new Date().toISOString();
+                    mistake.successfulFix = resolution;
+                }
+                else {
+                    memory.recurrentMistakes.push({
+                        symptom: issue,
+                        firstSeen: existing.timestamp,
+                        lastSeen: new Date().toISOString(),
+                        recurrenceCount: existing.occurrences,
+                        unsuccessfulAttempts: [],
+                        successfulFix: resolution
+                    });
+                }
+            }
             writePersistentMemory(memory);
             showNotification("Regression Fix Stored", `${existing.id}: ${issue.substring(0, 45)}...`);
             return {
