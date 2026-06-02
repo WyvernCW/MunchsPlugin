@@ -1015,50 +1015,99 @@ server.registerTool(
     const memory = readPersistentMemory();
     const q = query.toLowerCase().trim();
     const tokens = q.split(/\s+/).filter(Boolean);
+    const currentCwd = process.cwd().replace(/\\/g, "/");
+    const pastPaths = extractPaths(memory);
 
     if (tokens.length === 0) {
       return { content: [{ type: "text", text: "Please enter a valid search query." }] };
     }
 
-    const scoreText = (text: string): number => {
-      let score = 0;
-      const lower = text.toLowerCase();
-      for (const token of tokens) {
-        if (lower.includes(token)) score += 1;
-      }
-      return score;
+    const translatePaths = (val: string): string => {
+      let updated = val;
+      pastPaths.forEach((past) => {
+        if (past !== currentCwd && currentCwd.length > 3 && past.length > 3) {
+          updated = updated.split(past).join(currentCwd);
+        }
+      });
+      return updated;
+    };
+
+    // Calculate score using token match (weighted TF-IDF style) and Jaccard similarity
+    const calculateSearchScore = (text: string, multiplier: number = 1.0): number => {
+      const lowerText = text.toLowerCase();
+      let matchScore = 0;
+      
+      // 1. Exact token occurrence scoring (higher weight for matching specific search tokens)
+      tokens.forEach((token) => {
+        const count = (lowerText.split(token).length - 1);
+        matchScore += count * multiplier;
+      });
+
+      // 2. Fuzzy Jaccard token set similarity addition
+      const jaccard = getJaccardSimilarity(q, text);
+      matchScore += jaccard * 5.0; // scale fuzzy match contribution
+
+      return matchScore;
     };
 
     // Query and rank lessons
     const lessons = memory.learnedLessons
       .map((l) => {
-        const score = scoreText(l.category) * 1.5 + scoreText(l.symptom) * 2 + scoreText(l.fix) * 2 + scoreText(l.context);
-        return { lesson: l, score };
+        const catScore = calculateSearchScore(l.category, 1.5);
+        const symScore = calculateSearchScore(l.symptom, 2.5);
+        const fixScore = calculateSearchScore(l.fix, 2.0);
+        const contextScore = calculateSearchScore(l.context || "", 1.0);
+        const totalScore = catScore + symScore + fixScore + contextScore;
+        return { lesson: l, score: totalScore };
       })
-      .filter((item) => item.score > 0)
+      .filter((item) => item.score > 0.1)
       .sort((a, b) => b.score - a.score || (b.lesson.occurrences ?? 1) - (a.lesson.occurrences ?? 1))
-      .map((item) => item.lesson);
+      .map((item) => {
+        const l = item.lesson;
+        return {
+          ...l,
+          symptom: translatePaths(l.symptom),
+          fix: translatePaths(l.fix),
+          context: translatePaths(l.context || "")
+        };
+      });
 
     // Query and rank fixes
     const fixes = memory.registryFixes
       .map((f) => {
-        const score = scoreText(f.issue) * 2 + scoreText(f.resolution) * 2;
-        return { fix: f, score };
+        const issueScore = calculateSearchScore(f.issue, 2.5);
+        const resScore = calculateSearchScore(f.resolution, 2.0);
+        const totalScore = issueScore + resScore;
+        return { fix: f, score: totalScore };
       })
-      .filter((item) => item.score > 0)
+      .filter((item) => item.score > 0.1)
       .sort((a, b) => b.score - a.score || (b.fix.occurrences ?? 1) - (a.fix.occurrences ?? 1))
-      .map((item) => item.fix);
+      .map((item) => {
+        const f = item.fix;
+        return {
+          ...f,
+          issue: translatePaths(f.issue),
+          resolution: translatePaths(f.resolution)
+        };
+      });
 
     // Query and rank conversations
     const convs = memory.conversationSummaries
       .map((c) => {
-        const tagScore = c.tags.reduce((acc, tag) => acc + (scoreText(tag) * 2), 0);
-        const score = scoreText(c.summary) + tagScore;
-        return { conv: c, score };
+        const summaryScore = calculateSearchScore(c.summary, 1.0);
+        const tagsScore = c.tags.reduce((acc, tag) => acc + calculateSearchScore(tag, 2.0), 0);
+        const totalScore = summaryScore + tagsScore;
+        return { conv: c, score: totalScore };
       })
-      .filter((item) => item.score > 0)
+      .filter((item) => item.score > 0.1)
       .sort((a, b) => b.score - a.score)
-      .map((item) => item.conv);
+      .map((item) => {
+        const c = item.conv;
+        return {
+          ...c,
+          summary: translatePaths(c.summary)
+        };
+      });
 
     let output = `### Memory Query Results for "${query}"\n\n`;
     
