@@ -594,15 +594,26 @@ server.registerTool(
       if (pastPaths.length > 0) {
         memoryBlock += `- Detected Past Workspace/Project Paths:\n` +
                        pastPaths.map(p => `  * \`${p}\``).join("\n") + "\n" +
-                       `- **Transfer Instruction**: The active workspace has shifted or differs from previous folders. You MUST translate all absolute paths from the detected past paths to the current workspace path \`${currentCwd}\`. Apply all lessons, error resolutions, and bugs solved in those directories to their corresponding files in the current folder. Treat the current project as a continuation or evolution of the previous projects.\n\n`;
+                       `- **Transfer Instruction**: The active workspace has shifted or differs from previous folders. Apply all lessons, error resolutions, and bugs solved in those directories to their corresponding files in the current folder. All absolute paths from the detected past paths have been auto-translated to the current workspace path \`${currentCwd}\`.\n\n`;
       } else {
         memoryBlock += `- Detected Past Workspace/Project Paths: None registered yet.\n\n`;
       }
 
+      // Automatically translate absolute paths dynamically for the loaded session context
+      const translatePaths = (val: string): string => {
+        let updated = val;
+        pastPaths.forEach((past) => {
+          if (past !== currentCwd && currentCwd.length > 3 && past.length > 3) {
+            updated = updated.split(past).join(currentCwd);
+          }
+        });
+        return updated;
+      };
+
       if (memory.registryFixes.length > 0) {
         memoryBlock += `### Active Regression Fixes (PINs/FIXes)\n`;
         memory.registryFixes.forEach((f) => {
-          memoryBlock += `- **${f.id}**: ${f.issue} ∆ Resolution: ${f.resolution}\n`;
+          memoryBlock += `- **${f.id}**: ${translatePaths(f.issue)} ∆ Resolution: ${translatePaths(f.resolution)}\n`;
         });
         memoryBlock += "\n";
       }
@@ -611,7 +622,7 @@ server.registerTool(
         memoryBlock += `### Learned Lessons & Resolved Bugs\n`;
         const recentLessons = memory.learnedLessons.slice(-10);
         recentLessons.forEach((l) => {
-          memoryBlock += `- [${l.category}] Symptom: *${l.symptom}* → Resolution: ${l.fix}\n`;
+          memoryBlock += `- [${l.category}] Symptom: *${translatePaths(l.symptom)}* → Resolution: ${translatePaths(l.fix)}\n`;
         });
         memoryBlock += "\n";
       }
@@ -620,7 +631,7 @@ server.registerTool(
         memoryBlock += `### Past Conversation Contexts\n`;
         const recentConversations = memory.conversationSummaries.slice(-3);
         recentConversations.forEach((c) => {
-          memoryBlock += `- Summary (${c.timestamp}): ${c.summary}\n`;
+          memoryBlock += `- Summary (${c.timestamp}): ${translatePaths(c.summary)}\n`;
         });
         memoryBlock += "\n";
       }
