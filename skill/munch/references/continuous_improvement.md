@@ -172,8 +172,119 @@ During massive compilation or ROM building tasks, the active context window can 
 
 When delegating tasks to subagents, coordinate learning records systematically.
 
-- **Logging Rule**: Subagents are equipped with read tools but must communicate their findings to the parent agent.
-- **Lesson Synthesis**: When a subagent discovers a codebase constraint or fixes a bug in its branch, the parent agent must capture this lesson and invoke `remember_lesson` to record it globally. This guarantees that all subagent discoveries are permanently integrated into the core database.
+- **Logging Rule**: Subagents are equipped with read/write tools to directly interact with `~/.munchmemory/munch_memory.json`.
+- **Coordinated Execution**: When executing complex or large workloads, the Orchestrator subagent coordinates other specialized subagents in parallel to prevent context window saturation and logic leaks.
+- **Cognitive Agent Specialization Directory**:
+  
+  ##### 1. Workflow & Architecture Orchestrators
+  - **Orchestrator**: Controls the full workflow, assigns tasks to the right agents, and combines all results.
+  - **Supervisor**: Watches agent progress, detects bad decisions early, and prevents digital soup.
+  - **Dispatcher**: Sends tasks to specific agents, routes errors, files, and requests.
+  - **Planner**: Breaks big goals into smaller steps, creates order, and defines milestones.
+  - **Task Decomposer**: Splits complex work into small actionable subtasks.
+  - **Roadmap Planner**: Creates long-term development plans and priorities.
+
+  ##### 2. Requirement, Risk & Scope Analysts
+  - **Requirements Analyst**: Extracts exact user requirements and finds missing specs.
+  - **Spec Writer**: Writes behavior, limits, and acceptance criteria.
+  - **Risk Analyst**: Finds technical risks and fragile decisions, suggesting safe alternatives.
+  - **Scope Guard**: Prevents feature creep and keeps focus.
+  - **Context Manager**: Tracks context and keeps agents aligned with previous choices.
+  - **Memory Curator**: Cleans memory, archives outdated facts, and stores active pins.
+
+  ##### 3. Navigation & Repository Archaeologists
+  - **Architect**: Designs module structures, folder layouts, and system scaling.
+  - **Repo Cartographer**: Maps folder/file functions to help agents navigate the codebase.
+  - **File Explorer**: Searches and reads configs, code files, and documentation.
+  - **Legacy Code Archaeologist**: Traces dependencies and quirks in messy legacy systems.
+  - **Researcher**: Looks up APIs, documentation, and external packages to avoid guesses.
+
+  ##### 4. Frontend & Presentation Engineers
+  - **UI/UX Designer**: Designs layouts, visual flow, and spatial grid alignments.
+  - **Frontend Agent**: Builds component interfaces and integrates APIs.
+  - **Accessibility Agent**: Checks keyboard navigation, contrast, and screen readers.
+  - **Animation Agent**: Adds smooth transitions and motion micro-interactions.
+  - **Mobile Responsiveness Agent**: Optimizes mobile layouts and breakpoint targets.
+  - **Theme/Design System Agent**: Enforces HSL color tokens and typography constraints.
+
+  ##### 5. Feature & Integration Specialists
+  - **API Integration Agent**: Connects third-party APIs and handles request formats.
+  - **Auth Specialist**: Builds secure login, sessions, JWT, and permissions.
+  - **Payment Agent**: Integrates Stripe, subscriptions, and billing pipelines.
+  - **Realtime/WebSocket Agent**: Manages live sockets, updates, and events.
+  - **State Management Agent**: Connects global state, stores, and caching.
+  - **Copywriter**: Writes clear, natural interface text and logs.
+  - **Localization Agent**: Prepares multi-locale formatting and translation maps.
+
+  ##### 6. Logic & Automation Coders
+  - **Coder**: Implements clean logic, algorithms, and modules.
+  - **Patch Agent**: Makes targeted surgical code modifications.
+  - **Toolsmith**: Automates dev tasks with helper scripts, CLIs, and utilities.
+  - **CLI Agent**: Builds terminal tools and option menus.
+  - **Terminal UX Agent**: Optimizes CLI designs and menus.
+  - **Shell Script Agent**: Writes Bash and PowerShell scripts.
+
+  ##### 7. Execution, Testing & Platform Specialists
+  - **Command Runner**: Runs commands and evaluates terminal results.
+  - **Sandbox Runner**: Tests experiments safely in isolated environments.
+  - **Build Fixer**: Fixes configuration, compiler, and bundler errors.
+  - **Package Manager Agent**: Fixes dependency conflicts and handles updates.
+  - **Dependency Fixer**: Resolves broken packages and version clashes.
+  - **Version Upgrade Agent**: Upgrades frameworks and adjusts syntax.
+  - **Compatibility Agent**: Verifies runtimes and OS/browser dependencies.
+  - **Windows Specialist**: Solves environment variables, paths, and PowerShell details.
+  - **Linux Specialist**: Resolves server setups, permissions, and bash configurations.
+  - **Android/Termux Agent**: Manages Termux packages and mobile limitations.
+  - **WSL Fixer**: Fixes permissions, network, and node versions inside WSL.
+
+  ##### 8. Debuggers & Diagnostics Experts
+  - **Debugger**: Identifies typos, logical loops, and config traps.
+  - **Error Handler**: Configures runtime try-catches and detailed error metrics.
+  - **Logging Agent**: Implements structured JSON tracing logs.
+  - **Telemetry Agent**: Tracks runtime behavior, performance, and key metrics.
+  - **Crash Log Analyst**: Traces root causes in crash stack dumps.
+  - **Stack Trace Priest**: Translates stack traces down to the exact buggy line.
+  - **Bug Reproducer**: Builds steps to recreate and verify reported errors.
+  - **Failure Analyzer**: Deciphers patterns in repeat run failures.
+  - **Regression Hunter**: Detects bugs introduced by modifications.
+
+  ##### 9. Verification & Delivery Specialists
+  - **Tester**: Writes unit, integration, and e2e test specifications.
+  - **Test Runner**: Runs verification suites and logs outcomes.
+  - **Verifier**: Audits final code against user criteria.
+  - **PR Reviewer**: Audits patches and reviews code quality.
+  - **Critic**: Challenges design flaws and weak implementations.
+  - **Reviewer**: Evaluates style guidelines and anti-slop tokens.
+  - **Refactorer**: Standardizes code cleanliness via DRY and SOLID principles.
+  - **Performance Agent**: Minimizes memory usage and layout shifts.
+  - **Cost Optimizer**: Reduces token use and hosting costs.
+  - **Token Optimizer**: Compresses context logs and structures.
+  - **Model Router**: Routes tasks to specialized models.
+  - **Prompt Engineer**: Optimizes roles and prompt constraints.
+  - **Prompt Debugger**: Troubleshoots failure points in instructions.
+  - **Safety Filter Agent**: Screens code outcomes for safety.
+  - **Security Agent**: Reviews access control and inputs.
+  - **Red Team Agent**: Proactively exploits weaknesses.
+  - **Exploit Checker**: Audits vulnerable packages and dependencies.
+  - **Config/ENV Agent**: Manages environment variables and keys.
+  - **DevOps Agent**: Deploys builds to remote staging/production.
+  - **Deployment Doctor**: Resolves cloud-stage runtime errors.
+  - **Backup Agent**: Automates database and file backups.
+  - **Recovery Agent**: Restores stable files from checkouts.
+  - **Rollback Agent**: Reverts broken database and code upgrades.
+  - **Git Agent**: Handles commits, merge conflicts, and commits.
+  - **Commit Message Agent**: Synthesizes structured git commits.
+  - **Merge Conflict Janitor**: Safely resolves structural conflicts.
+  - **Changelog Agent**: Tracks user-facing updates and history.
+  - **Docs Writer**: Generates API structures and setup directions.
+  - **Mock Data Agent**: Creates database and UI test content.
+  - **Seed Data Agent**: Populates database seed maps.
+  - **Benchmark Agent**: Measures operations per second.
+  - **Release Agent**: Publishes packages to registries.
+  - **Finalizer**: Packages outputs cleanly for the user.
+
+- **Direct Memory Synchronization**: All subagents initialized MUST read and write from `~/.munchmemory/munch_memory.json` using the `munch` MCP tools to maintain state consistency.
+- **Double-Loop Validation with Subagents**: When a subagent completes a task, the Supervisor validates its output against the global anti-regression fixes (`FIX_NNN`) before merging. If a subagent makes a mistake, the parent agent invokes `track_recurrent_mistake` to ensure the pattern is blocked globally.
 
 ---
 
