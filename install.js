@@ -63,8 +63,22 @@ skillTargets.forEach((target) => {
 
 // Copy configuration/persona files to corresponding host directories
 const docFiles = [
-  { src: 'AGENTS.md', dests: [join(homedir, '.codex/AGENTS.md')] },
-  { src: 'AGENT.md', dests: [join(homedir, '.codex/AGENT.md')] },
+  { src: 'AGENTS.md', dests: [
+      join(homedir, '.codex/AGENTS.md'),
+      join(homedir, '.config/opencode/AGENTS.md'),
+      join(homedir, '.opencode/AGENTS.md'),
+      join(homedir, '.kilocode/AGENTS.md'),
+      join(homedir, '.config/kilocode/AGENTS.md')
+    ] 
+  },
+  { src: 'AGENT.md', dests: [
+      join(homedir, '.codex/AGENT.md'),
+      join(homedir, '.config/opencode/AGENT.md'),
+      join(homedir, '.opencode/AGENT.md'),
+      join(homedir, '.kilocode/AGENT.md'),
+      join(homedir, '.config/kilocode/AGENT.md')
+    ] 
+  },
   { src: 'GEMINI.md', dests: [join(homedir, '.codex/GEMINI.md'), join(homedir, '.gemini/GEMINI.md')] },
   { src: 'CLAUDE.md', dests: [join(homedir, '.claude/CLAUDE.md')] }
 ];
