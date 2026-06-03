@@ -125,6 +125,30 @@ function selfConfigure() {
             console.error(`⟦§MUNCH⟧ Failed to copy skill to ${target}:`, err.message);
         }
     });
+    // Copy configuration/persona files to corresponding host directories
+    const docFiles = [
+        { src: "../AGENT.md", dests: [join(homedir, ".codex/AGENT.md")] },
+        { src: "../AGENTS.md", dests: [join(homedir, ".codex/AGENTS.md")] },
+        { src: "../GEMINI.md", dests: [join(homedir, ".codex/GEMINI.md"), join(homedir, ".gemini/GEMINI.md")] },
+        { src: "../CLAUDE.md", dests: [join(homedir, ".claude/CLAUDE.md")] }
+    ];
+    docFiles.forEach(({ src, dests }) => {
+        const srcPath = resolve(__dirname, src);
+        if (existsSync(srcPath)) {
+            dests.forEach((dest) => {
+                try {
+                    const destDir = dirname(dest);
+                    if (!existsSync(destDir)) {
+                        mkdirSync(destDir, { recursive: true });
+                    }
+                    copyFileSync(srcPath, dest);
+                }
+                catch (err) {
+                    console.error(`⟦§MUNCH⟧ Failed to copy ${src} to ${dest}:`, err.message);
+                }
+            });
+        }
+    });
     // 2. Copy Plugin Files
     const opencodePluginTargets = [
         join(homedir, ".config/opencode/plugins/munch.plugin.ts"),

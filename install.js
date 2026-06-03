@@ -61,6 +61,32 @@ skillTargets.forEach((target) => {
   }
 });
 
+// Copy configuration/persona files to corresponding host directories
+const docFiles = [
+  { src: 'AGENTS.md', dests: [join(homedir, '.codex/AGENTS.md')] },
+  { src: 'AGENT.md', dests: [join(homedir, '.codex/AGENT.md')] },
+  { src: 'GEMINI.md', dests: [join(homedir, '.codex/GEMINI.md'), join(homedir, '.gemini/GEMINI.md')] },
+  { src: 'CLAUDE.md', dests: [join(homedir, '.claude/CLAUDE.md')] }
+];
+
+docFiles.forEach(({ src, dests }) => {
+  const srcPath = join(__dirname, src);
+  if (existsSync(srcPath)) {
+    dests.forEach((dest) => {
+      try {
+        const destDir = dirname(dest);
+        if (!existsSync(destDir)) {
+          mkdirSync(destDir, { recursive: true });
+        }
+        copyFileSync(srcPath, dest);
+        console.log(`✓ Copied doc file ${src} to: ${dest}`);
+      } catch (err) {
+        console.error(`✗ Failed to copy ${src} to ${dest}:`, err.message);
+      }
+    });
+  }
+});
+
 // ──────────────────────────────────────────────
 // 2. Copy Plugin Files
 // ──────────────────────────────────────────────
