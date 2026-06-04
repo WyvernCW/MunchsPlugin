@@ -133,9 +133,30 @@ When the user moves the project workspace, clones it to a new path, or starts a 
 - **Transfer Learning**: Do not discard past errors or fixes just because the project resides in a new directory. Apply the lessons, fixes, and style preferences from the previous project to the current active workspace, treating it as an analogical continuation.
 - **Self-Improving Memory Engine Strategy**: Map file patterns, language structures, and framework layouts. If a compilation bug was solved on `/home/user/example/src/main.rs`, and the current folder is `/home/user/new-project/src/main.rs`, translate the lessons and enforce the same fixes to prevent regression.
 
+### A. Cross-Project Topology Maps & Folder Alignment
+- **Path Offset Delta Matching**: If the root folder has shifted (e.g., from `/Users/biman/projects/app-v1` to `/Users/biman/dev/app-v2`), identify the parent delta and translate the file structures. Map key directories like `src/components` to `lib/components` or `app/routes` to `src/pages` based on folder signatures.
+- **File Signature Mapping**: When starting in a new repository, check the file extension topology (e.g., `.ts`, `.rs`, `.kt`, `.py`) and configurations (`package.json`, `Cargo.toml`, `build.gradle.kts`) to automatically link its category to previous projects.
+
+### B. Multi-Repository Tech Stack Synthesis
+- **Fuzzy Analogy Engine**: Query the lessons registry using Jaccard fuzzy token similarity. If project B throws a compilation error similar to one in project A (even with different imports or module names), run a cross-project query to extract and adapt project A's fix.
+- **Automatic Gradle & Compiling Sync**: If a Gradle flag or compiler options fix was applied in project A, auto-inject or check that compiler setting in project B when compilation failures occur.
+
+### C. Architectural Decision Record (ADR) Sync
+- **Preferred Design Tokens**: If a layout structure, HSL color system, typography baseline, or routing layout was accepted by the user in project A, load it as the default design archetype for project B.
+- **Structural Strategy Consistency**: Track the user's architectural choices (e.g., Zustand vs Redux, SQLite vs Postgres, Clean Architecture vs Flat structure). Prevent proposing rejected architectures from past projects.
+
 ---
 
-## 11. Dynamic Knowledge Synthesis Verification Checklist
+## 11. Global Codebase Directory & Project DNA Registry
+
+To build a unified brain across workspaces, the SIME engine maintains metadata signatures of all indexed repositories in `munch_memory.json`'s `projectModel` schema:
+
+- **Project Metadata**: Tracks the last active timestamp, absolute path, primary language, active tools, environment parameters (WSL, terminal type, node version), and key dependency versions.
+- **Global Search & Retrieve**: When the agent encounters a task in a brand-new project, it automatically scans the Project DNA Registry to fetch analogous implementations, preventing cold-start assumptions.
+
+---
+
+## 12. Dynamic Knowledge Synthesis Verification Checklist
 
 Before wrapping up a work cycle, the agent must run through these verification steps to guarantee memory synchronization:
 
@@ -143,6 +164,7 @@ Before wrapping up a work cycle, the agent must run through these verification s
 - **Check B**: Has the user profile been updated if the user specified a new framework version or lint rule?
 - **Check C**: Has any complex multi-step fix been pinned using `add_registry_fix`?
 - **Check D**: Have active tasks and blockers been registered via `update_timeline_task`?
-- **Check E**: Has the session been summarized and saved via `log_conversation`?
+- **Check E**: Has the project DNA registry been updated with the current project's active dependencies and directories layout?
+- **Check F**: Has the session been summarized and saved via `log_conversation`?
 
 **§STATUS: ACTIVE v1.0 | ANTI_REGRESSION: ∞ON | MEMORY_ENGINE: PERSISTENT**
