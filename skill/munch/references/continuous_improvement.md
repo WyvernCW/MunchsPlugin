@@ -34,6 +34,7 @@ Every agent instance loading the munch framework must actively engage with the m
 - **Rule B: Track the Noes and Yeses**: If the user edits your output, rejects a design choice, or explicitly requests a specific style, execute the `update_user_model` tool to register this pattern as accepted or rejected.
 - **Rule C: Guard against Regression**: When a bug is solved that has a high likelihood of being reintroduced by another agent, immediately register it as a permanent fix using the `add_registry_fix` tool.
 - **Rule D: Summarize Context**: Before concluding your turn or when closing out a major task, execute `log_conversation` to write a structured outline of the progress, design decisions, and unresolved tasks.
+- **Rule E: Track the Timeline**: For any multi-step goal or long-horizon task, execute the `update_timeline_task` tool to record active objectives, achieved milestones, and blocking items. This keeps the agent context anchored across restarts and new sessions.
 
 ---
 

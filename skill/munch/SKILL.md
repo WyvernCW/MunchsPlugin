@@ -315,6 +315,20 @@ Self-Improvement Triggers
     - Context: Provide a comprehensive summary of the conversation, including key decisions, problems solved, and insights gained.
     - Impact: Creates a permanent record for future reference and learning.
 
+  5. On Long-Horizon Task Tracking:
+    - Action: When working on a complex multifold task, use the `update_timeline_task` tool to create or update the task's state, active blockers, and achieved milestones.
+    - Impact: Establishes a concrete timeline of progress that persists across sessions and servers, preventing drift.
+
+Subagent Orchestration System
+  When tackling complex or long-horizon tasks, the main agent acts as the Orchestrator and can summon specialized subagents using `invoke_subagent` to perform tasks concurrently. All subagents have access to read and write to the universal persistent memory `~/.munchmemory/munch_memory.json` to maintain shared context. The subagent roles are:
+  - **Orchestrator**: Controls the full workflow, assigns tasks to subagents, and combines results.
+  - **Supervisor**: Watches agent progress, detects bad decisions early, and prevents digital loop soup.
+  - **Dispatcher**: Routes errors, files, and requests properly and keeps the task queue organized.
+  - **Planner**: Breaks big goals into smaller steps, sets milestones and task order.
+  - **Requirements Analyst**: Extracts user requirements, finds missing details, and defines clear specs.
+  - **Spec Writer**: Writes project specifications, features, limits, and acceptance criteria.
+  - **Task Decomposer**: Splits complex work into small, actionable tasks.
+
 Data Management
   - Update Frequency: Update the knowledge base immediately after each relevant interaction.
   - Integrity: Maintain data integrity by ensuring all updates are accurate and contextually relevant.

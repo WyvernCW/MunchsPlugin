@@ -387,7 +387,8 @@ const defaultMemory = {
     registryFixes: [],
     learnedLessons: [],
     conversationSummaries: [],
-    recurrentMistakes: []
+    recurrentMistakes: [],
+    timeline: []
 };
 function readPersistentMemory() {
     try {
@@ -396,6 +397,9 @@ function readPersistentMemory() {
             const parsed = JSON.parse(data);
             if (!parsed.recurrentMistakes) {
                 parsed.recurrentMistakes = [];
+            }
+            if (!parsed.timeline) {
+                parsed.timeline = [];
             }
             return parsed;
         }
@@ -409,8 +413,9 @@ function writePersistentMemory(memory) {
     try {
         const MAX_LESSONS = 50;
         const MAX_FIXES = 30;
-        const MAX_CONVERSATIONS = 10;
+        const MAX_CONVERSATIONS = 30; // Increased to 30 for deeper history
         const MAX_MISTAKES = 15;
+        const MAX_TIMELINE_TASKS = 30;
         // Prune learned lessons (keep highest occurrences, then most recent)
         if (memory.learnedLessons.length > MAX_LESSONS) {
             memory.learnedLessons.sort((a, b) => {
@@ -442,6 +447,11 @@ function writePersistentMemory(memory) {
         if (memory.recurrentMistakes && memory.recurrentMistakes.length > MAX_MISTAKES) {
             memory.recurrentMistakes.sort((a, b) => b.recurrenceCount - a.recurrenceCount);
             memory.recurrentMistakes = memory.recurrentMistakes.slice(0, MAX_MISTAKES);
+        }
+        // Prune timeline tasks
+        if (memory.timeline && memory.timeline.length > MAX_TIMELINE_TASKS) {
+            memory.timeline.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+            memory.timeline = memory.timeline.slice(0, MAX_TIMELINE_TASKS);
         }
         if (!existsSync(MEMORY_DIR)) {
             mkdirSync(MEMORY_DIR, { recursive: true });
@@ -588,9 +598,20 @@ function createMcpServer() {
             }
             if (memory.conversationSummaries.length > 0) {
                 memoryBlock += `### Past Conversation Contexts\n`;
-                const recentConversations = memory.conversationSummaries.slice(-3);
+                const recentConversations = memory.conversationSummaries.slice(-10);
                 recentConversations.forEach((c) => {
                     memoryBlock += `- Summary (${c.timestamp}): ${translatePaths(c.summary)}\n`;
+                });
+                memoryBlock += "\n";
+            }
+            if (memory.timeline && memory.timeline.length > 0) {
+                memoryBlock += `### Long-Horizon Task Timeline\n`;
+                memory.timeline.forEach((t) => {
+                    const blockersStr = t.blockers.length > 0 ? ` (Blockers: ${t.blockers.join(", ")})` : "";
+                    memoryBlock += `- [${t.status.toUpperCase()}] **${t.name}**${blockersStr}\n`;
+                    if (t.milestones && t.milestones.length > 0) {
+                        memoryBlock += `  * Milestones: ${t.milestones.join(" -> ")}\n`;
+                    }
                 });
                 memoryBlock += "\n";
             }
@@ -1117,6 +1138,56 @@ function createMcpServer() {
                 {
                     type: "text",
                     text: `✓ Recurrent pitfall recorded. Symptom: ${symptom}\nRecurrence Count: ${existing.recurrenceCount}\nSuccessful Fix: ${existing.successfulFix || "Unresolved"}`
+                }
+            ]
+        };
+    });
+    // ── Tool: update_timeline_task ────────────────
+    server.registerTool("update_timeline_task", {
+        description: "Create or update a long-horizon task inside the persistent memory timeline. " +
+            "Use this to record active goals, milestones, or current blockers, allowing " +
+            "future sessions to immediately resume state without context drift.",
+        inputSchema: {
+            name: z.string().describe("Name of the task/goal"),
+            status: z.enum(["active", "completed", "blocked", "deferred"]).describe("Current status of the task"),
+            milestones: z.array(z.string()).optional().describe("Key milestones achieved or planned for this task"),
+            blockers: z.array(z.string()).optional().describe("List of active issues blocking progress on this task"),
+        },
+    }, async ({ name, status, milestones, blockers }) => {
+        const memory = readPersistentMemory();
+        if (!memory.timeline) {
+            memory.timeline = [];
+        }
+        const cleanName = name.trim();
+        let existing = memory.timeline.find((t) => t.name.toLowerCase() === cleanName.toLowerCase());
+        if (existing) {
+            existing.status = status;
+            existing.lastUpdated = new Date().toISOString();
+            if (milestones) {
+                existing.milestones = Array.from(new Set([...existing.milestones, ...milestones]));
+            }
+            if (blockers) {
+                existing.blockers = blockers;
+            }
+        }
+        else {
+            existing = {
+                id: `TASK_${Date.now()}`,
+                name: cleanName,
+                status,
+                milestones: milestones ?? [],
+                blockers: blockers ?? [],
+                lastUpdated: new Date().toISOString()
+            };
+            memory.timeline.push(existing);
+        }
+        writePersistentMemory(memory);
+        showNotification("Timeline Task Updated", `Task: ${name} [${status.toUpperCase()}]`);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `✓ Long-horizon task updated in timeline: ${name} (${status.toUpperCase()})`
                 }
             ]
         };
