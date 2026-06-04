@@ -4,11 +4,31 @@
  * Cross-platform installer to copy skills/plugins and configure MCP host files automatically.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, cpSync, unlinkSync } from 'fs';
+import fs from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import os from 'os';
+
+const { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, unlinkSync } = fs;
+
+function cpSync(src, dest) {
+  if (fs.cpSync) {
+    fs.cpSync(src, dest, { recursive: true });
+    return;
+  }
+  const stats = fs.statSync(src);
+  if (stats.isDirectory()) {
+    if (!existsSync(dest)) {
+      mkdirSync(dest, { recursive: true });
+    }
+    fs.readdirSync(src).forEach((child) => {
+      cpSync(join(src, child), join(dest, child));
+    });
+  } else {
+    copyFileSync(src, dest);
+  }
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 let homedir = os.homedir();
