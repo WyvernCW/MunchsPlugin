@@ -7,6 +7,15 @@ boot: auto_load | load_skill_integration
 
 This supporting skill establishes parameters for high-end web visual aesthetics, spring physics, layout transitions, and micro-animations. It translates visual design ideas into premium motion-driven interfaces.
 
+```mermaid
+graph TD
+  UserTrigger["1. User Interaction Event"] --> SelectPhysics["2. Select Motion Token (Spring/Sleek/Elastic)"]
+  SelectPhysics --> ComputeFrames["3. Compute Transform & Opacity Transitions"]
+  ComputeFrames --> CheckPref["4. Check prefers-reduced-motion media query"]
+  CheckPref -->|Reduced| RenderFade["5. Apply Simple Fade Transition"]
+  CheckPref -->|Normal| RenderSpring["6. Render GPU-Accelerated Spring Animations"]
+```
+
 ---
 
 ## 1. Spring Physics and Easing Tokens

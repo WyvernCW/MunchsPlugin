@@ -7,6 +7,16 @@ boot: auto_load | load_skill_integration
 
 This supporting skill establishes standard guidelines for real-time state synchronization, offline-first databases, Conflict-Free Replicated Data Types (CRDTs), and transactional event sourcing.
 
+```mermaid
+graph TD
+  StateChange["1. Local State Modification"] --> OptimisticUI["2. Render Optimistic UI Update"]
+  OptimisticUI --> WriteQueue["3. Persist Event Store in IndexedDB/SQLite"]
+  WriteQueue --> NetworkSync{"4. Network Connection Available?"}
+  NetworkSync -->|No| QueueEvents["5. Keep Events in Queue & Retain Offline State"]
+  NetworkSync -->|Yes| SyncServer["6. Replicate to Remote Host via Backoff Sync"]
+  SyncServer --> ResolveConflict["7. Apply CRDT Merge (OR-Set/LWW) on Conflict"]
+```
+
 ---
 
 ## 1. Offline-First Synchronization Architecture

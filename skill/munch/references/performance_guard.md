@@ -7,6 +7,16 @@ boot: auto_load | load_skill_integration
 
 This supporting skill establishes performance standards, profiling metrics, algorithmic complexity gates, and caching protocols. It prevents optimization decay and guarantees light, fast runtimes.
 
+```mermaid
+graph TD
+  CodeDraft["1. Code Implementation Draft"] --> ComplexityGate{"2. Big-O Complexity Check (<= O(N log N))"}
+  ComplexityGate -->|Fail| Refactor["3. Refactor Loops / Optimize Lookups"]
+  ComplexityGate -->|Pass| RunBenchmark["4. Execute Telemetry Benchmarking Loop"]
+  RunBenchmark --> CheckLimits{"5. Execution Time < 100ms & Stable Heap?"}
+  CheckLimits -->|No| Refactor
+  CheckLimits -->|Yes| CacheStore["6. Integrate LRU Cache & Debounce Listeners"]
+```
+
 ---
 
 ## 1. Algorithmic Complexity Gates (Big-O limits)

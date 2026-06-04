@@ -7,6 +7,16 @@ boot: auto_load | load_skill_integration
 
 This supporting skill establishes parameters for secure script execution, local sandboxing, dynamic runtime checks, and exploit auditing. It protects the host machine from unverified executions and logic leaks.
 
+```mermaid
+graph TD
+  Start["1. Subprocess/Script Trigger"] --> SecurityScan["2. Static Exploit Scan & Taint Check"]
+  SecurityScan --> CheckSafety{"3. Safe to Execute?"}
+  CheckSafety -->|No| BlockRun["4. Block Execution & Flag Blocker"]
+  CheckSafety -->|Yes| LaunchSandbox["5. Spin up isolated Sandbox (Container/Micro-VM)"]
+  LaunchSandbox --> ApplyLimits["6. Apply CPU/Memory limits & Telemetry"]
+  ApplyLimits --> ReturnResult["7. Return Clean Sandbox Output"]
+```
+
 ---
 
 ## 1. Sandbox Isolation Requirements
