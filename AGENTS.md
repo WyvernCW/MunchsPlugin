@@ -30,6 +30,7 @@ rules:
 - Read `references/heavy_engineering.md` to activate rules for handling complex system configurations, massive compilations, kernels, custom ROMs, and long-horizon tasks.
 - Read `references/continuous_improvement.md` to activate performance auditing, double-loop learning, and subagent specialization details.
 - Read `references/persistent_memory.md` to activate the Self-Improving Memory Engine (SIME), path mapping, and task timeline persistence.
+- Read `references/context_disambiguation.md` to activate Chain of Thought (CoT) reasoning, implicit constraint deduction, and technology selection strategy.
 - Read `references/polyglot_index.md` to load the worldwide language classification index (comprising 100+ core languages, shell environments, blockchain models, esoteric engines).
 - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
 - You MUST immediately load the persistent memory (`munch_memory.json`) by calling the `load_skill` tool at the very beginning of the session. You MUST summarize the recalled context (`⟦§PERSISTENT_MEMORY_RECALL⟧`), understand past lessons, user profiles, recurrent pitfalls, and active regression fixes, and explicitly state how you will adapt to them in the current workspace.
