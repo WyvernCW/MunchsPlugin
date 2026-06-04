@@ -476,13 +476,24 @@ function readPersistentMemory(): PersistentMemory {
     if (existsSync(MEMORY_PATH)) {
       const data = readFileSync(MEMORY_PATH, "utf-8");
       const parsed = JSON.parse(data);
-      if (!parsed.recurrentMistakes) {
-        parsed.recurrentMistakes = [];
-      }
-      if (!parsed.timeline) {
-        parsed.timeline = [];
-      }
-      return parsed;
+      
+      const merged: PersistentMemory = {
+        userModel: {
+          skillLevel: parsed.userModel?.skillLevel ?? defaultMemory.userModel.skillLevel,
+          preferredStyle: parsed.userModel?.preferredStyle ?? defaultMemory.userModel.preferredStyle,
+          techStack: parsed.userModel?.techStack ?? defaultMemory.userModel.techStack,
+          rejectedPatterns: parsed.userModel?.rejectedPatterns ?? defaultMemory.userModel.rejectedPatterns,
+          acceptedPatterns: parsed.userModel?.acceptedPatterns ?? defaultMemory.userModel.acceptedPatterns,
+          vocabulary: parsed.userModel?.vocabulary ?? defaultMemory.userModel.vocabulary,
+        },
+        registryFixes: parsed.registryFixes ?? defaultMemory.registryFixes,
+        learnedLessons: parsed.learnedLessons ?? defaultMemory.learnedLessons,
+        conversationSummaries: parsed.conversationSummaries ?? defaultMemory.conversationSummaries,
+        recurrentMistakes: parsed.recurrentMistakes ?? defaultMemory.recurrentMistakes,
+        timeline: parsed.timeline ?? defaultMemory.timeline,
+      };
+      
+      return merged;
     }
   } catch (err) {
     console.error("⟦§MUNCH⟧ Failed to read persistent memory:", err);
