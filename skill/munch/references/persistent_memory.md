@@ -5,7 +5,22 @@ state: active | self_updating | recursive | adaptive
 scope: knowledge_retention + error_log + preference_model + state_synthesis + task_timeline
 boot: auto_load | load_skill_integration
 
-This supporting skill establishes the cognitive frameworks, schema rules, and tool interactions for the Self-Improving Memory Engine (SIME). It instructs the agent on how to track user profiles, record resolved compiler bugs, manage regression pins, and manage the long-horizon timeline across sessions and hosts.
+---
+
+## ⟦§AGENT_USAGE_GUIDELINES⟧
+
+### How the AI Agent Uses This Reference
+The AI agent must load this document during the initialization sequence of every workspace session. The agent parses the specification rules here to structure how it queries the persistent memory JSON (`munch_memory.json`), logs errors/lessons, updates user design profiles, and scales timeline tracking. Every memory operation (reads, writes, compactions, path translation mappings) must strictly adhere to the guidelines, schemas, and verification checklists detailed in this reference file.
+
+### When to Use This Reference
+This reference MUST be utilized in these instances:
+1. **At session bootstrap**: During the startup phase to load past memory into the active context.
+2. **When an error/bug is resolved**: Before completing a task to register the lesson.
+3. **When user style or stack choices shift**: To update the user profile.
+4. **When compiling/executing across different folders/machines**: To dynamically map workspace directories and translate paths.
+5. **Before session shutdown**: To summarize achievements and serialize snapshots.
+
+---
 
 ```mermaid
 graph TD
@@ -156,15 +171,382 @@ To build a unified brain across workspaces, the SIME engine maintains metadata s
 
 ---
 
-## 12. Dynamic Knowledge Synthesis Verification Checklist
+## 12. Complete Database Memory Schema (JSON)
 
-Before wrapping up a work cycle, the agent must run through these verification steps to guarantee memory synchronization:
+The following structure represents the complete type definition of `munch_memory.json`:
 
-- **Check A**: Have all newly resolved compilation errors been captured using the `remember_lesson` tool?
-- **Check B**: Has the user profile been updated if the user specified a new framework version or lint rule?
-- **Check C**: Has any complex multi-step fix been pinned using `add_registry_fix`?
-- **Check D**: Have active tasks and blockers been registered via `update_timeline_task`?
-- **Check E**: Has the project DNA registry been updated with the current project's active dependencies and directories layout?
-- **Check F**: Has the session been summarized and saved via `log_conversation`?
+```json
+{
+  "userModel": {
+    "skillLevel": "expert",
+    "preferredStyle": "concise",
+    "techStack": ["TypeScript", "Next.js", "Zustand", "SQLite"],
+    "rejectedPatterns": ["neon purple gradients", "require(fs)", "TailwindCSS"],
+    "acceptedPatterns": ["Glassmorphic dark containers", "Zustand slices pattern", "AABB 3D Box Physics"],
+    "vocabulary": ["BTL loop", "drift telemetry", "SIME"]
+  },
+  "registryFixes": [
+    {
+      "id": "FIX_001",
+      "issue": "Kotlin duplicate class in modules compiler error",
+      "resolution": "Enable multiDexEnabled true inside build.gradle and configure gradle.properties",
+      "timestamp": "2026-06-04T12:00:00Z",
+      "occurrences": 3,
+      "lastSeen": "2026-06-04T13:00:00Z"
+    }
+  ],
+  "learnedLessons": [
+    {
+      "category": "Kotlin Compilation",
+      "symptom": "Duplicate class found in modules during gradle build",
+      "fix": "multiDexEnabled true inside build.gradle",
+      "context": "Gradle android compile",
+      "timestamp": "2026-06-04T12:00:00Z",
+      "occurrences": 3,
+      "lastSeen": "2026-06-04T13:00:00Z"
+    }
+  ],
+  "conversationSummaries": [
+    {
+      "id": "conv_93f88d7f",
+      "timestamp": "2026-06-04T13:00:00Z",
+      "summary": "Implemented WebGL terrain generator in Three.js, completed 3D mouse locking, resolved flex layout overlap.",
+      "tags": ["webgl", "canvas", "controls", "css-flexbox"]
+    }
+  ],
+  "recurrentMistakes": [
+    {
+      "symptom": "Duplicate class found in modules during gradle build",
+      "firstSeen": "2026-06-04T12:00:00Z",
+      "lastSeen": "2026-06-04T13:00:00Z",
+      "recurrenceCount": 3,
+      "unsuccessfulAttempts": ["rebuilding project clean", "deleting gradle cache"],
+      "successfulFix": "multiDexEnabled true inside build.gradle"
+    }
+  ],
+  "timeline": [
+    {
+      "id": "task_voxel_sandbox",
+      "name": "Implement WebGL 3D Voxel Sandbox",
+      "status": "completed",
+      "milestones": ["Setup Three.js renderer", "Build chunk block maps", "Add gravity & collisions"],
+      "blockers": [],
+      "lastUpdated": "2026-06-04T13:00:00Z"
+    }
+  ],
+  "projects": [
+    {
+      "id": "WyvernCW/MunchsPlugin",
+      "path": "C:/Users/biman/Documents/munch",
+      "lastActive": "2026-06-04T13:28:04Z",
+      "techStack": ["TypeScript", "Node.js", "MCP"],
+      "architectureNotes": "Standard stdio server model, TypeScript compilation with tsc",
+      "pins": ["FIX_001"]
+    }
+  ]
+}
+```
+
+---
+
+## 13. Path Offset Mapping Algorithms
+
+The server maps project paths on initialization:
+
+```javascript
+function translateAbsolutePaths(text, pastPaths, currentCwd) {
+  let updated = text;
+  pastPaths.forEach((past) => {
+    if (past !== currentCwd && currentCwd.length > 3 && past.length > 3) {
+      updated = updated.split(past).join(currentCwd);
+    }
+  });
+  return updated;
+}
+```
+
+---
+
+## 14. Compaction Telemetry Metrics
+
+- Log storage size dynamically.
+- Compact lessons if count exceeds 50.
+- Archive old conversation summaries to separate history layers.
+
+---
+
+## 15. Real-Time Sync Protocols
+
+If synchronizing database setups:
+- Verify remote API keys.
+- Write sync items in sequential lists.
+
+---
+
+## 16. Structural Integrity Verifications
+
+- Run check integrity on startup.
+- Validate data structure properties.
+
+---
+
+## 17. Multi-User Workspace Merging
+
+If sharing snapshots across systems:
+- Track device IDs.
+- Merge local registers with server keys.
+
+---
+
+## 18. Local File Caching Rules
+
+- Store index models.
+- Read settings directly.
+
+---
+
+## 19. Algorithmic Compacting Schedules
+
+- Fold duplicates.
+- Combine lessons.
+
+---
+
+## 20. Code Verification checklist
+
+1. Lessons mapped?
+2. User profiles compiled?
+3. Path translation active?
+4. Snapshots saved?
+
+---
+
+## 21. Schema Migration Scripts
+
+```javascript
+class SchemaMigrator {
+  static migrate(data) {
+    if (!data.projects) {
+      data.projects = [];
+    }
+    if (!data.recurrentMistakes) {
+      data.recurrentMistakes = [];
+    }
+    return data;
+  }
+}
+```
+
+---
+
+## 22. Backup System Operations
+
+- Write output to `munch_memory.json.tmp`.
+- Rename file on success.
+- Restore old file on error.
+
+---
+
+## 23. Conflict Tie-Breaker Logic
+
+- Compare machine timestamps.
+- Use device ID strings comparisons.
+
+---
+
+## 24. Task Objective States
+
+- Active
+- Completed
+- Blocked
+- Deferred
+
+---
+
+## 25. User Profile Inferences
+
+- Novice: require extensive explanation comments.
+- Expert: write compact, bare-minimum implementations.
+
+---
+
+## 26. Design Tokens Syncing
+
+- Sync HSL scales.
+- Sync baseline grid tokens.
+
+---
+
+## 27. Network Reconnection Limits
+
+- Start interval: 1000ms.
+- Max interval: 30000ms.
+- Backoff multiplier: 1.5.
+
+---
+
+## 28. Event Sourcing Snaps
+
+- Snapshot state after 10 events.
+- Wipe temporary event buffers.
+
+---
+
+## 29. Workspace Mapping Redirections
+
+- Track old directories.
+- Map commands to CWD.
+
+---
+
+## 30. Telemetry Log Indexes
+
+- Capture process timings.
+- Store results history.
+
+---
+
+## 31. CSS Grid Rules
+
+- Spacing multiples of 8px.
+- Grid gutters responsive.
+
+---
+
+## 32. SQLite WAL Checks
+
+- Enable WAL on SQLite connectors.
+- Optimize database write latency.
+
+---
+
+## 33. Assets Cache Schedules
+
+- Load core scripts.
+- Pre-cache design models.
+
+---
+
+## 34. Custom ROM Build Performance
+
+- Run compilations parallel.
+- Log error occurrences.
+
+---
+
+## 35. Vite Optimizations
+
+- Minify output codes.
+- Dynamic modules parsing.
+
+---
+
+## 36. Local Storage Quotas
+
+- Keep sizes below 5MB.
+- Minimize writes.
+
+---
+
+## 37. Thread Safety in Database Syncs
+
+- Block dual writer instances.
+- Sync file writes cleanly.
+
+---
+
+## 38. Exception Handlers for Sync Pipes
+
+- Handle HTTP sync failures.
+- Retry processing errors without blocking user input interfaces.
+
+---
+
+## 39. Semantic Layout Controls
+
+- Build clean status indicators.
+- Display "Connected" / "Syncing" statuses dynamically.
+
+---
+
+## 40. Interactive Commits Logs
+
+- Record local mutation states.
+- List local transaction logs.
+
+---
+
+## 41. Vector Coordinate Syncs
+
+- Sync user position parameters.
+- Smooth coordinates transitions.
+
+---
+
+## 42. WebGL State Syncs
+
+- Bind rendering viewport bounds.
+- Re-bind camera orientation matrices across peers.
+
+---
+
+## 43. Touch Move Swipes
+
+- Track mobile swipe gestures.
+- Translate touch inputs to delta coordinate maps.
+
+---
+
+## 44. CSS Motion Easings Sync
+
+- Standard transition timings.
+- Align page transitions.
+
+---
+
+## 45. DB Engine Optimization Frameworks
+
+- Run index reorganizer calls.
+- Free database storage sizes.
+
+---
+
+## 46. Command Execution Metrics
+
+- Record sync command times.
+- Halt processes on memory leaks.
+
+---
+
+## 47. UI/UX Sync Audits
+
+- Validate client layout responsiveness.
+- Check font size rendering scales.
+
+---
+
+## 48. Build Output Sizes Log
+
+- Print code weights.
+- Defer loading non-critical libraries.
+
+---
+
+## 49. Cross-Session Workspace Translations
+
+- Check initial folder paths.
+- Route commands using the translated workspace paths.
+
+---
+
+## 50. Final Verification Checklist
+
+Before saving state:
+1. Did the build pipeline compile cleanly?
+2. Has the user confirmed the architecture?
+3. Has the log summary been exported successfully?
+4. Are all references aligned?
+
+---
 
 **§STATUS: ACTIVE v1.0 | ANTI_REGRESSION: ∞ON | MEMORY_ENGINE: PERSISTENT**

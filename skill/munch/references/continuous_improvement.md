@@ -5,7 +5,21 @@ state: active | self_updating | recursive | adaptive
 scope: performance_audit + error_diagnosis + double_loop_learning + subagent_coordination
 boot: auto_load | load_skill_integration
 
-This supporting skill establishes the cognitive frameworks, lints, loops, and audit gates for maintaining execution quality. It works in tandem with the Self-Improving Memory Engine (SIME) documented in [persistent_memory.md](file:///C:/Users/biman/Documents/munch/skill/munch/references/persistent_memory.md) to ensure all turns are evaluated against past sessions, preventing regression and cognitive drift.
+---
+
+## ⟦§AGENT_USAGE_GUIDELINES⟧
+
+### How the AI Agent Uses This Reference
+The AI agent must parse this reference file to govern its self-correction loops, code quality gates, compilation diagnostics, and subagent organization layouts. When compilation errors occur, or if a user style/pattern is rejected, the agent consults this document to run double-loop learning, perform task decompositions, and coordinate subagent trees to resolve architectural blockages.
+
+### When to Use This Reference
+This reference MUST be utilized in these instances:
+1. **At startup**: To align active goals and register the specialization directory.
+2. **Prior to emitting any response**: To audit the draft against the metacognitive gates.
+3. **Upon build/compilation failure**: To launch the error diagnosis, patch, and verification loops.
+4. **When task complexity is high**: To coordinate, delegate, and supervise specialized subagents.
+
+---
 
 ```mermaid
 graph TD
@@ -67,7 +81,9 @@ Double-loop learning is critical for long-horizon agent stability. Rather than s
 - **Double-Loop (Strategic Refactoring)**:
   - Goal: Solve the root cause of why this class of errors is frequent.
   - Action: Evaluate if the selected framework, database connector, or path routing is fundamentally flawed.
-  - Persistence: Propose architectural changes to the user and log them in the conversation summary as key de---
+  - Persistence: Propose architectural changes to the user and log them in the conversation summary as key decisions.
+
+---
 
 ## 5. Anti-Drift Threshold Metrics
 
@@ -202,5 +218,332 @@ When executing complex or large workloads, the Orchestrator subagent coordinates
 - **Benchmark Agent**: Measures operations per second.
 - **Release Agent**: Publishes packages to registries.
 - **Finalizer**: Packages outputs cleanly for the user.
+
+---
+
+## 8. Compilation Error Diagnosis Framework (Algorithm)
+
+The agent runs this diagnostic cycle to parse stack traces:
+
+```javascript
+class ErrorDiagnoser {
+  static parseTrace(stackTrace) {
+    const errorPattern = /([a-zA-Z0-9_\-\.\/]+):(\d+):(\d+) - error TS\d+: (.+)/;
+    const match = stackTrace.match(errorPattern);
+    if (match) {
+      return {
+        file: match[1],
+        line: parseInt(match[2]),
+        column: parseInt(match[3]),
+        message: match[4]
+      };
+    }
+    return null;
+  }
+}
+```
+
+---
+
+## 9. Metacognitive Audit Implementation
+
+Ensure all code passes the internal quality gate:
+
+- Check variables uniqueness.
+- Check code DRY patterns.
+- Confirm HSL design token matching.
+
+---
+
+## 10. Verification Loop Timings
+
+- Max validation time limit: 60s.
+- Clear cached files before re-running test suites.
+
+---
+
+## 11. Subagent Coordination Rules
+
+- Restrict thread depths to 3 levels.
+- Wipe subagent memory logs upon termination.
+
+---
+
+## 12. Local Workspace Redirects
+
+- Track target folders.
+- Translate CLI environments.
+
+---
+
+## 13. System Call Block lists
+
+- Enforce write boundaries.
+- Block parent route configurations.
+
+---
+
+## 14. Performance Bounds Telemetry
+
+- Run benchmark checks on critical paths.
+- Enforce memory profiling loops.
+
+---
+
+## 15. Double-Loop Refactoring Standards
+
+If a module fails compilation three times:
+- Halt tactical tweaks.
+- Redesign class inheritance or API contracts.
+
+---
+
+## 16. Code Obfuscation Prevention
+
+- Block base64 code generation.
+- Enforce human-readable layout spacing.
+
+---
+
+## 17. Safe IPC Channels
+
+- Limit sockets to localhost boundaries.
+- Reject plain socket streams.
+
+---
+
+## 18. Temporary Directory Wipes
+
+- Clean build artifacts before committing files.
+- Run folder cleanup scripts.
+
+---
+
+## 19. Dependency Verification Checks
+
+- Verify integrity parameters in package manifests.
+- Warn on missing lockfiles.
+
+---
+
+## 20. Code Verification checklist
+
+1. Compilation passed?
+2. Audit checklist met?
+3. Specializations assigned?
+4. Timeline logs updated?
+
+---
+
+## 21. Dynamic Taint Analyser
+
+Run a taint check model to block user controlled inputs from execution pipes.
+
+---
+
+## 22. Safe Script Wrappers
+
+- Write bash scripts with `set -euo pipefail`.
+- Use clean catch statements in power shell.
+
+---
+
+## 23. Obfuscated Logic Blockers
+
+- Scan files for heavy base64 strings.
+- Refuse executing obfuscated code snippets.
+
+---
+
+## 24. Dependency Locking Requirements
+
+- Always inspect lockfiles (`package-lock.json`, `Cargo.lock`).
+- Verify checksum bounds.
+
+---
+
+## 25. Host Telemetry Log Audits
+
+- Record execution timelines.
+- Log exit signals cleanly.
+
+---
+
+## 26. Dynamic Threat Mapping
+
+- Profile process behaviors.
+- Halt executions showing recursion indicators.
+
+---
+
+## 27. Sandboxed Temp Directories
+
+Ensure that all file operations executed during test verification run in a isolated temp space.
+
+---
+
+## 28. Port Scanner Telemetry
+
+- Automatically scan open ports.
+- Kill tasks binding to unauthorized ports.
+
+---
+
+## 29. Executable Checksums Checks
+
+- Verify local Node binary hashes.
+- Halt execution if signature mismatch occurs.
+
+---
+
+## 30. Third-Party Registry Blocklists
+
+- Maintain blocklists of known compromise repositories.
+- Scan package versions against active security updates.
+
+---
+
+## 31. Safe API Access Hooks
+
+- Enforce credential loading via process environments.
+- Reject raw key inputs.
+
+---
+
+## 32. OS Sandbox Profiles
+
+- Map configurations to SELinux profiles.
+- Configure AppArmor restrictions for Linux runtimes.
+
+---
+
+## 33. Subprocess Thread Allocation Limits
+
+- Restrict thread pools.
+- Block fork loops.
+
+---
+
+## 34. Secure Database Connector Rules
+
+- Bind SQLite connections strictly to local files.
+- Reject tcp network setups unless authenticated.
+
+---
+
+## 35. File Permissions Verifier
+
+- Enforce standard `chmod 644` files.
+- Limit executable directories scope.
+
+---
+
+## 36. Memory Leak Traps
+
+- Trace closure references.
+- Log heap snapshots dynamically.
+
+---
+
+## 37. SSH Key Protections
+
+- Block reading key files (`~/.ssh/*`).
+- Enforce runtime locks.
+
+---
+
+## 38. Compiler Exploit Protections
+
+- Set buffer overflow compiler flags.
+- Enforce address space layout randomization.
+
+---
+
+## 39. Dynamic Package Lock Auditing
+
+- Inspect dependency upgrades.
+- Warn when direct dependency versions differ.
+
+---
+
+## 40. Root Execution Deny Rule
+
+- Never execute as administrator or root.
+- Demote process ownerships.
+
+---
+
+## 41. Remote Registry Mirror Guards
+
+- Verify SSL keys of registries.
+- Fail on certificate validation errors.
+
+---
+
+## 42. Process Hierarchy Scans
+
+- Watch child processes trees.
+- Enforce parent-process-termination hooks.
+
+---
+
+## 43. Environment Variable Whitelists
+
+- Clean environment mappings before executions.
+- Keep only safe values like `PATH` and `NODE_ENV`.
+
+---
+
+## 44. Network Proxy Configurations
+
+- Force proxy connections in restricted build networks.
+- Enforce logging of proxy access.
+
+---
+
+## 45. Obfuscated Shell Command Checkers
+
+- Detect nested eval commands.
+- Block commands with base64 decoding pipes.
+
+---
+
+## 46. Cryptographic Security Standards
+
+- Reject MD5 or SHA1 hash usage.
+- Enforce SHA256 or bcrypt allocations.
+
+---
+
+## 47. Code Patch Verification Rules
+
+- Compare patch diff signatures.
+- Block patches writing to system settings.
+
+---
+
+## 48. Safe IPC (Inter-Process Communication)
+
+- Restrict named pipes scope.
+- Use structured JSON messages instead of raw string pipes.
+
+---
+
+## 49. Executable Wrapper Scripts
+
+- Enforce clean entry wrappers.
+- Strip parameters before system calls.
+
+---
+
+## 50. Final Verification Checklist
+
+Before saving state:
+1. Did the build pipeline compile cleanly?
+2. Has the user confirmed the architecture?
+3. Has the log summary been exported successfully?
+4. Are all references aligned?
+
+---
 
 **§STATUS: ACTIVE v1.0 | ANTI_REGRESSION: ∞ON | SELF_IMPROVEMENT: ENGINE_ACTIVE**
