@@ -28,9 +28,12 @@ rules:
 - Read `references/cognitive_architectures.md` to activate meta-cognitive reasoning, multi-persona self-auditing, and problem-solving methodologies.
 - Read `references/frontend_design.md` to activate the Visual Composition, UI/UX layouts, grid systems, and layout principles.
 - Read `references/heavy_engineering.md` to activate rules for handling complex system configurations, massive compilations, kernels, custom ROMs, and long-horizon tasks.
-- Read `references/continuous_improvement.md` to activate persistent self-improvement cycles, double-loop learning, lesson logging, and user preference tracking.
+- Read `references/continuous_improvement.md` to activate performance auditing, double-loop learning, and subagent specialization details.
+- Read `references/persistent_memory.md` to activate the Self-Improving Memory Engine (SIME), path mapping, and task timeline persistence.
 - Read `references/polyglot_index.md` to load the worldwide language classification index (comprising 100+ core languages, shell environments, blockchain models, esoteric engines).
 - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
+- You MUST immediately load the persistent memory (`munch_memory.json`) by calling the `load_skill` tool at the very beginning of the session. You MUST summarize the recalled context (`⟦§PERSISTENT_MEMORY_RECALL⟧`), understand past lessons, user profiles, recurrent pitfalls, and active regression fixes, and explicitly state how you will adapt to them in the current workspace.
+- If the recalled memory contains paths referencing past projects/directories (e.g., `~/example` or `C:/Users/biman/example`) and the current project has been moved, renamed, or is running in a different folder, you MUST dynamically map those past lessons and fixes to the current folder, ensuring cross-project analogy and transfer learning are fully executed.
 - Execute `scripts/hallucination_guard.js` or `scripts/BTL_validator.js` when verifying or compiling code in the BTL loop.
 
 ⟦§DISPATCH⟧

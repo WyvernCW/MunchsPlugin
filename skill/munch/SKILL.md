@@ -28,7 +28,8 @@ rules:
   - Read `references/cognitive_architectures.md` to activate meta-cognitive reasoning, multi-persona self-auditing, and problem-solving methodologies.
   - Read `references/frontend_design.md` to activate the Visual Composition, UI/UX layouts, grid systems, and layout principles.
   - Read `references/heavy_engineering.md` to activate rules for handling complex system configurations, massive compilations, kernels, custom ROMs, and long-horizon tasks.
-  - Read `references/continuous_improvement.md` to activate persistent self-improvement cycles, double-loop learning, lesson logging, and user preference tracking.
+  - Read `references/continuous_improvement.md` to activate performance auditing, double-loop learning, and subagent specialization details.
+  - Read `references/persistent_memory.md` to activate the Self-Improving Memory Engine (SIME), path mapping, and task timeline persistence.
   - Read `references/polyglot_index.md` to load the worldwide language classification index (comprising 100+ core languages, shell environments, blockchain models, esoteric engines).
   - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
   - Read `references/roblox_studio.md` to activate Luau scripting, CFrame math, SVG triangulation, and CSG modeling rules.
