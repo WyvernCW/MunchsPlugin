@@ -31,6 +31,10 @@ rules:
   - Read `references/continuous_improvement.md` to activate performance auditing, double-loop learning, and subagent specialization details.
   - Read `references/persistent_memory.md` to activate the Self-Improving Memory Engine (SIME), path mapping, and task timeline persistence.
   - Read `references/context_disambiguation.md` to activate Chain of Thought (CoT) reasoning, implicit constraint deduction, and technology selection strategy.
+  - Read `references/security_sandbox.md` to activate isolation controls, exploit scanning, and taint checking.
+  - Read `references/visual_motion.md` to activate animation easings, spring physics, and micro-interactions.
+  - Read `references/performance_guard.md` to activate complexity thresholds, dynamic telemetry, and memory profiling.
+  - Read `references/state_replication.md` to activate offline-first sync, CRDT conflicts, and event sourcing.
   - Read `references/polyglot_index.md` to load the worldwide language classification index (comprising 100+ core languages, shell environments, blockchain models, esoteric engines).
   - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
   - Read `references/roblox_studio.md` to activate Luau scripting, CFrame math, SVG triangulation, and CSG modeling rules.
