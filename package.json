@@ -13,6 +13,21 @@
     "compile": "npm run --prefix mcp-server build",
     "start": "npm run --prefix mcp-server start"
   },
+  "files": [
+    "mcp-server/build",
+    "skill",
+    "opencode-plugin",
+    "install.js",
+    "package.json",
+    "plugin.json",
+    "marketplace.json",
+    "munch_plugin_logo.png",
+    "munch_plugin_logo.svg",
+    "AGENT.md",
+    "AGENTS.md",
+    "GEMINI.md",
+    "CLAUDE.md"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "zod": "^3.25.28"
