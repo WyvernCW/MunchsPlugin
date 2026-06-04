@@ -26,7 +26,8 @@
     "AGENT.md",
     "AGENTS.md",
     "GEMINI.md",
-    "CLAUDE.md"
+    "CLAUDE.md",
+    ".codex-plugin"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
