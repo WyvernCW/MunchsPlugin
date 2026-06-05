@@ -27,7 +27,7 @@
     "policy:compile": "npm run compile && node scripts/compile-policy.js",
     "evaluate": "node scripts/run-evaluation.js",
     "lint": "eslint install.js lib scripts tests skill/munch/scripts",
-    "coverage": "c8 --exclude=mcp-server/build/** --check-coverage --lines 55 --functions 55 --branches 50 node --test tests/*.test.js",
+    "coverage": "c8 --exclude=mcp-server/build/** --check-coverage --lines 55 --functions 55 --branches 50 node --test tests/advanced-runtime.test.js tests/http.integration.test.js tests/mcp.integration.test.js tests/validators.test.js",
     "audit": "npm audit --omit=dev && npm audit --omit=dev --prefix mcp-server",
     "pack:check": "npm pack --dry-run",
     "compile": "npm run --prefix mcp-server build",

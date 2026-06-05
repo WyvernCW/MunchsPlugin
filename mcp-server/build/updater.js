@@ -5,10 +5,7 @@ import https from "node:https";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 const REPOSITORY = "WyvernCW/MunchsPlugin";
-export async function checkForUpdate(currentVersion) {
-    const release = await requestJson(`https://api.github.com/repos/${REPOSITORY}/releases/latest`, {
-        allowNotFound: true,
-    });
+export function buildUpdateInfo(currentVersion, release) {
     if (!release) {
         return {
             currentVersion,
@@ -24,6 +21,12 @@ export async function checkForUpdate(currentVersion) {
         releaseUrl: release.html_url ?? `https://github.com/${REPOSITORY}/releases`,
         updateAvailable: compareVersions(latestVersion, currentVersion) > 0,
     };
+}
+export async function checkForUpdate(currentVersion) {
+    const release = await requestJson(`https://api.github.com/repos/${REPOSITORY}/releases/latest`, {
+        allowNotFound: true,
+    });
+    return buildUpdateInfo(currentVersion, release);
 }
 export async function applyVersionedUpdate(version) {
     if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {

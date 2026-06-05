@@ -14,13 +14,10 @@ export interface UpdateInfo {
   updateAvailable: boolean;
 }
 
-export async function checkForUpdate(currentVersion: string): Promise<UpdateInfo> {
-  const release = await requestJson<{
-    tag_name?: string;
-    html_url?: string;
-  }>(`https://api.github.com/repos/${REPOSITORY}/releases/latest`, {
-    allowNotFound: true,
-  });
+export function buildUpdateInfo(
+  currentVersion: string,
+  release?: { tag_name?: string; html_url?: string },
+): UpdateInfo {
   if (!release) {
     return {
       currentVersion,
@@ -36,6 +33,16 @@ export async function checkForUpdate(currentVersion: string): Promise<UpdateInfo
     releaseUrl: release.html_url ?? `https://github.com/${REPOSITORY}/releases`,
     updateAvailable: compareVersions(latestVersion, currentVersion) > 0,
   };
+}
+
+export async function checkForUpdate(currentVersion: string): Promise<UpdateInfo> {
+  const release = await requestJson<{
+    tag_name?: string;
+    html_url?: string;
+  }>(`https://api.github.com/repos/${REPOSITORY}/releases/latest`, {
+    allowNotFound: true,
+  });
+  return buildUpdateInfo(currentVersion, release);
 }
 
 export async function applyVersionedUpdate(version: string): Promise<void> {

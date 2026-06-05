@@ -8,7 +8,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { resolveHttpSecurity } from '../mcp-server/build/http-server.js';
-import { checkForUpdate } from '../mcp-server/build/updater.js';
+import { buildUpdateInfo } from '../mcp-server/build/updater.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -51,8 +51,8 @@ test('HTTP security permits Railway startup without silently weakening other hos
   });
 });
 
-test('update check treats a repository without releases as up to date', async () => {
-  const update = await checkForUpdate('1.0.0');
+test('update policy treats a repository without releases as up to date', () => {
+  const update = buildUpdateInfo('1.0.0');
   assert.equal(update.currentVersion, '1.0.0');
   assert.equal(update.latestVersion, '1.0.0');
   assert.equal(update.updateAvailable, false);
