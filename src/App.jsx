@@ -5,6 +5,30 @@ import logoUrl from '../munch_plugin_logo.svg';
 const githubUrl = 'https://github.com/WyvernCW/MunchsPlugin';
 const mcpUrl = 'https://munch-ashy.vercel.app/api/mcp';
 
+async function writeClipboard(value) {
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch (clipboardError) {
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.append(textarea);
+    textarea.select();
+
+    try {
+      return document.execCommand('copy');
+    } catch (fallbackError) {
+      console.warn('Clipboard copy failed', { clipboardError, fallbackError });
+      return false;
+    } finally {
+      textarea.remove();
+    }
+  }
+}
+
 function Icon({ name }) {
   const paths = {
     route: (
@@ -83,8 +107,8 @@ const capabilities = [
 function App() {
   const [copied, setCopied] = useState('');
   const copy = async (value, label) => {
-    await navigator.clipboard.writeText(value);
-    setCopied(label);
+    const didCopy = await writeClipboard(value);
+    setCopied(didCopy ? label : `error:${label}`);
     window.setTimeout(() => setCopied(''), 1400);
   };
 
@@ -194,13 +218,23 @@ function App() {
             <div className="terminal-title"><Icon name="terminal" /><span>Local install</span></div>
             <code>npm install -g --ignore-scripts git+https://github.com/WyvernCW/MunchsPlugin.git</code>
             <button type="button" onClick={() => copy('npm install -g --ignore-scripts git+https://github.com/WyvernCW/MunchsPlugin.git', 'install')}>
-              <Icon name="copy" /> {copied === 'install' ? 'Copied' : 'Copy'}
+              <Icon name="copy" />{' '}
+              {copied === 'install'
+                ? 'Copied'
+                : copied === 'error:install'
+                  ? 'Copy failed'
+                  : 'Copy'}
             </button>
             <div className="terminal-divider" />
             <div className="terminal-title"><Icon name="route" /><span>Remote MCP endpoint</span></div>
             <code>{mcpUrl}</code>
             <button type="button" onClick={() => copy(mcpUrl, 'mcp')}>
-              <Icon name="copy" /> {copied === 'mcp' ? 'Copied' : 'Copy'}
+              <Icon name="copy" />{' '}
+              {copied === 'mcp'
+                ? 'Copied'
+                : copied === 'error:mcp'
+                  ? 'Copy failed'
+                  : 'Copy'}
             </button>
           </div>
         </section>
