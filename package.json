@@ -2,6 +2,15 @@
   "name": "munch",
   "version": "1.0.0",
   "description": "Augmented cognitive agent skill & MCP server",
+  "homepage": "https://github.com/WyvernCW/MunchsPlugin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WyvernCW/MunchsPlugin.git"
+  },
+  "bugs": "https://github.com/WyvernCW/MunchsPlugin/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "bin": {
     "munch": "./mcp-server/build/index.js",
@@ -9,14 +18,29 @@
   },
   "scripts": {
     "setup": "node install.js",
-    "postinstall": "node install.js",
+    "doctor": "node install.js doctor",
+    "uninstall:munch": "node install.js uninstall",
+    "setup:dry-run": "node install.js setup --dry-run",
+    "generate": "node scripts/generate-artifacts.js && node scripts/generate-reference-catalog.js",
+    "generate:check": "node scripts/generate-artifacts.js --check && node scripts/generate-reference-catalog.js --check",
+    "references:normalize": "node scripts/normalize-references.js",
+    "policy:compile": "npm run compile && node scripts/compile-policy.js",
+    "evaluate": "node scripts/run-evaluation.js",
+    "lint": "eslint install.js lib scripts tests skill/munch/scripts",
+    "coverage": "c8 --exclude=mcp-server/build/** --check-coverage --lines 55 --functions 55 --branches 50 node --test tests/*.test.js",
+    "audit": "npm audit --omit=dev && npm audit --omit=dev --prefix mcp-server",
+    "pack:check": "npm pack --dry-run",
     "compile": "npm run --prefix mcp-server build",
-    "start": "npm run --prefix mcp-server start"
+    "start": "npm run --prefix mcp-server start",
+    "test": "node --test tests/*.test.js",
+    "verify": "npm run generate:check && npm run lint && npm run compile && npm run coverage && node skill/munch/scripts/hallucination_guard.js ."
   },
   "files": [
     "mcp-server/build",
     "skill",
     "opencode-plugin",
+    "lib",
+    "scripts",
     "install.js",
     "package.json",
     "plugin.json",
@@ -30,8 +54,13 @@
     ".codex-plugin"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.25.28"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "c8": "^11.0.0",
+    "eslint": "^9.39.2"
   },
   "keywords": [
     "mcp",

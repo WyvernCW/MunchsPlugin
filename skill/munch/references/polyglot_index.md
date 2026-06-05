@@ -161,10 +161,10 @@ When loaded into the AI agent's session, this supporting skill governs how the a
 ---
 
 ## 17. Markup / Style / Config
-* **Languages**: HTML, CSS, XML, JSON, YAML, TOML, Markdown, LaTeX, SVG, JSX, TSX, HCL, INI, Dockerfile, Makefile.
+* **Languages**: HTML, CSS, XML, JSON, YAML, TOML, Markdown, LaTeX, SVG, JSX, TSX, HCL, INI, service manifests, Makefile.
 * **Core Paradigm**: Structural descriptions, configuration parameters, document templates, build pipeline targets, and layout descriptions.
-* **Security Checks**: Disable External Entities (XXE) in XML, restrict root access in Dockerfiles, check configurations in Terraform files, and validate tags in XML/HTML schemas.
-* **AI Guideline**: Prevent XML External Entity disclosure (XXE), secure Docker non-root contexts, and follow structural configurations.
+* **Security Checks**: Disable External Entities (XXE) in XML, restrict administrative runtime access, check configurations in Terraform files, and validate tags in XML/HTML schemas.
+* **AI Guideline**: Prevent XML External Entity disclosure (XXE), enforce least-privilege runtime contexts, and follow structural configurations.
 
 ---
 

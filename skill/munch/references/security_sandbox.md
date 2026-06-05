@@ -16,8 +16,8 @@ The AI agent uses this reference file as a secure runtime filter. Before executi
 This reference MUST be utilized in these instances:
 1. **Prior to running any command** (e.g. `npm install`, `run_command`).
 2. **When installing third-party dependencies** or configuring package packages.
-3. **During environment configuration setups** (such as Docker mappings or micro-VM configurations).
-4. **Before committing files containing environment configs** (like `.env`, `docker-compose.yml`) to verify that no secret keys are leaked.
+3. **During environment configuration setups** (such as process sandbox or micro-VM configurations).
+4. **Before committing files containing environment configs** (like `.env` or service manifests) to verify that no secret keys are leaked.
 
 ---
 
@@ -37,7 +37,7 @@ graph TD
 
 When executing third-party scripts, untrusted test files, or arbitrary commands:
 
-- **Isolated Execution Runtimes**: Prefer running commands inside isolated Docker containers, virtual machines, or process sandboxes (e.g. gVisor, firejail) if available.
+- **Isolated Execution Runtimes**: Prefer running commands inside virtual machines, operating-system sandboxes, or restricted worker processes if available.
 - **Port & Network Restriction**: Block outbound network connections by default for all test runs unless specifically required.
 - **File System Guard**: Execute in read-only directories, restricting write permissions exclusively to designated temporary folders (e.g. `./scratch/sandbox_tmp`).
 
@@ -158,10 +158,10 @@ Block subprocesses calling system files:
 
 ---
 
-## 15. Container Isolation Specs
+## 15. Runtime Isolation Specs
 
-- Configure user mappings in docker.
-- Mount mounts as read-only.
+- Configure least-privilege user mappings.
+- Mount external paths as read-only.
 
 ---
 

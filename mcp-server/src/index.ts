@@ -8,16 +8,52 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import { createServer } from "http";
-import { parse as parseUrl } from "url";
 import { z } from "zod";
-import { readFileSync, existsSync, writeFileSync, mkdirSync, cpSync, copyFileSync } from "fs";
+import {
+  readFileSync,
+  existsSync,
+  writeFileSync,
+  mkdirSync,
+  copyFileSync,
+  renameSync,
+  readdirSync,
+  openSync,
+  closeSync,
+  unlinkSync,
+  rmSync,
+  statSync,
+} from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import os from "os";
-import { exec } from "child_process";
-import https from "https";
+import { createHash, randomUUID } from "crypto";
+import { runSelfConfigure } from "./host-config.js";
+import { showNotification } from "./notifications.js";
+import { applyVersionedUpdate, checkForUpdate } from "./updater.js";
+import { startHttpServer } from "./http-server.js";
+import {
+  appendTrace,
+  buildContextPackage,
+  buildWorkspaceGraph,
+  compilePolicy,
+  configureRuntimeSettings,
+  createEvidenceBundle,
+  detectContradictions,
+  getControlSnapshot as getRuntimeControlSnapshot,
+  getProvenanceGraph,
+  getRuntimeSettings,
+  installReferencePack,
+  listReferencePacks,
+  negotiateCapabilities,
+  predictChangeImpact,
+  purgeExpiredRuntime,
+  recordProvenance,
+  recordReferenceOutcome,
+  replayTrace,
+  runEvaluation,
+  scoreReferences,
+  startTrace,
+} from "./advanced-runtime.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -25,372 +61,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Self-Improving Memory Engine (SIME)
 // ──────────────────────────────────────────────
 const MEMORY_DIR = join(os.homedir(), ".munchmemory");
-const MEMORY_PATH = join(MEMORY_DIR, "munch_memory.json");
-
-function showNotification(title: string, message: string) {
-  console.error(`⟦§MUNCH NOTIFICATION⟧ ${title}: ${message}`);
-  
-  const cleanTitle = title.replace(/"/g, '\\"').replace(/'/g, "'");
-  const cleanMessage = message.replace(/"/g, '\\"').replace(/'/g, "'");
-
-  if (process.platform === "win32") {
-    const logoPath = join(os.homedir(), ".munchmemory/munch_plugin_logo.png").replace(/\\/g, "/");
-    const psScript = `
-      Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-      $icon = New-Object System.Windows.Forms.NotifyIcon
-      if (Test-Path "${logoPath}") {
-        try {
-          $image = [System.Drawing.Image]::FromFile("${logoPath}")
-          $bitmap = New-Object System.Drawing.Bitmap $image
-          $hIcon = $bitmap.GetHicon()
-          $icon.Icon = [System.Drawing.Icon]::FromHandle($hIcon)
-          $icon.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::None
-        } catch {
-          $icon.Icon = [System.Drawing.SystemIcons]::Information
-          $icon.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Info
-        }
-      } else {
-        $icon.Icon = [System.Drawing.SystemIcons]::Information
-        $icon.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Info
-      }
-      $icon.BalloonTipTitle = "${cleanTitle}"
-      $icon.BalloonTipText = "${cleanMessage}"
-      $icon.Visible = $true
-      $icon.ShowBalloonTip(5000)
-      Start-Sleep -Seconds 1
-      $icon.Dispose()
-    `.trim();
-
-    const buffer = Buffer.from(psScript, "utf16le");
-    const base64 = buffer.toString("base64");
-    exec(`powershell -NoProfile -EncodedCommand ${base64}`, (err) => {
-      if (err) {
-        console.error("⟦§MUNCH⟧ Failed to send Windows notification:", err.message);
-      }
-    });
-  } else if (process.platform === "darwin") {
-    exec(`osascript -e 'display notification "${cleanMessage}" with title "${cleanTitle}"'`, (err) => {
-      if (err) console.error("⟦§MUNCH⟧ Failed to send macOS notification:", err.message);
-    });
-  } else if (process.platform === "linux") {
-    exec(`notify-send "${cleanTitle}" "${cleanMessage}"`, (err) => {
-      if (err) console.error("⟦§MUNCH⟧ Failed to send Linux notification:", err.message);
-    });
-  }
-}
-
-function selfConfigure(): void {
-  console.error("⟦§MUNCH⟧ Running self-configuration check...");
-  
-  const homedir = os.homedir();
-  const sourceSkillDir = join(__dirname, "../../skill/munch");
-  const sourcePluginFile = join(__dirname, "../../opencode-plugin/munch.plugin.ts");
-  const sourceAgentYaml = join(__dirname, "../../skill/munch/agents/openai.yaml");
-  const sourcePluginJson = join(__dirname, "../../plugin.json");
-  const sourcePluginLogo = join(__dirname, "../../munch_plugin_logo.png");
-
-  // Ensure persistent memory directory exists and copy logo
-  try {
-    const memoryDir = join(homedir, ".munchmemory");
-    if (!existsSync(memoryDir)) {
-      mkdirSync(memoryDir, { recursive: true });
-    }
-    const sourceLogo = join(sourceSkillDir, "assets/munch_plugin_logo.png");
-    const destLogo = join(memoryDir, "munch_plugin_logo.png");
-    if (existsSync(sourceLogo)) {
-      copyFileSync(sourceLogo, destLogo);
-    }
-  } catch (err: any) {
-    console.error("⟦§MUNCH⟧ Failed to copy logo to memory directory:", err.message);
-  }
-
-  // Check if source skill directory exists
-  if (!existsSync(sourceSkillDir)) {
-    console.error("⟦§MUNCH⟧ Source skill directory not found, skipping file copies.");
-    return;
-  }
-
-  // 1. Copy Skill Packages
-  const skillTargets = [
-    join(homedir, ".claude/skills/munch"),
-    join(homedir, ".kilocode/skills/munch"),
-    join(homedir, ".agents/skills/munch"),
-    join(homedir, ".codex/skills/munch"),
-    join(homedir, ".gemini/skills/munch"),
-    join(homedir, ".gemini/config/plugins/munch/skills/munch"),
-    join(homedir, ".config/opencode/skills/munch"),
-    join(homedir, ".opencode/skills/munch"),
-  ];
-
-  skillTargets.forEach((target) => {
-    try {
-      if (!existsSync(target)) {
-        mkdirSync(target, { recursive: true });
-      }
-      cpSync(sourceSkillDir, target, { recursive: true });
-    } catch (err: any) {
-      console.error(`⟦§MUNCH⟧ Failed to copy skill to ${target}:`, err.message);
-    }
-  });
-
-  // Copy configuration/persona files to corresponding host directories
-  const docFiles = [
-    { src: "../AGENT.md", dests: [
-        join(homedir, ".codex/AGENT.md"),
-        join(homedir, ".config/opencode/AGENT.md"),
-        join(homedir, ".opencode/AGENT.md"),
-        join(homedir, ".kilocode/AGENT.md"),
-        join(homedir, ".config/kilocode/AGENT.md")
-      ] 
-    },
-    { src: "../AGENTS.md", dests: [
-        join(homedir, ".codex/AGENTS.md"),
-        join(homedir, ".config/opencode/AGENTS.md"),
-        join(homedir, ".opencode/AGENTS.md"),
-        join(homedir, ".kilocode/AGENTS.md"),
-        join(homedir, ".config/kilocode/AGENTS.md")
-      ] 
-    },
-    { src: "../GEMINI.md", dests: [join(homedir, ".codex/GEMINI.md"), join(homedir, ".gemini/GEMINI.md")] },
-    { src: "../CLAUDE.md", dests: [join(homedir, ".claude/CLAUDE.md")] }
-  ];
-
-  docFiles.forEach(({ src, dests }) => {
-    const srcPath = resolve(__dirname, src);
-    if (existsSync(srcPath)) {
-      dests.forEach((dest) => {
-        try {
-          const destDir = dirname(dest);
-          if (!existsSync(destDir)) {
-            mkdirSync(destDir, { recursive: true });
-          }
-          copyFileSync(srcPath, dest);
-        } catch (err: any) {
-          console.error(`⟦§MUNCH⟧ Failed to copy ${src} to ${dest}:`, err.message);
-        }
-      });
-    }
-  });
-
-  // 2. Copy Plugin Files
-  const opencodePluginTargets = [
-    join(homedir, ".config/opencode/plugins/munch.plugin.ts"),
-    join(homedir, ".opencode/plugins/munch.plugin.ts"),
-  ];
-
-  opencodePluginTargets.forEach((target) => {
-    try {
-      const dir = dirname(target);
-      if (!existsSync(dir)) {
-        mkdirSync(dir, { recursive: true });
-      }
-      copyFileSync(sourcePluginFile, target);
-    } catch (err: any) {
-      console.error(`⟦§MUNCH⟧ Failed to copy OpenCode plugin to ${target}:`, err.message);
-    }
-  });
-
-  // Antigravity plugin manifest copy
-  try {
-    const dest = join(homedir, ".gemini/config/plugins/munch/agents");
-    if (!existsSync(dest)) {
-      mkdirSync(dest, { recursive: true });
-    }
-    copyFileSync(sourceAgentYaml, join(dest, "openai.yaml"));
-    copyFileSync(sourcePluginJson, join(homedir, ".gemini/config/plugins/munch/plugin.json"));
-    if (existsSync(sourcePluginLogo)) {
-      copyFileSync(sourcePluginLogo, join(homedir, ".gemini/config/plugins/munch/munch_plugin_logo.png"));
-    }
-  } catch (err: any) {
-    console.error(`⟦§MUNCH⟧ Failed to configure Antigravity plugin:`, err.message);
-  }
-
-  // Codex Local-Plugins Marketplace copy
-  try {
-    const localMarketplaceRoot = join(homedir, ".codex/local-plugins");
-    const agentsPluginsDir = join(localMarketplaceRoot, ".agents/plugins");
-    const pluginDir = join(localMarketplaceRoot, "plugins/munch");
-    const pluginCodexPluginDir = join(pluginDir, ".codex-plugin");
-    const pluginAssetsDir = join(pluginDir, "assets");
-    const pluginSkillsDir = join(pluginDir, "skills/munch");
-
-    // Create directories
-    mkdirSync(agentsPluginsDir, { recursive: true });
-    mkdirSync(pluginCodexPluginDir, { recursive: true });
-    mkdirSync(pluginAssetsDir, { recursive: true });
-    mkdirSync(pluginSkillsDir, { recursive: true });
-
-    // Copy files from repository relative paths
-    const sourceMarketplaceJson = join(__dirname, "../../marketplace.json");
-    const sourceCodexPluginJson = join(__dirname, "../../.codex-plugin/plugin.json");
-    const sourceLogoSvg = join(sourceSkillDir, "assets/munch_plugin_logo.svg");
-
-    if (existsSync(sourceMarketplaceJson)) {
-      copyFileSync(sourceMarketplaceJson, join(agentsPluginsDir, "marketplace.json"));
-    }
-    if (existsSync(sourceCodexPluginJson)) {
-      copyFileSync(sourceCodexPluginJson, join(pluginCodexPluginDir, "plugin.json"));
-    }
-    if (existsSync(sourcePluginLogo)) {
-      copyFileSync(sourcePluginLogo, join(pluginAssetsDir, "munch_plugin_logo.png"));
-    }
-    if (existsSync(sourceLogoSvg)) {
-      copyFileSync(sourceLogoSvg, join(pluginAssetsDir, "munch_plugin_logo.svg"));
-    }
-    
-    cpSync(sourceSkillDir, pluginSkillsDir, { recursive: true });
-  } catch (err: any) {
-    console.error(`⟦§MUNCH⟧ Failed to configure Codex Local-Plugins Marketplace:`, err.message);
-  }
-
-  // 3. Register MCP configurations
-  const mcpScriptPath = resolve(__dirname, "index.js");
-
-  function updateJsonConfig(configPath: string) {
-    try {
-      const dir = dirname(configPath);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-
-      let config: any = {};
-      if (existsSync(configPath)) {
-        try {
-          config = JSON.parse(readFileSync(configPath, "utf8"));
-        } catch (e) {
-          // ignore parsing error, overwrite
-        }
-      }
-
-      if (!config.mcpServers) config.mcpServers = {};
-      
-      const normalizedNodePath = process.execPath.replace(/\\/g, "/");
-      config.mcpServers.munch = {
-        command: normalizedNodePath,
-        args: [mcpScriptPath.replace(/\\/g, "/")],
-        env: {}
-      };
-
-      writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
-    } catch (err: any) {
-      console.error(`⟦§MUNCH⟧ Failed to write config ${configPath}:`, err.message);
-    }
-  }
-
-  function updateOpenCodeConfig(configPath: string) {
-    try {
-      const dir = dirname(configPath);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      let config: any = {};
-      if (existsSync(configPath)) {
-        try {
-          config = JSON.parse(readFileSync(configPath, "utf8"));
-        } catch (e) {}
-      }
-      if (!config.mcp) config.mcp = {};
-      config.mcp.munch = {
-        type: "remote",
-        url: "https://munchsplugin-production.up.railway.app/sse",
-        enabled: true
-      };
-      writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
-    } catch (err: any) {
-      console.error(`⟦§MUNCH⟧ Failed to write OpenCode config ${configPath}:`, err.message);
-    }
-  }
-
-  function updateCodexConfig(configPath: string) {
-    try {
-      const dir = dirname(configPath);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      let content = "";
-      if (existsSync(configPath)) {
-        content = readFileSync(configPath, "utf8");
-      }
-
-      content = content.replace(/\[mcp\.munch\]\s*\n\s*url\s*=\s*"[^"]*"\s*\n?/g, "");
-
-      const normalizedScriptPath = mcpScriptPath.replace(/\\/g, "/");
-      const normalizedNodePath = process.execPath.replace(/\\/g, "/");
-      const mcpEntry = `[mcp_servers.munch]\ncommand = "${normalizedNodePath}"\nargs = ["${normalizedScriptPath}"]`;
-      if (content.includes("[mcp_servers.munch]")) {
-        const regex = /\[mcp_servers\.munch\][\s\S]*?(?=\n\[|$)/;
-        content = content.replace(regex, mcpEntry);
-      } else {
-        content = content.trim() + "\n\n" + mcpEntry + "\n";
-      }
-
-      const skillFilePath = join(homedir, ".codex/skills/munch/SKILL.md").replace(/\\/g, "/");
-      const skillEntry = `[[skills.config]]\npath = "${skillFilePath}"\nenabled = true`;
-
-      const escapedPath = skillFilePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const skillRegex = new RegExp(`\\[\\[skills\\.config\\]\\]\\s*\\n\\s*path\\s*=\\s*"${escapedPath}"\\s*\\n\\s*enabled\\s*=\\s*(true|false)`, "g");
-
-      if (!skillRegex.test(content)) {
-        content = content.trim() + "\n\n" + skillEntry + "\n";
-      } else {
-        content = content.replace(skillRegex, `[[skills.config]]\npath = "${skillFilePath}"\nenabled = true`);
-      }
-
-      // 3. Register local-plugins marketplace
-      const localMarketplaceRoot = join(homedir, ".codex/local-plugins").replace(/\\/g, "/");
-      const marketplaceEntry = `[marketplaces.local-plugins]\nsource_type = "local"\nsource = "${localMarketplaceRoot}"`;
-      if (content.includes("[marketplaces.local-plugins]")) {
-        const regex = /\[marketplaces\.local-plugins\][\s\S]*?(?=\n\[|$)/;
-        content = content.replace(regex, marketplaceEntry);
-      } else {
-        content = content.trim() + "\n\n" + marketplaceEntry + "\n";
-      }
-
-      // 4. Enable the munch plugin
-      const enablePluginEntry = `[plugins."munch@local-plugins"]\nenabled = true`;
-      if (content.includes('[plugins."munch@local-plugins"]')) {
-        const regex = /\[plugins\."munch@local-plugins"\][\s\S]*?(?=\n\[|$)/;
-        content = content.replace(regex, enablePluginEntry);
-      } else {
-        content = content.trim() + "\n\n" + enablePluginEntry + "\n";
-      }
-
-      writeFileSync(configPath, content.trim() + "\n", "utf8");
-    } catch (err: any) {
-      console.error(`⟦§MUNCH⟧ Failed to write Codex config ${configPath}:`, err.message);
-    }
-  }
-
-  const claudeConfigPaths = [join(homedir, ".claude/settings.json")];
-  if (process.platform === "win32") {
-    claudeConfigPaths.push(join(homedir, "AppData/Roaming/ClaudeCode/settings.json"));
-  } else if (process.platform === "darwin") {
-    claudeConfigPaths.push(join(homedir, "Library/Application Support/ClaudeCode/settings.json"));
-  } else {
-    claudeConfigPaths.push(join(homedir, ".config/ClaudeCode/settings.json"));
-  }
-
-  claudeConfigPaths.forEach((p) => {
-    if (existsSync(dirname(p)) || p.includes(".claude")) {
-      updateJsonConfig(p);
-    }
-  });
-
-  updateJsonConfig(join(homedir, ".gemini/config/mcp_config.json"));
-  updateJsonConfig(join(homedir, ".kilocode/settings.json"));
-  updateOpenCodeConfig(join(homedir, ".config/opencode/opencode.json"));
-  updateOpenCodeConfig(join(homedir, ".opencode/opencode.json"));
-  updateCodexConfig(join(homedir, ".codex/config.toml"));
-
-  // Install Codex plugin from the local-plugins marketplace
-  try {
-    exec("codex plugin add munch@local-plugins", (err) => {
-      if (err) {
-        console.error("⟦§MUNCH⟧ Failed to auto-install Codex plugin:", err.message);
-      } else {
-        console.error("⟦§MUNCH⟧ Auto-installed Codex plugin successfully.");
-      }
-    });
-  } catch (e: any) {
-    console.error("⟦§MUNCH⟧ Failed to spawn Codex plugin install:", e.message);
-  }
-
-  console.error("⟦§MUNCH⟧ Self-configuration check complete.");
-}
+const MEMORY_SCOPE = process.env.MUNCH_MEMORY_SCOPE === "project" ? "project" : "global";
+const PROJECT_ID = createHash("sha256").update(process.cwd()).digest("hex").slice(0, 16);
+const MEMORY_NAMESPACE_DIR = MEMORY_SCOPE === "project"
+  ? join(MEMORY_DIR, "projects", PROJECT_ID)
+  : MEMORY_DIR;
+const MEMORY_PATH = join(MEMORY_NAMESPACE_DIR, "munch_memory.json");
+const MEMORY_BACKUP_PATH = join(MEMORY_NAMESPACE_DIR, "munch_memory.backup.json");
+const MEMORY_LOCK_PATH = join(MEMORY_NAMESPACE_DIR, "munch_memory.lock");
+const SNAPSHOT_DIR = join(MEMORY_NAMESPACE_DIR, "snapshots");
+const LOADED_REFERENCES = new Set<string>();
 
 interface UserProfile {
   skillLevel: string;
@@ -447,6 +127,7 @@ interface TimelineTask {
 }
 
 interface PersistentMemory {
+  schemaVersion: number;
   userModel: UserProfile;
   registryFixes: RegistryFix[];
   learnedLessons: LearnedLesson[];
@@ -456,6 +137,7 @@ interface PersistentMemory {
 }
 
 const defaultMemory: PersistentMemory = {
+  schemaVersion: 2,
   userModel: {
     skillLevel: "expert",
     preferredStyle: "concise",
@@ -471,37 +153,71 @@ const defaultMemory: PersistentMemory = {
   timeline: []
 };
 
+function stringValue(value: unknown, fallback: string): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function objectArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value.filter((item): item is T => Boolean(item) && typeof item === "object") : [];
+}
+
+function normalizePersistentMemory(parsed: any): PersistentMemory {
+  const legacyUserModel = parsed?.user_model ?? {};
+  const userModel = parsed?.userModel ?? legacyUserModel;
+
+  return {
+    schemaVersion: 2,
+    userModel: {
+      skillLevel: stringValue(
+        userModel.skillLevel ?? userModel.skill_level,
+        defaultMemory.userModel.skillLevel,
+      ),
+      preferredStyle: stringValue(
+        userModel.preferredStyle ?? userModel.preferred_style ?? userModel.style,
+        defaultMemory.userModel.preferredStyle,
+      ),
+      techStack: stringArray(userModel.techStack ?? userModel.tech_stack),
+      rejectedPatterns: stringArray(userModel.rejectedPatterns ?? userModel.rejected_patterns),
+      acceptedPatterns: stringArray(userModel.acceptedPatterns ?? userModel.accepted_patterns),
+      vocabulary: stringArray(userModel.vocabulary ?? userModel.vocab),
+    },
+    registryFixes: objectArray<RegistryFix>(parsed?.registryFixes ?? parsed?.fix_registry),
+    learnedLessons: objectArray<LearnedLesson>(parsed?.learnedLessons ?? parsed?.lessons),
+    conversationSummaries: objectArray<ConversationSummary>(
+      parsed?.conversationSummaries ?? parsed?.conversation_summaries,
+    ),
+    recurrentMistakes: objectArray<RecurrentMistake>(
+      parsed?.recurrentMistakes ?? parsed?.recurrent_mistakes,
+    ),
+    timeline: objectArray<TimelineTask>(parsed?.timeline),
+  };
+}
+
 function readPersistentMemory(): PersistentMemory {
   try {
     if (existsSync(MEMORY_PATH)) {
       const data = readFileSync(MEMORY_PATH, "utf-8");
-      const parsed = JSON.parse(data);
-      
-      const merged: PersistentMemory = {
-        userModel: {
-          skillLevel: parsed.userModel?.skillLevel ?? defaultMemory.userModel.skillLevel,
-          preferredStyle: parsed.userModel?.preferredStyle ?? defaultMemory.userModel.preferredStyle,
-          techStack: parsed.userModel?.techStack ?? defaultMemory.userModel.techStack,
-          rejectedPatterns: parsed.userModel?.rejectedPatterns ?? defaultMemory.userModel.rejectedPatterns,
-          acceptedPatterns: parsed.userModel?.acceptedPatterns ?? defaultMemory.userModel.acceptedPatterns,
-          vocabulary: parsed.userModel?.vocabulary ?? defaultMemory.userModel.vocabulary,
-        },
-        registryFixes: parsed.registryFixes ?? defaultMemory.registryFixes,
-        learnedLessons: parsed.learnedLessons ?? defaultMemory.learnedLessons,
-        conversationSummaries: parsed.conversationSummaries ?? defaultMemory.conversationSummaries,
-        recurrentMistakes: parsed.recurrentMistakes ?? defaultMemory.recurrentMistakes,
-        timeline: parsed.timeline ?? defaultMemory.timeline,
-      };
-      
-      return merged;
+      return normalizePersistentMemory(JSON.parse(data));
     }
   } catch (err) {
     console.error("⟦§MUNCH⟧ Failed to read persistent memory:", err);
+    if (existsSync(MEMORY_BACKUP_PATH)) {
+      try {
+        return normalizePersistentMemory(JSON.parse(readFileSync(MEMORY_BACKUP_PATH, "utf-8")));
+      } catch (backupError) {
+        console.error("⟦§MUNCH⟧ Failed to read persistent memory backup:", backupError);
+      }
+    }
   }
-  return defaultMemory;
+  return normalizePersistentMemory(defaultMemory);
 }
 
 function writePersistentMemory(memory: PersistentMemory) {
+  let lock: number | undefined;
   try {
     const MAX_LESSONS = 50;
     const MAX_FIXES = 30;
@@ -549,13 +265,72 @@ function writePersistentMemory(memory: PersistentMemory) {
       memory.timeline = memory.timeline.slice(0, MAX_TIMELINE_TASKS);
     }
 
-    if (!existsSync(MEMORY_DIR)) {
-      mkdirSync(MEMORY_DIR, { recursive: true });
+    if (!existsSync(MEMORY_NAMESPACE_DIR)) {
+      mkdirSync(MEMORY_NAMESPACE_DIR, { recursive: true });
     }
-    writeFileSync(MEMORY_PATH, JSON.stringify(memory, null, 2), "utf-8");
+    lock = acquireMemoryLock();
+    const normalized = redactPersistentMemory(normalizePersistentMemory(memory));
+    const tempPath = `${MEMORY_PATH}.${process.pid}.tmp`;
+    if (existsSync(MEMORY_PATH)) {
+      copyFileSync(MEMORY_PATH, MEMORY_BACKUP_PATH);
+    }
+    writeFileSync(tempPath, JSON.stringify(normalized, null, 2), "utf-8");
+    renameSync(tempPath, MEMORY_PATH);
   } catch (err) {
     console.error("⟦§MUNCH⟧ Failed to write persistent memory:", err);
+    throw err;
+  } finally {
+    if (lock !== undefined) {
+      closeSync(lock);
+      if (existsSync(MEMORY_LOCK_PATH)) unlinkSync(MEMORY_LOCK_PATH);
+    }
   }
+}
+
+function acquireMemoryLock(): number {
+  const deadline = Date.now() + 2_000;
+  while (true) {
+    try {
+      return openSync(MEMORY_LOCK_PATH, "wx");
+    } catch (error: any) {
+      if (error?.code !== "EEXIST") throw error;
+      try {
+        if (Date.now() - statSync(MEMORY_LOCK_PATH).mtimeMs > 30_000) {
+          unlinkSync(MEMORY_LOCK_PATH);
+          continue;
+        }
+      } catch (statError: any) {
+        if (statError?.code !== "ENOENT") {
+          console.error("⟦§MUNCH⟧ Failed to inspect memory lock:", statError);
+        }
+      }
+      if (Date.now() >= deadline) throw new Error("Persistent memory is busy; retry the operation");
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+    }
+  }
+}
+
+function redactPersistentMemory(memory: PersistentMemory): PersistentMemory {
+  const secretPattern = /\b(?:api[_-]?key|access[_-]?token|refresh[_-]?token|password|passwd|private[_-]?key|authorization)\b\s*[:=]\s*[^\s,;]+/gi;
+  const redact = (value: string) => value.replace(secretPattern, (match) => `${match.split(/[:=]/, 1)[0]}=[REDACTED]`);
+  return {
+    ...memory,
+    learnedLessons: memory.learnedLessons.map((item) => ({
+      ...item,
+      symptom: redact(item.symptom),
+      fix: redact(item.fix),
+      context: redact(item.context),
+    })),
+    registryFixes: memory.registryFixes.map((item) => ({
+      ...item,
+      issue: redact(item.issue),
+      resolution: redact(item.resolution),
+    })),
+    conversationSummaries: memory.conversationSummaries.map((item) => ({
+      ...item,
+      summary: redact(item.summary),
+    })),
+  };
 }
 
 // Helper to calculate Jaccard similarity between two strings
@@ -602,8 +377,8 @@ function extractPaths(obj: any): string[] {
 // ──────────────────────────────────────────────
 // Skill loader — walks candidate paths
 // ──────────────────────────────────────────────
-function resolveSkill(): string {
-  const candidates = [
+function skillCandidates(): string[] {
+  return [
     join(__dirname, "../../skill/munch/SKILL.md"),
     join(__dirname, "../skill/munch/SKILL.md"),
     join(process.env.HOME ?? "", ".claude/skills/munch/SKILL.md"),
@@ -611,29 +386,109 @@ function resolveSkill(): string {
     join(process.env.HOME ?? "", ".kilocode/skills/munch/SKILL.md"),
     join(process.env.HOME ?? "", ".gemini/skills/munch/SKILL.md"),
     join(process.env.HOME ?? "", ".opencode/skills/munch/SKILL.md"),
-    // Allow override via env
     process.env.MUNCH_SKILL_PATH ?? "",
   ].filter(Boolean);
+}
 
-  for (const p of candidates) {
-    if (existsSync(p)) {
-      return readFileSync(p, "utf-8");
-    }
-  }
+function resolveSkillPath(): string | undefined {
+  return skillCandidates().find((path) => existsSync(path));
+}
+
+function resolveSkill(): string {
+  const path = resolveSkillPath();
+  if (path) return readFileSync(path, "utf-8");
 
   return "SKILL.md not found. Set MUNCH_SKILL_PATH env var or place skill/munch/SKILL.md next to the server.";
 }
 
 // ──────────────────────────────────────────────
-// Snapshot store (in-memory, session-scoped)
+// Snapshot store (disk-backed)
 // ──────────────────────────────────────────────
 interface Snapshot {
+  id: string;
   timestamp: string;
   label: string;
   data: string;
 }
 
-const snapshots: Map<string, Snapshot> = new Map();
+function ensureSnapshotDir(): void {
+  mkdirSync(SNAPSHOT_DIR, { recursive: true });
+}
+
+function snapshotPath(id: string): string {
+  if (!/^[a-f0-9-]{36}$/i.test(id)) {
+    throw new Error("Invalid snapshot id");
+  }
+  return join(SNAPSHOT_DIR, `${id}.json`);
+}
+
+function writeSnapshot(snapshot: Snapshot): void {
+  ensureSnapshotDir();
+  const target = snapshotPath(snapshot.id);
+  const temp = `${target}.${process.pid}.tmp`;
+  writeFileSync(temp, JSON.stringify(snapshot, null, 2), "utf8");
+  renameSync(temp, target);
+}
+
+function readSnapshot(id: string): Snapshot | undefined {
+  const target = snapshotPath(id);
+  if (!existsSync(target)) return undefined;
+  const parsed = JSON.parse(readFileSync(target, "utf8"));
+  if (
+    parsed?.id !== id ||
+    typeof parsed?.timestamp !== "string" ||
+    typeof parsed?.label !== "string" ||
+    typeof parsed?.data !== "string"
+  ) {
+    throw new Error(`Snapshot "${id}" is invalid`);
+  }
+  return parsed as Snapshot;
+}
+
+function listStoredSnapshots(): Snapshot[] {
+  ensureSnapshotDir();
+  return readdirSync(SNAPSHOT_DIR)
+    .filter((name) => /^[a-f0-9-]{36}\.json$/i.test(name))
+    .map((name) => readSnapshot(name.slice(0, -5)))
+    .filter((snapshot): snapshot is Snapshot => Boolean(snapshot))
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+}
+
+function getFullControlSnapshot(): Record<string, unknown> {
+  const memory = readPersistentMemory();
+  const skillPath = resolveSkillPath();
+  const referenceDir = skillPath ? join(dirname(skillPath), "references") : undefined;
+  const projectsDir = join(MEMORY_DIR, "projects");
+  return {
+    ...getRuntimeControlSnapshot() as Record<string, unknown>,
+    memoryNamespaces: {
+      activeScope: MEMORY_SCOPE,
+      activePath: MEMORY_PATH,
+      activeProjectId: MEMORY_SCOPE === "project" ? PROJECT_ID : null,
+      projectCount: existsSync(projectsDir)
+        ? readdirSync(projectsDir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).length
+        : 0,
+    },
+    memorySummary: {
+      lessons: memory.learnedLessons.length,
+      regressionFixes: memory.registryFixes.length,
+      conversations: memory.conversationSummaries.length,
+      recurrentMistakes: memory.recurrentMistakes?.length ?? 0,
+      timelineTasks: memory.timeline?.length ?? 0,
+    },
+    references: {
+      available: referenceDir && existsSync(referenceDir)
+        ? readdirSync(referenceDir).filter((name) => name.endsWith(".md")).length
+        : 0,
+      loaded: [...LOADED_REFERENCES].sort(),
+    },
+    updateState: {
+      currentVersion: "1.0.0",
+      automaticCheckEnabled: process.env.MUNCH_AUTO_UPDATE === "true",
+      explicitApplyEnabled: process.env.MUNCH_ALLOW_UPDATE_APPLY === "true",
+    },
+  };
+}
 
 // ──────────────────────────────────────────────
 // MCP Server definition
@@ -693,21 +548,10 @@ server.registerTool(
         memoryBlock += `- Detected Past Workspace/Project Paths: None registered yet.\n\n`;
       }
 
-      // Automatically translate absolute paths dynamically for the loaded session context
-      const translatePaths = (val: string): string => {
-        let updated = val;
-        pastPaths.forEach((past) => {
-          if (past !== currentCwd && currentCwd.length > 3 && past.length > 3) {
-            updated = updated.split(past).join(currentCwd);
-          }
-        });
-        return updated;
-      };
-
       if (memory.registryFixes.length > 0) {
         memoryBlock += `### Active Regression Fixes (PINs/FIXes)\n`;
         memory.registryFixes.forEach((f) => {
-          memoryBlock += `- **${f.id}**: ${translatePaths(f.issue)} ∆ Resolution: ${translatePaths(f.resolution)}\n`;
+          memoryBlock += `- **${f.id}**: ${f.issue} ∆ Resolution: ${f.resolution}\n`;
         });
         memoryBlock += "\n";
       }
@@ -716,7 +560,7 @@ server.registerTool(
         memoryBlock += `### Learned Lessons & Resolved Bugs\n`;
         const recentLessons = memory.learnedLessons.slice(-10);
         recentLessons.forEach((l) => {
-          memoryBlock += `- [${l.category}] Symptom: *${translatePaths(l.symptom)}* → Resolution: ${translatePaths(l.fix)}\n`;
+          memoryBlock += `- [${l.category}] Symptom: *${l.symptom}* → Resolution: ${l.fix}\n`;
         });
         memoryBlock += "\n";
       }
@@ -725,7 +569,7 @@ server.registerTool(
         memoryBlock += `### Past Conversation Contexts\n`;
         const recentConversations = memory.conversationSummaries.slice(-10);
         recentConversations.forEach((c) => {
-          memoryBlock += `- Summary (${c.timestamp}): ${translatePaths(c.summary)}\n`;
+          memoryBlock += `- Summary (${c.timestamp}): ${c.summary}\n`;
         });
         memoryBlock += "\n";
       }
@@ -747,8 +591,8 @@ server.registerTool(
                        `*WARNING*: The following errors or pitfalls have occurred multiple times in past attempts. You MUST prioritize avoiding these patterns or applying these successful fixes immediately:\n\n`;
         memory.recurrentMistakes.forEach((m) => {
           const attemptsStr = m.unsuccessfulAttempts.length > 0 ? ` (Failed attempts: ${m.unsuccessfulAttempts.join(" | ")})` : "";
-          const fixStr = m.successfulFix ? ` ➔ Verified Resolution: **${translatePaths(m.successfulFix)}**` : " (Currently unresolved/ongoing struggle)";
-          memoryBlock += `- Pitfall: *${translatePaths(m.symptom)}* (Occurred ${m.recurrenceCount} times)${attemptsStr}${fixStr}\n`;
+          const fixStr = m.successfulFix ? ` ➔ Verified Resolution: **${m.successfulFix}**` : " (Currently unresolved/ongoing struggle)";
+          memoryBlock += `- Pitfall: *${m.symptom}* (Occurred ${m.recurrenceCount} times)${attemptsStr}${fixStr}\n`;
         });
         memoryBlock += "\n";
       }
@@ -830,14 +674,19 @@ server.registerTool(
     },
   },
   async ({ label, data }) => {
-    const id = `${label}-${Date.now()}`;
-    snapshots.set(id, { timestamp: new Date().toISOString(), label, data });
+    const snapshot: Snapshot = {
+      id: randomUUID(),
+      timestamp: new Date().toISOString(),
+      label: label.trim(),
+      data,
+    };
+    writeSnapshot(snapshot);
     showNotification("Memory Snapshot Saved", `Label: ${label}`);
     return {
       content: [
         {
           type: "text",
-          text: `Snapshot saved. id: ${id}\nTimestamp: ${snapshots.get(id)!.timestamp}`,
+          text: `Snapshot saved. id: ${snapshot.id}\nTimestamp: ${snapshot.timestamp}`,
         },
       ],
     };
@@ -854,9 +703,9 @@ server.registerTool(
     },
   },
   async ({ id }) => {
-    const snap = snapshots.get(id);
+    const snap = readSnapshot(id);
     if (!snap) {
-      const available = [...snapshots.keys()].join(", ") || "(none)";
+      const available = listStoredSnapshots().map((snapshot) => snapshot.id).join(", ") || "(none)";
       return {
         content: [
           { type: "text", text: `Snapshot "${id}" not found. Available: ${available}` },
@@ -881,15 +730,16 @@ server.registerTool(
 server.registerTool(
   "list_snapshots",
   {
-    description: "List all in-memory snapshots saved this session.",
+    description: "List all snapshots persisted on disk.",
     inputSchema: {},
   },
   async () => {
-    if (snapshots.size === 0) {
-      return { content: [{ type: "text", text: "No snapshots saved this session." }] };
+    const snapshots = listStoredSnapshots();
+    if (snapshots.length === 0) {
+      return { content: [{ type: "text", text: "No persisted snapshots found." }] };
     }
-    const lines = [...snapshots.entries()].map(
-      ([id, s]) => `  ${id}  |  ${s.label}  |  ${s.timestamp}`
+    const lines = snapshots.map(
+      (snapshot) => `  ${snapshot.id}  |  ${snapshot.label}  |  ${snapshot.timestamp}`
     );
     return {
       content: [
@@ -912,6 +762,446 @@ server.registerTool(
   async () => ({
     content: [{ type: "text", text: "⟦§MUNCH v1.0⟧ — ACTIVE | MCP server running" }],
   })
+);
+
+server.registerTool(
+  "check_for_update",
+  {
+    description: "Check the latest versioned Munch release without changing the installation.",
+    inputSchema: {},
+  },
+  async () => {
+    const info = await checkForUpdate("1.0.0");
+    return { content: [{ type: "text", text: JSON.stringify(info, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "list_references",
+  {
+    description: "List available supporting references for selective context loading.",
+    inputSchema: {},
+  },
+  async () => {
+    const skillPath = resolveSkillPath();
+    if (!skillPath) return { content: [{ type: "text", text: "SKILL.md not found." }] };
+    const referenceDir = join(dirname(skillPath), "references");
+    const names = readdirSync(referenceDir)
+      .filter((name) => name.endsWith(".md"))
+      .sort();
+    return { content: [{ type: "text", text: names.join("\n") }] };
+  },
+);
+
+server.registerTool(
+  "load_reference",
+  {
+    description: "Load one supporting reference by filename instead of expanding the entire skill library.",
+    inputSchema: {
+      name: z.string().regex(/^[A-Za-z0-9_]+(?:\.md)?$/).describe("Reference name, for example network_protocols"),
+    },
+  },
+  async ({ name }) => {
+    const skillPath = resolveSkillPath();
+    if (!skillPath) return { content: [{ type: "text", text: "SKILL.md not found." }] };
+    const filename = name.endsWith(".md") ? name : `${name}.md`;
+    const path = join(dirname(skillPath), "references", filename);
+    if (!existsSync(path)) {
+      return { content: [{ type: "text", text: `Reference "${filename}" not found.` }] };
+    }
+    LOADED_REFERENCES.add(filename);
+    return { content: [{ type: "text", text: readFileSync(path, "utf8") }] };
+  },
+);
+
+server.registerTool(
+  "export_memory",
+  {
+    description: "Export the active global or project memory namespace as normalized JSON.",
+    inputSchema: {},
+  },
+  async () => ({
+    content: [{
+      type: "text",
+      text: JSON.stringify({
+        scope: MEMORY_SCOPE,
+        projectId: MEMORY_SCOPE === "project" ? PROJECT_ID : undefined,
+        memory: readPersistentMemory(),
+      }, null, 2),
+    }],
+  }),
+);
+
+server.registerTool(
+  "clear_memory",
+  {
+    description: "Delete the active memory namespace only after explicit confirmation.",
+    inputSchema: {
+      confirm: z.literal("DELETE").describe('Must be exactly "DELETE"'),
+    },
+  },
+  async () => {
+    rmSync(MEMORY_PATH, { force: true });
+    rmSync(MEMORY_BACKUP_PATH, { force: true });
+    rmSync(SNAPSHOT_DIR, { recursive: true, force: true });
+    return { content: [{ type: "text", text: `Cleared ${MEMORY_SCOPE} Munch memory.` }] };
+  },
+);
+
+server.registerTool(
+  "apply_update",
+  {
+    description:
+      "Apply an explicitly requested exact release version. Requires MUNCH_ALLOW_UPDATE_APPLY=true.",
+    inputSchema: {
+      version: z.string().describe("Exact semantic version from a verified Munch release, such as 1.2.3"),
+      confirm: z.literal(true).describe("Explicit confirmation that the update should modify the global installation"),
+    },
+  },
+  async ({ version }) => {
+    await applyVersionedUpdate(version);
+    return {
+      content: [{
+        type: "text",
+        text: `Munch ${version} installed with lifecycle scripts disabled. Run munch-setup repair to refresh managed host files.`,
+      }],
+    };
+  },
+);
+
+server.registerTool(
+  "compile_policy",
+  {
+    description: "Compile SKILL.md directives into a machine-checkable policy artifact.",
+    inputSchema: {},
+  },
+  async () => {
+    const skillPath = resolveSkillPath();
+    if (!skillPath) throw new Error("SKILL.md not found");
+    return { content: [{ type: "text", text: JSON.stringify(compilePolicy(skillPath), null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "negotiate_capabilities",
+  {
+    description: "Select a safe execution and context strategy from the host's actual capabilities.",
+    inputSchema: {
+      host: z.string(),
+      tools: z.array(z.string()),
+      contextBudget: z.number().int().positive(),
+      filesystem: z.enum(["none", "read", "write"]),
+      network: z.boolean(),
+      mcpTransport: z.enum(["stdio", "http", "unknown"]),
+    },
+  },
+  async (args) => ({
+    content: [{ type: "text", text: JSON.stringify(negotiateCapabilities(args), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "detect_contradictions",
+  {
+    description: "Detect likely conflicts across user instructions, memory, policies, and runtime constraints.",
+    inputSchema: {
+      statements: z.array(z.object({
+        source: z.string(),
+        text: z.string(),
+        priority: z.number().optional(),
+      })).min(2),
+    },
+  },
+  async ({ statements }) => ({
+    content: [{ type: "text", text: JSON.stringify(detectContradictions(statements), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "configure_runtime",
+  {
+    description: "Configure trust mode, retention duration, and sensitivity labels for local Munch runtime artifacts.",
+    inputSchema: {
+      trustMode: z.enum(["strict", "balanced", "experimental"]).optional(),
+      retentionDays: z.number().int().min(1).max(3650).optional(),
+      sensitivity: z.record(z.enum(["public", "internal", "sensitive"])).optional(),
+    },
+  },
+  async (args) => ({
+    content: [{ type: "text", text: JSON.stringify(configureRuntimeSettings(args), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "start_trace",
+  {
+    description: "Create a deterministic, hash-chained agent replay trace.",
+    inputSchema: {
+      label: z.string(),
+      metadata: z.record(z.unknown()).optional(),
+    },
+  },
+  async ({ label, metadata }) => ({
+    content: [{ type: "text", text: JSON.stringify(startTrace(label, metadata), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "append_trace",
+  {
+    description: "Append a typed event to a deterministic replay trace.",
+    inputSchema: {
+      traceId: z.string().uuid(),
+      type: z.string(),
+      payload: z.unknown(),
+    },
+  },
+  async ({ traceId, type, payload }) => ({
+    content: [{ type: "text", text: JSON.stringify(appendTrace(traceId, type, payload), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "replay_trace",
+  {
+    description: "Replay a trace and verify its complete hash chain.",
+    inputSchema: { traceId: z.string().uuid() },
+  },
+  async ({ traceId }) => ({
+    content: [{ type: "text", text: JSON.stringify(replayTrace(traceId), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "record_provenance",
+  {
+    description: "Record a confidence-scored memory, decision, claim, or evidence node with provenance links.",
+    inputSchema: {
+      kind: z.string(),
+      content: z.string(),
+      source: z.string(),
+      confidence: z.number().min(0).max(1),
+      supersedes: z.array(z.string()).optional(),
+      evidence: z.array(z.string()).optional(),
+    },
+  },
+  async (args) => ({
+    content: [{ type: "text", text: JSON.stringify(recordProvenance(args), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "get_provenance_graph",
+  {
+    description: "Return the local provenance nodes and supersession/evidence edges.",
+    inputSchema: {},
+  },
+  async () => ({
+    content: [{ type: "text", text: JSON.stringify(getProvenanceGraph(), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "create_evidence_bundle",
+  {
+    description: "Create a durable completion artifact with requirements, changes, tests, risks, and file hashes.",
+    inputSchema: {
+      title: z.string(),
+      requirements: z.array(z.string()),
+      changes: z.array(z.string()),
+      tests: z.array(z.object({
+        name: z.string(),
+        status: z.enum(["passed", "failed", "skipped"]),
+        evidence: z.string().optional(),
+      })),
+      files: z.array(z.string()).optional(),
+      risks: z.array(z.string()).optional(),
+    },
+  },
+  async (args) => ({
+    content: [{ type: "text", text: JSON.stringify(createEvidenceBundle(args), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "run_evaluation",
+  {
+    description: "Evaluate repeatable Munch-enabled outputs against optional baseline outputs.",
+    inputSchema: {
+      name: z.string(),
+      cases: z.array(z.object({
+        id: z.string(),
+        expected: z.string(),
+        enabledOutput: z.string(),
+        baselineOutput: z.string().optional(),
+        matcher: z.enum(["includes", "exact", "regex"]).optional(),
+      })).min(1),
+    },
+  },
+  async (args) => ({
+    content: [{ type: "text", text: JSON.stringify(runEvaluation(args), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "score_references",
+  {
+    description: "Rank supporting references by task match, priority, freshness, usage, and validation outcomes.",
+    inputSchema: { query: z.string() },
+  },
+  async ({ query }) => {
+    const skillPath = resolveSkillPath();
+    if (!skillPath) throw new Error("SKILL.md not found");
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify(scoreReferences(join(dirname(skillPath), "references"), query), null, 2),
+      }],
+    };
+  },
+);
+
+server.registerTool(
+  "record_reference_outcome",
+  {
+    description: "Record whether a selected supporting reference helped the task succeed.",
+    inputSchema: { id: z.string(), success: z.boolean() },
+  },
+  async ({ id, success }) => ({
+    content: [{ type: "text", text: JSON.stringify(recordReferenceOutcome(id, success), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "build_context_package",
+  {
+    description: "Build a task-ranked context bundle that fits an explicit token budget.",
+    inputSchema: {
+      query: z.string(),
+      tokenBudget: z.number().int().min(500).max(200000),
+    },
+  },
+  async ({ query, tokenBudget }) => {
+    const skillPath = resolveSkillPath();
+    if (!skillPath) throw new Error("SKILL.md not found");
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify(buildContextPackage(join(dirname(skillPath), "references"), query, tokenBudget), null, 2),
+      }],
+    };
+  },
+);
+
+server.registerTool(
+  "install_reference_pack",
+  {
+    description: "Install a checksum-verified local reference extension pack. Requires explicit runtime permission.",
+    inputSchema: {
+      sourcePath: z.string(),
+      confirm: z.literal(true),
+    },
+  },
+  async ({ sourcePath }) => {
+    if (process.env.MUNCH_ALLOW_REFERENCE_PACK_INSTALL !== "true") {
+      throw new Error("Set MUNCH_ALLOW_REFERENCE_PACK_INSTALL=true to install a local reference pack");
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(installReferencePack(sourcePath), null, 2) }],
+    };
+  },
+);
+
+server.registerTool(
+  "list_reference_packs",
+  {
+    description: "List installed, independently versioned reference extension packs.",
+    inputSchema: {},
+  },
+  async () => ({
+    content: [{ type: "text", text: JSON.stringify(listReferencePacks(), null, 2) }],
+  }),
+);
+
+server.registerTool(
+  "build_workspace_graph",
+  {
+    description: "Index workspace files, imports, test relationships, configuration, and package dependencies.",
+    inputSchema: {
+      rootPath: z.string().optional(),
+      maximumFiles: z.number().int().min(10).max(10000).optional(),
+    },
+  },
+  async ({ rootPath, maximumFiles }) => ({
+    content: [{
+      type: "text",
+      text: JSON.stringify(buildWorkspaceGraph(rootPath ?? process.cwd(), maximumFiles), null, 2),
+    }],
+  }),
+);
+
+server.registerTool(
+  "predict_change_impact",
+  {
+    description: "Predict dependents, tests, generated artifacts, security risks, and checks for planned file changes.",
+    inputSchema: {
+      rootPath: z.string().optional(),
+      changedPaths: z.array(z.string()).min(1),
+    },
+  },
+  async ({ rootPath, changedPaths }) => ({
+    content: [{
+      type: "text",
+      text: JSON.stringify(predictChangeImpact(rootPath ?? process.cwd(), changedPaths), null, 2),
+    }],
+  }),
+);
+
+server.registerTool(
+  "purge_expired_data",
+  {
+    description: "Apply configured retention to traces, evidence, and timestamped persistent memory records.",
+    inputSchema: { confirm: z.literal(true) },
+  },
+  async () => {
+    const runtime = purgeExpiredRuntime();
+    const settings = getRuntimeSettings();
+    const cutoff = Date.now() - settings.retentionDays * 86_400_000;
+    const memory = readPersistentMemory();
+    const before = {
+      lessons: memory.learnedLessons.length,
+      fixes: memory.registryFixes.length,
+      conversations: memory.conversationSummaries.length,
+    };
+    memory.learnedLessons = memory.learnedLessons.filter((item) => Date.parse(item.lastSeen ?? item.timestamp) >= cutoff);
+    memory.registryFixes = memory.registryFixes.filter((item) => Date.parse(item.lastSeen ?? item.timestamp) >= cutoff);
+    memory.conversationSummaries = memory.conversationSummaries.filter((item) => Date.parse(item.timestamp) >= cutoff);
+    writePersistentMemory(memory);
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          runtime,
+          memoryRemoved: {
+            lessons: before.lessons - memory.learnedLessons.length,
+            fixes: before.fixes - memory.registryFixes.length,
+            conversations: before.conversations - memory.conversationSummaries.length,
+          },
+        }, null, 2),
+      }],
+    };
+  },
+);
+
+server.registerTool(
+  "get_control_snapshot",
+  {
+    description: "Return local dashboard state for trust, traces, provenance, evidence, privacy, and extensions.",
+    inputSchema: {},
+  },
+  async () => ({
+    content: [{ type: "text", text: JSON.stringify(getFullControlSnapshot(), null, 2) }],
+  }),
 );
 
 // ── Tool: remember_lesson ─────────────────────
@@ -1186,22 +1476,10 @@ server.registerTool(
     const memory = readPersistentMemory();
     const q = query.toLowerCase().trim();
     const tokens = q.split(/\s+/).filter(Boolean);
-    const currentCwd = process.cwd().replace(/\\/g, "/");
-    const pastPaths = extractPaths(memory);
 
     if (tokens.length === 0) {
       return { content: [{ type: "text", text: "Please enter a valid search query." }] };
     }
-
-    const translatePaths = (val: string): string => {
-      let updated = val;
-      pastPaths.forEach((past) => {
-        if (past !== currentCwd && currentCwd.length > 3 && past.length > 3) {
-          updated = updated.split(past).join(currentCwd);
-        }
-      });
-      return updated;
-    };
 
     // Calculate score using token match (weighted TF-IDF style) and Jaccard similarity
     const calculateSearchScore = (text: string, multiplier: number = 1.0): number => {
@@ -1233,15 +1511,7 @@ server.registerTool(
       })
       .filter((item) => item.score > 0.1)
       .sort((a, b) => b.score - a.score || (b.lesson.occurrences ?? 1) - (a.lesson.occurrences ?? 1))
-      .map((item) => {
-        const l = item.lesson;
-        return {
-          ...l,
-          symptom: translatePaths(l.symptom),
-          fix: translatePaths(l.fix),
-          context: translatePaths(l.context || "")
-        };
-      });
+      .map((item) => item.lesson);
 
     // Query and rank fixes
     const fixes = memory.registryFixes
@@ -1253,14 +1523,7 @@ server.registerTool(
       })
       .filter((item) => item.score > 0.1)
       .sort((a, b) => b.score - a.score || (b.fix.occurrences ?? 1) - (a.fix.occurrences ?? 1))
-      .map((item) => {
-        const f = item.fix;
-        return {
-          ...f,
-          issue: translatePaths(f.issue),
-          resolution: translatePaths(f.resolution)
-        };
-      });
+      .map((item) => item.fix);
 
     // Query and rank conversations
     const convs = memory.conversationSummaries
@@ -1272,13 +1535,7 @@ server.registerTool(
       })
       .filter((item) => item.score > 0.1)
       .sort((a, b) => b.score - a.score)
-      .map((item) => {
-        const c = item.conv;
-        return {
-          ...c,
-          summary: translatePaths(c.summary)
-        };
-      });
+      .map((item) => item.conv);
 
     let output = `### Memory Query Results for "${query}"\n\n`;
     
@@ -1458,183 +1715,38 @@ server.registerPrompt(
   return server;
 }
 
-// Background update checker from GitHub (WyvernCW/MunchsPlugin)
-async function checkForUpdates(): Promise<void> {
-  console.error("⟦§MUNCH⟧ Checking for updates from GitHub (WyvernCW/MunchsPlugin)...");
-  
-  const gitDir = join(__dirname, "../.git");
-  const isGitRepo = existsSync(gitDir) || existsSync(join(__dirname, "../../.git"));
-  
-  if (isGitRepo) {
-    const cwd = existsSync(gitDir) ? join(__dirname, "..") : join(__dirname, "../..");
-    
-    exec("git fetch origin main", { cwd }, (fetchErr) => {
-      if (fetchErr) {
-        console.error("⟦§MUNCH UPDATE CHECK⟧ git fetch failed:", fetchErr.message);
-        return;
-      }
-      
-      exec("git rev-list HEAD...origin/main --count", { cwd }, (countErr, stdout) => {
-        if (countErr) {
-          console.error("⟦§MUNCH UPDATE CHECK⟧ git rev-list failed:", countErr.message);
-          return;
-        }
-        
-        const count = parseInt(stdout.trim(), 10);
-        if (count > 0) {
-          console.error(`⟦§MUNCH UPDATE⟧ New updates found: ${count} commits behind origin/main. Auto-updating...`);
-          showNotification("Munch Auto-Update", `Found ${count} new commits. Downloading updates...`);
-          
-          exec("git pull && node install.js", { cwd }, (pullErr) => {
-            if (pullErr) {
-              console.error("⟦§MUNCH UPDATE⟧ Auto-update pull/install failed:", pullErr.message);
-              showNotification("Munch Update Failed", "Failed to pull and compile latest changes.");
-            } else {
-              console.error("⟦§MUNCH UPDATE⟧ Auto-update completed successfully.");
-              showNotification("Munch Update Successful", "The plugin and skills have been automatically updated and recompiled.");
-            }
-          });
-        } else {
-          console.error("⟦§MUNCH UPDATE CHECK⟧ Munch is up to date.");
-        }
-      });
-    });
-  } else {
-    const options = {
-      hostname: "api.github.com",
-      path: "/repos/WyvernCW/MunchsPlugin/commits/main",
-      headers: {
-        "User-Agent": "Munch-MCP-Server-AutoUpdater"
-      }
-    };
-    
-    https.get(options, (res) => {
-      let body = "";
-      res.on("data", chunk => body += chunk);
-      res.on("end", () => {
-        try {
-          const commitData = JSON.parse(body);
-          const latestSha = commitData.sha;
-          if (!latestSha) return;
-          
-          const shaPath = join(MEMORY_DIR, "last_commit_sha.txt");
-          let localSha = "";
-          if (existsSync(shaPath)) {
-            localSha = readFileSync(shaPath, "utf8").trim();
-          }
-          
-          if (latestSha !== localSha) {
-            console.error(`⟦§MUNCH UPDATE⟧ New updates found on GitHub. Auto-updating npm package...`);
-            showNotification("Munch Auto-Update", "New version detected on GitHub. Installing updates...");
-            
-            exec("npm install -g git+https://github.com/WyvernCW/MunchsPlugin.git", (npmErr) => {
-              if (npmErr) {
-                console.error("⟦§MUNCH UPDATE⟧ npm update failed:", npmErr.message);
-                showNotification("Munch Update Failed", "Failed to install latest npm package from GitHub.");
-              } else {
-                writeFileSync(shaPath, latestSha, "utf8");
-                console.error("⟦§MUNCH UPDATE⟧ npm auto-update completed successfully.");
-                showNotification("Munch Update Successful", "The global npm package has been updated.");
-              }
-            });
-          } else {
-            console.error("⟦§MUNCH UPDATE CHECK⟧ Munch npm package is up to date.");
-          }
-        } catch (e) {
-          console.error("⟦§MUNCH UPDATE CHECK⟧ Failed to parse GitHub API response:", e);
-        }
-      });
-    }).on("error", (err) => {
-      console.error("⟦§MUNCH UPDATE CHECK⟧ GitHub API request failed:", err.message);
-    });
-  }
-}
-
-// ──────────────────────────────────────────────
-// Start
-// ──────────────────────────────────────────────
 async function main(): Promise<void> {
   const isSseMode = process.argv.includes("--sse") || process.env.MUNCH_SSE === "true" || process.env.PORT !== undefined;
   const port = parseInt(process.env.PORT || "8080", 10);
 
-  // Run self-configuration asynchronously to prevent blocking the MCP handshake
-  setTimeout(() => {
-    try {
-      selfConfigure();
-    } catch (e) {
-      console.error("⟦§MUNCH⟧ Background self-configuration check failed:", e);
-    }
-  }, 1000);
+  if (process.env.MUNCH_AUTO_CONFIGURE === "true") {
+    setTimeout(() => {
+      runSelfConfigure();
+    }, 1000);
+  }
 
   if (isSseMode) {
-    const transports = new Map<string, SSEServerTransport>();
-
-    const httpServer = createServer(async (req, res) => {
-      // CORS headers
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-session-id");
-
-      if (req.method === "OPTIONS") {
-        res.writeHead(200);
-        res.end();
-        return;
-      }
-
-      const parsedUrl = parseUrl(req.url || "", true);
-      const pathname = parsedUrl.pathname;
-
-      if (req.method === "GET" && pathname === "/sse") {
-        const transport = new SSEServerTransport("/messages", res);
-        transports.set(transport.sessionId, transport);
-        
-        const sessionServer = createMcpServer();
-        await sessionServer.connect(transport);
-        console.error(`⟦§MUNCH⟧ SSE Client connected. Session: ${transport.sessionId}`);
-
-        req.on("close", () => {
-          transports.delete(transport.sessionId);
-          console.error(`⟦§MUNCH⟧ SSE Client disconnected. Session: ${transport.sessionId}`);
-        });
-        return;
-      }
-
-      if (req.method === "POST" && (pathname === "/messages" || pathname === "/sse" || pathname === "/")) {
-        const sessionId = (parsedUrl.query.sessionId as string) || (req.headers["x-session-id"] as string) || (req.headers["mcp-session-id"] as string);
-        console.error(`⟦§MUNCH⟧ Received POST on ${pathname}. Session ID: ${sessionId}`);
-        
-        let transport = sessionId ? transports.get(sessionId) : undefined;
-        if (!transport && transports.size === 1) {
-          transport = transports.values().next().value;
-          console.error(`⟦§MUNCH⟧ Fallback to single active session: ${transport?.sessionId}`);
-        }
-
-        if (!transport) {
-          res.writeHead(404, { "Content-Type": "text/plain" });
-          res.end(`Session not found or expired. Active sessions: ${[...transports.keys()].join(", ")}`);
-          return;
-        }
-        await transport.handlePostMessage(req, res);
-        return;
-      }
-
-      if (req.method === "GET" && (pathname === "/" || pathname === "/health")) {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({
-          status: "online",
-          mcp: "active",
-          version: "1.0.0",
-          message: "munch MCP Server is running"
-        }, null, 2));
-        return;
-      }
-
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end("Not Found");
-    });
-
-    httpServer.listen(port, () => {
-      console.error(`⟦§MUNCH⟧ MCP SSE server v1.0 running on port ${port}`);
+    const token = process.env.MUNCH_HTTP_TOKEN ?? process.env.MUNCH_SSE_TOKEN;
+    const allowInsecure =
+      process.env.MUNCH_ALLOW_INSECURE_HTTP === "true" ||
+      process.env.MUNCH_ALLOW_INSECURE_SSE === "true";
+    startHttpServer({
+      port,
+      token,
+      allowInsecure,
+      allowedOrigins: new Set(
+        (process.env.MUNCH_ALLOWED_ORIGINS ?? "")
+          .split(",")
+          .map((origin) => origin.trim())
+          .filter(Boolean),
+      ),
+      createMcpServer,
+      enableLegacySse: process.env.MUNCH_ENABLE_LEGACY_SSE === "true",
+      maxSessions: parsePositiveInt(process.env.MUNCH_MAX_SESSIONS, 100),
+      sessionTtlMs: parsePositiveInt(process.env.MUNCH_SESSION_TTL_MS, 30 * 60_000),
+      maxBodyBytes: parsePositiveInt(process.env.MUNCH_MAX_BODY_BYTES, 1_048_576),
+      rateLimitPerMinute: parsePositiveInt(process.env.MUNCH_RATE_LIMIT_PER_MINUTE, 120),
+      controlSnapshot: getFullControlSnapshot,
     });
   } else {
     const transport = new StdioServerTransport();
@@ -1643,10 +1755,20 @@ async function main(): Promise<void> {
     console.error("⟦§MUNCH⟧ MCP server v1.0 running on stdio");
   }
 
-  // Start background auto-updater check
-  checkForUpdates().catch((err) => {
-    console.error("⟦§MUNCH UPDATE CHECK⟧ Failed to execute update check:", err);
-  });
+  if (process.env.MUNCH_AUTO_UPDATE === "true") {
+    checkForUpdate("1.0.0")
+      .then((info) => {
+        if (info.updateAvailable) {
+          showNotification("Munch Update Available", `${info.latestVersion} is available at ${info.releaseUrl}`);
+        }
+      })
+      .catch((err) => console.error("⟦§MUNCH UPDATE CHECK⟧ Failed:", err));
+  }
+}
+
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 main().catch((err) => {

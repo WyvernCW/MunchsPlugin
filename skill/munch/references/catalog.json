@@ -1,0 +1,778 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "skill/munch/references/*.md",
+  "references": [
+    {
+      "id": "accessibility_engineering",
+      "file": "accessibility_engineering.md",
+      "title": "Accessibility Engineering Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "accessibility",
+        "engineering"
+      ],
+      "dependencies": [
+        "browser_automation.md",
+        "cli_tui_engineering.md",
+        "frontend_design.md",
+        "visual_motion.md"
+      ],
+      "graphIds": [
+        "accessibility_engineering_verification_flow_v1",
+        "accessibility_engineering_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "agent_reliability_runtime",
+      "file": "agent_reliability_runtime.md",
+      "title": "Agent Reliability Runtime Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "agent",
+        "reliability",
+        "runtime"
+      ],
+      "dependencies": [
+        "SKILL.md",
+        "ai_agent_engineering.md",
+        "documentation_engineering.md",
+        "package_release.md",
+        "persistent_memory.md",
+        "security_engineering.md",
+        "testing_strategy.md"
+      ],
+      "graphIds": [
+        "agent_reliability_runtime_trace_flow_v1",
+        "agent_reliability_runtime_decision_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "ai_agent_engineering",
+      "file": "ai_agent_engineering.md",
+      "title": "AI Agent Engineering Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "ai",
+        "agent",
+        "engineering"
+      ],
+      "dependencies": [
+        "task.md"
+      ],
+      "graphIds": [
+        "ai_agent_engineering_loop_v1",
+        "ai_agent_engineering_memory_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "api_design",
+      "file": "api_design.md",
+      "title": "API Design Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "api",
+        "design"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "api_design_intake_flow_v1",
+        "api_design_versioning_strategy_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "backend_architecture",
+      "file": "backend_architecture.md",
+      "title": "Backend Architecture Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "backend",
+        "architecture"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "backend_architecture_data_flow_v1",
+        "backend_architecture_recovery_flow_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "browser_automation",
+      "file": "browser_automation.md",
+      "title": "Browser Automation Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "browser",
+        "automation"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "browser_automation_skill_flow_v1",
+        "browser_automation_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "cli_tui_engineering",
+      "file": "cli_tui_engineering.md",
+      "title": "CLI and TUI Engineering Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "cli",
+        "tui",
+        "engineering"
+      ],
+      "dependencies": [
+        "accessibility_engineering.md",
+        "documentation_engineering.md",
+        "testing_strategy.md",
+        "windows_systems.md"
+      ],
+      "graphIds": [
+        "cli_tui_engineering_execution_flow_v1",
+        "cli_tui_engineering_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "code_review_refactoring",
+      "file": "code_review_refactoring.md",
+      "title": "Code Review and Refactoring Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "code",
+        "review",
+        "refactoring"
+      ],
+      "dependencies": [
+        "api_design.md",
+        "documentation_engineering.md",
+        "security_engineering.md",
+        "testing_strategy.md"
+      ],
+      "graphIds": [
+        "code_review_refactoring_review_flow_v1",
+        "code_review_refactoring_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "cognitive_architectures",
+      "file": "cognitive_architectures.md",
+      "title": "Meta-Cognitive Reasoner & Advanced Problem Solving",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "cognitive",
+        "architectures"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "context_disambiguation",
+      "file": "context_disambiguation.md",
+      "title": "⟦§CONTEXT_DISAMBIGUATION v1.0⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "context",
+        "disambiguation"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "continuous_improvement",
+      "file": "continuous_improvement.md",
+      "title": "⟦§CONTINUOUS_IMPROVEMENT v1.0⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "continuous",
+        "improvement"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "database_engineering",
+      "file": "database_engineering.md",
+      "title": "Database Engineering Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "database",
+        "engineering"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "database_engineering_skill_flow_v1",
+        "database_engineering_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "desktop_apps",
+      "file": "desktop_apps.md",
+      "title": "Desktop Applications Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "desktop",
+        "apps"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "desktop_apps_skill_flow_v1",
+        "desktop_apps_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "devops_ci_cd",
+      "file": "devops_ci_cd.md",
+      "title": "DevOps CI/CD Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "devops",
+        "ci",
+        "cd"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "devops_ci_cd_skill_flow_v1",
+        "devops_ci_cd_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "distributed_systems",
+      "file": "distributed_systems.md",
+      "title": "Distributed Systems Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "distributed",
+        "systems"
+      ],
+      "dependencies": [
+        "backend_architecture.md",
+        "database_engineering.md",
+        "observability_debugging.md",
+        "state_replication.md"
+      ],
+      "graphIds": [
+        "distributed_systems_message_flow_v1",
+        "distributed_systems_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "documentation_engineering",
+      "file": "documentation_engineering.md",
+      "title": "Documentation Engineering Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "documentation",
+        "engineering"
+      ],
+      "dependencies": [
+        "accessibility_engineering.md",
+        "api_design.md",
+        "cli_tui_engineering.md",
+        "package_release.md"
+      ],
+      "graphIds": [
+        "documentation_engineering_workflow_v1",
+        "documentation_engineering_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "frontend_design",
+      "file": "frontend_design.md",
+      "title": "Frontend Design Supporting Skill: Distinctive Layouts and Compositions",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "frontend",
+        "design"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "game_development",
+      "file": "game_development.md",
+      "title": "Game Development Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "game",
+        "development"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "game_development_skill_flow_v1",
+        "game_development_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "hallucination_prevention",
+      "file": "hallucination_prevention.md",
+      "title": "⟦§HALLUCINATION_PREVENTION v2.3⟧",
+      "version": 1,
+      "priority": "core",
+      "keywords": [
+        "hallucination",
+        "prevention"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "heavy_engineering",
+      "file": "heavy_engineering.md",
+      "title": "Heavy & Complex Systems Engineering Supporting Skill",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "heavy",
+        "engineering"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "mobile_apps",
+      "file": "mobile_apps.md",
+      "title": "Mobile Applications Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "mobile",
+        "apps"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "mobile_apps_skill_flow_v1",
+        "mobile_apps_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "network_protocols",
+      "file": "network_protocols.md",
+      "title": "Network Protocols Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "network",
+        "protocols"
+      ],
+      "dependencies": [
+        "api_design.md",
+        "distributed_systems.md",
+        "observability_debugging.md",
+        "security_engineering.md"
+      ],
+      "graphIds": [
+        "network_protocols_connection_flow_v1",
+        "network_protocols_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "observability_debugging",
+      "file": "observability_debugging.md",
+      "title": "Observability and Debugging Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "observability",
+        "debugging"
+      ],
+      "dependencies": [
+        "backend_architecture.md",
+        "network_protocols.md",
+        "performance_guard.md",
+        "windows_systems.md"
+      ],
+      "graphIds": [
+        "observability_debugging_diagnostic_flow_v1",
+        "observability_debugging_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "package_release",
+      "file": "package_release.md",
+      "title": "Package Release Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "package",
+        "release"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "package_release_skill_flow_v1",
+        "package_release_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "performance_guard",
+      "file": "performance_guard.md",
+      "title": "⟦§PERFORMANCE_GUARD v1.0⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "performance",
+        "guard"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "persistent_memory",
+      "file": "persistent_memory.md",
+      "title": "⟦§PERSISTENT_MEMORY v1.0⟧",
+      "version": 1,
+      "priority": "core",
+      "keywords": [
+        "persistent",
+        "memory"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "polyglot_data_functional",
+      "file": "polyglot_data_functional.md",
+      "title": "⟦§POLYGLOT_DATA_FUNCTIONAL v2.3 ⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "polyglot",
+        "data",
+        "functional"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "polyglot_game_legacy_esolang",
+      "file": "polyglot_game_legacy_esolang.md",
+      "title": "⟦§POLYGLOT_GAME_LEGACY_ESOLANG v2.3 ⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "polyglot",
+        "game",
+        "legacy",
+        "esolang"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "polyglot_idioms",
+      "file": "polyglot_idioms.md",
+      "title": "⟦§POLYGLOT_IDIOMS v2.2⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "polyglot",
+        "idioms"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "polyglot_index",
+      "file": "polyglot_index.md",
+      "title": "⟦§POLYGLOT_INDEX v2.3⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "polyglot",
+        "index"
+      ],
+      "dependencies": [
+        "polyglot_data_functional.md",
+        "polyglot_idioms.md",
+        "polyglot_systems.md"
+      ],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "polyglot_mainstream",
+      "file": "polyglot_mainstream.md",
+      "title": "⟦§POLYGLOT_MAINSTREAM v2.3 ⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "polyglot",
+        "mainstream"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "polyglot_systems",
+      "file": "polyglot_systems.md",
+      "title": "⟦§POLYGLOT_SYSTEMS v2.3 ⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "polyglot",
+        "systems"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "prompt_engineering",
+      "file": "prompt_engineering.md",
+      "title": "Prompt Engineering Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "prompt",
+        "engineering"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "prompt_engineering_skill_flow_v1",
+        "prompt_engineering_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "reference_index",
+      "file": "reference_index.md",
+      "title": "Reference Index Reference",
+      "version": 1,
+      "priority": "core",
+      "keywords": [
+        "reference",
+        "index"
+      ],
+      "dependencies": [
+        "accessibility_engineering.md",
+        "agent_reliability_runtime.md",
+        "ai_agent_engineering.md",
+        "api_design.md",
+        "backend_architecture.md",
+        "cli_tui_engineering.md",
+        "code_review_refactoring.md",
+        "database_engineering.md",
+        "distributed_systems.md",
+        "documentation_engineering.md",
+        "frontend_design.md",
+        "network_protocols.md",
+        "observability_debugging.md",
+        "package_release.md",
+        "performance_guard.md",
+        "security_engineering.md",
+        "security_sandbox.md",
+        "testing_strategy.md",
+        "visual_motion.md",
+        "windows_installer_updater.md",
+        "windows_systems.md"
+      ],
+      "graphIds": [
+        "reference_index_skill_flow_v1",
+        "reference_index_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "reverse_engineering",
+      "file": "reverse_engineering.md",
+      "title": "Reverse Engineering Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "reverse",
+        "engineering"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "reverse_engineering_skill_flow_v1",
+        "reverse_engineering_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "roblox_studio",
+      "file": "roblox_studio.md",
+      "title": "⟦§ROBLOX_STUDIO v1.0⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "roblox",
+        "studio"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "security_engineering",
+      "file": "security_engineering.md",
+      "title": "Security Engineering Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "security",
+        "engineering"
+      ],
+      "dependencies": [
+        "code_review_refactoring.md",
+        "network_protocols.md",
+        "package_release.md",
+        "windows_systems.md"
+      ],
+      "graphIds": [
+        "security_engineering_threat_flow_v1",
+        "security_engineering_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "security_sandbox",
+      "file": "security_sandbox.md",
+      "title": "⟦§SECURITY_SANDBOX v1.0⟧",
+      "version": 1,
+      "priority": "core",
+      "keywords": [
+        "security",
+        "sandbox"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "state_replication",
+      "file": "state_replication.md",
+      "title": "⟦§STATE_REPLICATION v1.0⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "state",
+        "replication"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "testing_strategy",
+      "file": "testing_strategy.md",
+      "title": "Testing Strategy Reference",
+      "version": 1,
+      "priority": "core",
+      "keywords": [
+        "testing",
+        "strategy"
+      ],
+      "dependencies": [],
+      "graphIds": [
+        "testing_strategy_skill_flow_v1",
+        "testing_strategy_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "visual_motion",
+      "file": "visual_motion.md",
+      "title": "⟦§VISUAL_MOTION v1.0⟧",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "visual",
+        "motion"
+      ],
+      "dependencies": [],
+      "graphIds": [],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "windows_installer_updater",
+      "file": "windows_installer_updater.md",
+      "title": "Windows Installer and Updater Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "windows",
+        "installer",
+        "updater"
+      ],
+      "dependencies": [
+        "observability_debugging.md",
+        "package_release.md",
+        "security_engineering.md",
+        "windows_systems.md"
+      ],
+      "graphIds": [
+        "windows_installer_updater_transaction_flow_v1",
+        "windows_installer_updater_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    },
+    {
+      "id": "windows_systems",
+      "file": "windows_systems.md",
+      "title": "Windows Systems Reference",
+      "version": 1,
+      "priority": "domain",
+      "keywords": [
+        "windows",
+        "systems"
+      ],
+      "dependencies": [
+        "cli_tui_engineering.md",
+        "observability_debugging.md",
+        "security_engineering.md",
+        "windows_installer_updater.md"
+      ],
+      "graphIds": [
+        "windows_systems_change_flow_v1",
+        "windows_systems_domain_map_v1"
+      ],
+      "verification": "npm run verify"
+    }
+  ]
+}

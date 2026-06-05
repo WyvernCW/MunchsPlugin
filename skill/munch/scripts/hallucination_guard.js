@@ -1,118 +1,105 @@
 #!/usr/bin/env node
 /**
- * ⟦§MUNCH HALLUCINATION GUARD v1.0⟧
- * Static analysis script to detect common LLM hallucination markers,
- * empty error handlers, code placeholders, and hardcoded secrets.
+ * ⟦§MUNCH HALLUCINATION GUARD v1.1⟧
+ * Detects incomplete code markers, silent error handlers, and likely secrets.
  */
 
-import { readFileSync, lstatSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { existsSync, lstatSync, readFileSync, readdirSync } from 'fs';
+import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 const BANNED_PATTERNS = [
+  { regex: /\/\/\s*\.\.\./g, message: 'Placeholder comment found. Code must be complete.' },
+  { regex: /\/\*\s*\.\.\.\s*\*\//g, message: 'Placeholder block found. Code must be complete.' },
+  { regex: /#\s*\.\.\./g, message: 'Python placeholder comment found. Code must be complete.' },
+  { regex: /catch\s*\(\s*\w*\s*\)\s*\{\s*\}/g, message: 'Silent catch block detected.' },
+  { regex: /(TODO|FIXME):\s*implement/gi, message: 'Unimplemented placeholder tag found.' },
   {
-    regex: /\/\/\s*\.\.\./g,
-    message: "Placeholder comment found ('// ...'). Code must be complete."
+    regex: /(password|passwd|secret|api_key|apikey|private_key|token|auth_token)\s*=\s*['"`][a-zA-Z0-9_.\/-]{12,}['"`]/gi,
+    message: 'Potential hardcoded secret or token detected.',
   },
-  {
-    regex: /\/\*\s*\.\.\.\s*\*\//g,
-    message: "Placeholder comment found ('/* ... */'). Code must be complete."
-  },
-  {
-    regex: /#\s*\.\.\./g,
-    message: "Python placeholder comment found ('# ...'). Code must be complete."
-  },
-  {
-    regex: /catch\s*\(\s*\w*\s*\)\s*\{\s*\}/g,
-    message: "Silent catch block detected (empty error handling)."
-  },
-  {
-    regex: /(TODO|FIXME):\s*implement/i,
-    message: "Unimplemented placeholder tag found ('TODO: implement')."
-  },
-  {
-    regex: /(password|passwd|secret|api_key|apikey|private_key|token|auth_token)\s*=\s*['"`][a-zA-Z0-9_\-\.\/]{12,}['"`]/i,
-    message: "Potential hardcoded secret or token detected."
-  }
 ];
 
-function scanFile(filePath) {
-  try {
-    const content = readFileSync(filePath, 'utf8');
-    const lines = content.split('\n');
-    let violations = [];
+export function scanFile(filePath) {
+  const content = readFileSync(filePath, 'utf8');
+  const violations = [];
 
-    BANNED_PATTERNS.forEach(({ regex, message }) => {
-      let match;
-      // Reset regex index for safety
-      regex.lastIndex = 0;
-      while ((match = regex.exec(content)) !== null) {
-        // Find line number
-        const charIdx = match.index;
-        const lineNo = content.slice(0, charIdx).split('\n').length;
-        violations.push({ line: lineNo, message, match: match[0] });
-      }
-    });
-
-    return violations;
-  } catch (err) {
-    console.error(`Could not read file ${filePath}: ${err.message}`);
-    return [];
+  for (const { regex, message } of BANNED_PATTERNS) {
+    regex.lastIndex = 0;
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      const line = content.slice(0, match.index).split('\n').length;
+      violations.push({ line, message, match: match[0] });
+      if (match[0].length === 0) regex.lastIndex++;
+    }
   }
+
+  return violations;
 }
 
-function walkDir(dir, fileList = []) {
-  const files = readdirSync(dir);
-  files.forEach((file) => {
+export function walkDir(dir, fileList = []) {
+  for (const file of readdirSync(dir)) {
     const path = join(dir, file);
-    if (file === 'node_modules' || file === '.git' || file === 'build') return;
+    if (file === 'node_modules' || file === '.git' || file === 'build') continue;
     if (lstatSync(path).isDirectory()) {
       walkDir(path, fileList);
-    } else {
-      if (path.endsWith('.js') || path.endsWith('.ts') || path.endsWith('.py') || path.endsWith('.go') || path.endsWith('.java')) {
-        fileList.push(path);
-      }
+    } else if (/\.(js|ts|py|go|java)$/i.test(path)) {
+      fileList.push(path);
     }
-  });
+  }
   return fileList;
 }
 
-function main() {
+export function scanTargets(targets) {
+  const results = [];
+
+  for (const target of targets) {
+    if (!existsSync(target)) {
+      results.push({
+        file: target,
+        violations: [{ line: 0, message: 'Target does not exist.', match: target }],
+      });
+      continue;
+    }
+
+    const files = lstatSync(target).isDirectory() ? walkDir(target) : [target];
+    for (const file of files) {
+      const violations = scanFile(file);
+      if (violations.length > 0) results.push({ file, violations });
+    }
+  }
+
+  return results;
+}
+
+export function main() {
   const targets = process.argv.slice(2);
   if (targets.length === 0) {
-    console.log("Usage: node hallucination_guard.js <file_or_directory_path>");
+    console.log('Usage: node hallucination_guard.js <file_or_directory_path>');
     process.exit(0);
   }
 
+  const results = scanTargets(targets);
   let totalViolations = 0;
 
-  targets.forEach((target) => {
-    let files = [];
-    if (lstatSync(target).isDirectory()) {
-      files = walkDir(target);
-    } else {
-      files = [target];
+  for (const result of results) {
+    console.log(`\nViolations found in: ${result.file}`);
+    for (const violation of result.violations) {
+      console.log(`  [Line ${violation.line}]: ${violation.message} (Matched: "${violation.match.trim()}")`);
+      totalViolations++;
     }
-
-    files.forEach((file) => {
-      const violations = scanFile(file);
-      if (violations.length > 0) {
-        console.log(`\n❌ Violations found in: ${file}`);
-        violations.forEach((v) => {
-          console.log(`  [Line ${v.line}]: ${v.message} (Matched: "${v.match.trim()}")`);
-          totalViolations++;
-        });
-      }
-    });
-  });
+  }
 
   console.log('\n----------------------------------------');
   if (totalViolations > 0) {
-    console.log(`🚨 Scan failed. Found ${totalViolations} coding violations/hallucinations.`);
+    console.log(`Scan failed. Found ${totalViolations} coding violations.`);
     process.exit(1);
-  } else {
-    console.log("✓ Scan complete. 0 violations found. Code is robust and fully implemented.");
-    process.exit(0);
   }
+
+  console.log('Scan complete. 0 violations found.');
+  process.exit(0);
 }
 
-main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  main();
+}

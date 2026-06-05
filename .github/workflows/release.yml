@@ -1,0 +1,35 @@
+name: Release Package
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm ci --prefix mcp-server --ignore-scripts
+      - run: npm run verify
+      - run: npm audit --omit=dev
+      - run: npm audit --omit=dev --prefix mcp-server
+      - run: npm pack
+      - run: sha256sum munch-*.tgz > munch-${GITHUB_REF_NAME#v}.tgz.sha256
+      - name: Publish immutable GitHub release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" munch-*.tgz munch-*.tgz.sha256 --verify-tag --generate-notes
+      - uses: actions/upload-artifact@v4
+        with:
+          name: munch-package
+          path: |
+            munch-*.tgz
+            munch-*.tgz.sha256

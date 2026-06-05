@@ -23,7 +23,9 @@ boot: silent | zero_prompt | no_permission_required
 trigger: session_initialization | plugin_load
 action: LOAD_ALL_SUPPORTING_SKILLS
 rules:
+  - You MUST read `references/reference_index.md` first to route supporting references by task domain.
   - You MUST immediately read and load all files in the `references/` folder of this skill package.
+  - When context budget is limited, load `references/reference_index.md` plus the smallest matching reference set instead of blindly expanding unrelated domains.
   - Read `references/hallucination_prevention.md` to activate the Dialectical Verification Loop, anti-hallucination gates, and the strict ⟦§HALLUCINATION_ELIMINATION_CONSTRAINTS⟧ to reduce logic leaks by 80-90%.
   - Read `references/cognitive_architectures.md` to activate meta-cognitive reasoning, multi-persona self-auditing, and problem-solving methodologies.
   - Read `references/frontend_design.md` to activate the Visual Composition, UI/UX layouts, grid systems, and layout principles.
@@ -35,7 +37,32 @@ rules:
   - Read `references/visual_motion.md` to activate animation easings, spring physics, and micro-interactions.
   - Read `references/performance_guard.md` to activate complexity thresholds, dynamic telemetry, and memory profiling.
   - Read `references/state_replication.md` to activate offline-first sync, CRDT conflicts, and event sourcing.
+  - Read `references/backend_architecture.md` when designing services, workers, auth boundaries, retries, or observability.
+  - Read `references/database_engineering.md` when changing schemas, migrations, queries, indexes, transactions, or data integrity rules.
+  - Read `references/devops_ci_cd.md` when creating native CI, build automation, secrets handling, or deployment checks.
+  - Read `references/testing_strategy.md` when adding or verifying unit, integration, end-to-end, or regression tests.
+  - Read `references/api_design.md` when defining endpoints, MCP tools, SDK contracts, webhooks, errors, or versioning.
+  - Read `references/ai_agent_engineering.md` when building agents, MCP servers, memory systems, tools, or orchestration loops.
+  - Read `references/prompt_engineering.md` when creating or debugging prompts, skills, instruction packs, guardrails, or eval prompts.
+  - Read `references/desktop_apps.md` when building or packaging Windows, macOS, or Linux desktop applications.
+  - Read `references/mobile_apps.md` when building iOS, Android, mobile web, responsive touch UI, or device-tested flows.
+  - Read `references/game_development.md` when building games, gameplay systems, HUDs, controls, physics, or playtests.
+  - Read `references/browser_automation.md` when using browser QA, screenshots, automation, scraping, or frontend runtime inspection.
+  - Read `references/reverse_engineering.md` when inspecting binaries, file formats, protocols, compiled artifacts, or opaque runtime behavior.
+  - Read `references/package_release.md` when preparing package manifests, artifacts, changelogs, checksums, publishing, or rollback plans.
+  - Read `references/agent_reliability_runtime.md` when using policy compilation, trust modes, deterministic replay, provenance, evaluations, context packaging, workspace graphs, evidence bundles, extension packs, privacy retention, or the control dashboard.
+  - Read `references/windows_systems.md` when changing the Windows registry, PowerShell behavior, services, scheduled tasks, ACLs, event logs, or OS integration.
+  - Read `references/security_engineering.md` when threat modeling, tracing attack paths, handling secrets, securing updates, or validating remediations.
+  - Read `references/observability_debugging.md` when adding telemetry or diagnosing logs, traces, crashes, hangs, memory growth, latency, or production failures.
+  - Read `references/distributed_systems.md` when designing queues, retries, idempotency, replication, coordination, consistency, or reconciliation.
+  - Read `references/cli_tui_engineering.md` when building command-line or terminal interfaces, output contracts, prompts, signals, or shell completion.
+  - Read `references/windows_installer_updater.md` when implementing Windows install, update, repair, rollback, elevation, or uninstall workflows.
+  - Read `references/accessibility_engineering.md` when building or auditing interfaces, documents, charts, keyboard flows, screen-reader behavior, contrast, or motion.
+  - Read `references/code_review_refactoring.md` when reviewing changes, ranking findings, preserving compatibility, or performing behavior-safe refactors.
+  - Read `references/network_protocols.md` when implementing HTTP, TLS, DNS, proxies, WebSockets, SSE, framing, timeouts, or reconnect behavior.
+  - Read `references/documentation_engineering.md` when creating READMEs, tutorials, references, ADRs, runbooks, changelogs, or migration guides.
   - Read `references/polyglot_index.md` to load the worldwide language classification index (comprising 100+ core languages, shell environments, blockchain models, esoteric engines).
+  - Read `references/polyglot_idioms.md` for cross-language naming, error-handling, concurrency, and interoperability patterns.
   - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.
   - Read `references/roblox_studio.md` to activate Luau scripting, CFrame math, SVG triangulation, and CSG modeling rules.
   - You MUST immediately load the persistent memory (`munch_memory.json`) by calling the `load_skill` tool at the very beginning of the session. You MUST summarize the recalled context (`⟦§PERSISTENT_MEMORY_RECALL⟧`), understand past lessons, user profiles, recurrent pitfalls, and active regression fixes, and explicitly state how you will adapt to them in the current workspace.
@@ -49,6 +76,26 @@ signal_class→module_set:
   UI_UX         → btl + composition + frontend + polyglot + security_kernel
   ANALYSIS      → cognition + btl
   ARCHITECTURE  → cognition + btl + code_quality + security_kernel
+  BACKEND       → backend_architecture + api_design + database_engineering + testing_strategy + security_kernel
+  DATA          → database_engineering + api_design + testing_strategy + security_kernel
+  DEVOPS        → devops_ci_cd + package_release + testing_strategy + security_kernel
+  AGENT_SYSTEMS → ai_agent_engineering + prompt_engineering + api_design + persistent_memory + security_kernel
+  RELIABILITY   → agent_reliability_runtime + testing_strategy + security_engineering + persistent_memory
+  DESKTOP       → desktop_apps + package_release + testing_strategy + security_kernel
+  MOBILE        → mobile_apps + frontend + testing_strategy + performance_guard
+  GAME          → game_development + visual_motion + performance_guard + browser_automation
+  BROWSER_QA    → browser_automation + testing_strategy + frontend
+  REVERSE_ENGINEERING → reverse_engineering + security_sandbox + performance_guard
+  WINDOWS_SYSTEMS → windows_systems + windows_installer_updater + security_engineering + observability_debugging
+  SECURITY      → security_engineering + security_sandbox + testing_strategy + code_review_refactoring
+  OBSERVABILITY → observability_debugging + performance_guard + testing_strategy
+  DISTRIBUTED   → distributed_systems + backend_architecture + database_engineering + network_protocols
+  CLI_TUI       → cli_tui_engineering + accessibility_engineering + testing_strategy
+  INSTALLER     → windows_installer_updater + windows_systems + package_release + security_engineering
+  ACCESSIBILITY → accessibility_engineering + frontend + visual_motion + testing_strategy
+  CODE_REVIEW   → code_review_refactoring + testing_strategy + security_engineering
+  NETWORKING    → network_protocols + api_design + distributed_systems + security_engineering
+  DOCUMENTATION → documentation_engineering + api_design + package_release + accessibility_engineering
   MIXED         → union(matched_classes)
   AMBIGUOUS     → disambiguation_first | no_module_until_resolved
 

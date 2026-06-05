@@ -1,81 +1,123 @@
 #!/usr/bin/env node
 /**
- * ⟦§MUNCH BTL VALIDATOR v1.0⟧
- * Executes compilations and runs files for JavaScript, TypeScript, Python, and Go,
- * parsing syntax and stack traces to aid the self-correcting Build-Test-Loop.
+ * ⟦§MUNCH BTL VALIDATOR v1.1⟧
+ * Performs project-aware compilation and syntax validation without executing
+ * the target program as a side effect.
  */
 
-import { execSync } from 'child_process';
-import { existsSync, lstatSync } from 'fs';
-import { extname, resolve } from 'path';
+import { spawnSync } from 'child_process';
+import { existsSync } from 'fs';
+import { dirname, extname, join, parse, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
-function validateFile(filePath) {
-  const absPath = resolve(filePath);
-  if (!existsSync(absPath)) {
-    return { ok: false, error: `File not found: ${filePath}` };
-  }
+export function findNearestTsconfig(filePath) {
+  let current = dirname(resolve(filePath));
+  const root = parse(current).root;
 
-  const ext = extname(absPath);
-  let buildCommand = '';
-  let runCommand = '';
-
-  switch (ext) {
-    case '.js':
-      runCommand = `node "${absPath}"`;
-      break;
-    case '.ts':
-      buildCommand = `npx tsc --noEmit "${absPath}"`;
-      runCommand = `npx ts-node "${absPath}"`;
-      break;
-    case '.py':
-      buildCommand = `python -m py_compile "${absPath}"`;
-      runCommand = `python "${absPath}"`;
-      break;
-    case '.go':
-      buildCommand = `go build -o /dev/null "${absPath}"`; // Unix-centric, for windows we run go vet
-      if (process.platform === 'win32') {
-        buildCommand = `go vet "${absPath}"`;
-      }
-      runCommand = `go run "${absPath}"`;
-      break;
-    default:
-      return { ok: false, error: `Unsupported file type: ${ext}` };
-  }
-
-  // 1. Run build/compilation check if defined
-  if (buildCommand) {
-    console.log(`Checking compilation: ${buildCommand}`);
-    try {
-      execSync(buildCommand, { stdio: 'pipe' });
-      console.log("✓ Compilation / Syntax check passed.");
-    } catch (err) {
-      return {
-        ok: false,
-        phase: 'Compilation / Build',
-        error: err.stderr ? err.stderr.toString() : err.message
-      };
-    }
-  }
-
-  // 2. Run the script and observe outcomes
-  console.log(`Executing code: ${runCommand}`);
-  try {
-    const output = execSync(runCommand, { stdio: 'pipe' });
-    return { ok: true, output: output.toString() };
-  } catch (err) {
-    return {
-      ok: false,
-      phase: 'Runtime / Execution',
-      error: err.stderr ? err.stderr.toString() : err.message,
-      output: err.stdout ? err.stdout.toString() : ''
-    };
+  while (true) {
+    const candidate = join(current, 'tsconfig.json');
+    if (existsSync(candidate)) return candidate;
+    if (current === root) return undefined;
+    current = dirname(current);
   }
 }
 
-function main() {
+export function findNearestTypeScriptCompiler(startPath) {
+  let current = dirname(resolve(startPath));
+  const root = parse(current).root;
+
+  while (true) {
+    const candidate = join(current, 'node_modules', 'typescript', 'bin', 'tsc');
+    if (existsSync(candidate)) return candidate;
+    if (current === root) return undefined;
+    current = dirname(current);
+  }
+}
+
+function run(command, args, cwd) {
+  console.log(`Executing: ${command} ${args.map((arg) => JSON.stringify(arg)).join(' ')}`);
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: 'utf8',
+    shell: false,
+  });
+
+  if (result.error) {
+    return { ok: false, error: result.error.message, output: result.stdout ?? '' };
+  }
+
+  return {
+    ok: result.status === 0,
+    error: result.stderr || `Process exited with status ${result.status}`,
+    output: result.stdout ?? '',
+  };
+}
+
+export function validateFile(filePath) {
+  const absPath = resolve(filePath);
+  if (!existsSync(absPath)) {
+    return { ok: false, phase: 'Pre-check', error: `File not found: ${filePath}` };
+  }
+
+  const ext = extname(absPath).toLowerCase();
+  let command;
+  let args;
+  let cwd;
+
+  switch (ext) {
+    case '.js':
+      command = process.execPath;
+      args = ['--check', absPath];
+      break;
+    case '.ts': {
+      const tsconfig = findNearestTsconfig(absPath);
+      if (!tsconfig) {
+        return {
+          ok: false,
+          phase: 'Pre-check',
+          error: `No tsconfig.json found for: ${filePath}`,
+        };
+      }
+      const compiler = findNearestTypeScriptCompiler(tsconfig);
+      if (!compiler) {
+        return {
+          ok: false,
+          phase: 'Pre-check',
+          error: `TypeScript is not installed near: ${tsconfig}. Run npm install in the project first.`,
+        };
+      }
+      command = process.execPath;
+      args = [compiler, '--noEmit', '-p', tsconfig];
+      cwd = dirname(tsconfig);
+      break;
+    }
+    case '.py':
+      command = 'python';
+      args = ['-m', 'py_compile', absPath];
+      break;
+    case '.go':
+      command = 'go';
+      args = ['vet', absPath];
+      break;
+    default:
+      return { ok: false, phase: 'Pre-check', error: `Unsupported file type: ${ext}` };
+  }
+
+  const result = run(command, args, cwd);
+  return result.ok
+    ? { ok: true, output: result.output || '(build-only validation)' }
+    : {
+        ok: false,
+        phase: 'Compilation / Syntax',
+        error: result.error,
+        output: result.output,
+      };
+}
+
+export function main() {
   const file = process.argv[2];
   if (!file) {
-    console.log("Usage: node BTL_validator.js <file_path>");
+    console.log('Usage: node BTL_validator.js <file_path>');
     process.exit(0);
   }
 
@@ -83,20 +125,22 @@ function main() {
   const result = validateFile(file);
 
   if (result.ok) {
-    console.log("\n✅ VALIDATION PASSED");
-    console.log("--------------------");
-    console.log(result.output || "(no output emitted)");
+    console.log('\nVALIDATION PASSED');
+    console.log('-----------------');
+    console.log(result.output);
     process.exit(0);
-  } else {
-    console.log("\n❌ VALIDATION FAILED");
-    console.log("--------------------");
-    console.log(`Phase: ${result.phase || 'Pre-check'}`);
-    console.log(`Error details:\n${result.error}`);
-    if (result.output) {
-      console.log(`Stdout before crash:\n${result.output}`);
-    }
-    process.exit(1);
   }
+
+  console.log('\nVALIDATION FAILED');
+  console.log('-----------------');
+  console.log(`Phase: ${result.phase}`);
+  console.log(`Error details:\n${result.error}`);
+  if (result.output) {
+    console.log(`Stdout before failure:\n${result.output}`);
+  }
+  process.exit(1);
 }
 
-main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  main();
+}

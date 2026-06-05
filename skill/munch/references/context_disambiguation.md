@@ -58,7 +58,7 @@ When constraints are absent, you must systematically reason about the best tools
 | **Web Apps / Interactive** | Modern responsive SPA / Next.js / Vite | Vanilla JS + Canvas or React + Vite | Maximizes interactive visual performance, zero compilation setup for the user, runs in any browser. |
 | **Simple Visual Games** | Web Canvas / 3D WebGL | HTML5 Canvas + JS or Three.js | Instant deployment, high frame rates, readable math logic. |
 | **Scripting / Automation** | Platform-native scripting | Node.js (TS) or Python | Cross-platform, easy dependency management, fast execution. |
-| **Database Engines** | In-memory or zero-config local db | SQLite (local) or Local Storage (Web) | Avoids installation blockers (Docker/Postgres setups) during initialization. |
+| **Database Engines** | In-memory or zero-config local db | SQLite (local) or Local Storage (Web) | Avoids external service installation blockers during initialization. |
 
 ---
 

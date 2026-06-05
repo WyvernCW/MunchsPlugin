@@ -33,7 +33,7 @@ When designing configurations, executing database queries, or structuring functi
 1. **Configure Supervisor Restarts Appropriately**: When designing concurrent worker systems (like Elixir GenServers), implement a robust supervision structure, selecting restarts policies that prevent cascades.
 2. **Mitigate GraphQL N+1 Issues**: Enforce batch-loading patterns for nested query resolution, avoiding single-record database calls in loops.
 3. **Parameterize Cypher and SQL statements**: Never concatenate strings to construct statements. Pass dynamic values inside parameterized map parameters.
-4. **Harden Docker Container Manifests**: Set container execution users to unprivileged users, limiting local root permissions.
+4. **Harden Runtime Manifests**: Use least-privilege service accounts and restrict administrative permissions.
 5. **Secure XML Parsing Contexts**: Disable external entity resolution (DTD checking) on all XML parser initialization routines.
 
 ---
@@ -74,9 +74,9 @@ When designing configurations, executing database queries, or structuring functi
 
 ---
 
-## 5. Configuration & Infrastructure (Docker, Terraform, YAML, XML)
+## 5. Configuration & Infrastructure (Terraform, YAML, XML, Service Manifests)
 
-### A. Docker Root User Mitigation
+### A. Runtime Privilege Mitigation
 * **Container Hardening**: Never let containers run as the root user. Always define a custom, unprivileged user and restrict file permissions.
 * **Multi-Stage Builds**: Separate build-time dependencies (like compilers and headers) from the final runtime image using multi-stage builds to minimize the attack surface.
 

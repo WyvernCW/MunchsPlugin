@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      root-dependencies:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /mcp-server
+    schedule:
+      interval: weekly
+    groups:
+      mcp-dependencies:
+        patterns: ["*"]

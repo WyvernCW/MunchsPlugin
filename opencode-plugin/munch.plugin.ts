@@ -20,7 +20,16 @@ function loadSkill(): string {
   ];
 
   for (const p of candidates) {
-    if (existsSync(p)) return readFileSync(p, "utf-8");
+    if (existsSync(p)) {
+      const full = readFileSync(p, "utf-8");
+      if (process.env.MUNCH_OPENCODE_FULL_SKILL === "true") return full;
+      const sections = ["BOOTLOADER", "DISPATCH", "ANTI_REGRESSION", "EXECUTION", "CONSTRAINTS"];
+      const compact = sections
+        .map((name) => extractSection(full, name))
+        .filter(Boolean)
+        .join("\n\n");
+      return `⟦§MUNCH COMPACT KERNEL⟧\n${compact}\n\nUse reference_index.md and load only task-relevant supporting references.`;
+    }
   }
 
   // Inline fallback — minimal kernel so plugin never silently fails
@@ -28,6 +37,14 @@ function loadSkill(): string {
 id: munch | state: always_active | mode: autonomous
 scope: code + design + security + analysis + architecture
 Augmented cognitive agent — anti-regression, adaptive intelligence, BTL loop, OWASP security scan, polyglot code quality. Full SKILL.md not found; place skill/munch/SKILL.md adjacent to plugin.`;
+}
+
+function extractSection(full: string, name: string): string {
+  const marker = `⟦§${name}⟧`;
+  const start = full.indexOf(marker);
+  if (start === -1) return "";
+  const next = full.indexOf("\n⟦§", start + marker.length);
+  return full.slice(start, next === -1 ? full.length : next).trim();
 }
 
 export const MunchPlugin: Plugin = async ({ client }) => {
@@ -40,8 +57,8 @@ export const MunchPlugin: Plugin = async ({ client }) => {
         role: "user",
         content: `[munch skill loaded]\n\n${skill}`,
         metadata: { noReply: true },
-      }).catch(() => {
-        // Non-fatal — older SDK versions may not support addMessage
+      }).catch((error) => {
+        console.error("[munch] Failed to inject compact skill:", error);
       });
     },
 
@@ -51,7 +68,9 @@ export const MunchPlugin: Plugin = async ({ client }) => {
         role: "user",
         content: `[munch skill re-injected after compaction]\n\n${skill}`,
         metadata: { noReply: true },
-      }).catch(() => {});
+      }).catch((error) => {
+        console.error("[munch] Failed to re-inject compact skill:", error);
+      });
     },
   };
 };
