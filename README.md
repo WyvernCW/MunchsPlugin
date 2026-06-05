@@ -183,7 +183,7 @@ pulling updates. Optional runtime behavior is controlled explicitly:
 | --- | --- |
 | `MUNCH_AUTO_CONFIGURE=true` | Run host self-configuration after MCP startup |
 | `MUNCH_AUTO_UPDATE=true` | Check for versioned releases and notify; never applies automatically |
-| `MUNCH_HTTP_TOKEN=<secret>` | Required bearer token for Streamable HTTP mode |
+| `MUNCH_HTTP_TOKEN=<secret>` | Bearer token for Streamable HTTP mode; strongly recommended for public deployments |
 | `MUNCH_ALLOWED_ORIGINS=https://host` | Comma-separated browser origins allowed for HTTP |
 | `MUNCH_ALLOW_INSECURE_HTTP=true` | Permit tokenless HTTP for isolated local development |
 | `MUNCH_ENABLE_LEGACY_SSE=true` | Enable deprecated `/sse` and `/messages` compatibility endpoints |
@@ -212,6 +212,20 @@ Remote servers use MCP Streamable HTTP at `/mcp`. `/health` and `/ready`
 provide process and readiness checks. Authenticated `/dashboard` and
 `/control.json` expose the local reliability state. Legacy HTTP+SSE is disabled
 by default.
+
+Railway supplies `PORT` automatically. When Railway metadata is present but
+`MUNCH_HTTP_TOKEN` is missing, Munch starts in compatibility mode and emits a
+structured security warning instead of crash-looping. Configure
+`MUNCH_HTTP_TOKEN` in Railway for bearer-authenticated `/mcp`, `/dashboard`, and
+`/control.json` access. Without a token, the compatibility mode exposes only
+the MCP transport and health probes; control endpoints remain unavailable.
+Other remote hosts still require a token unless `MUNCH_ALLOW_INSECURE_HTTP=true`
+is explicitly set.
+
+The update checker uses published GitHub releases, not `git pull`. A repository
+with no published release is treated as up to date; applying an update still
+requires an exact version, checksummed release assets, and
+`MUNCH_ALLOW_UPDATE_APPLY=true`.
 
 ---
 

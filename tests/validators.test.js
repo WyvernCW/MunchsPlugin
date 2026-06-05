@@ -29,6 +29,7 @@ import {
   readInstallState,
   uninstall,
 } from '../lib/installer-core.js';
+import { normalizeGeneratedText } from '../lib/generated-text.js';
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
 const skillDirectory = join(repositoryRoot, 'skill', 'munch');
@@ -42,6 +43,13 @@ function withTempDir(run) {
     rmSync(dir, { recursive: true, force: true });
   }
 }
+
+test('generated artifact checks ignore checkout line-ending differences', () => {
+  assert.equal(
+    normalizeGeneratedText('{\r\n  "name": "munch"\r\n}\r\n'),
+    normalizeGeneratedText('{\n  "name": "munch"\n}\n'),
+  );
+});
 
 test('hallucination guard reports repeated case-insensitive markers without looping', () => {
   withTempDir((dir) => {

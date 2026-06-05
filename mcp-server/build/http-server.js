@@ -4,6 +4,17 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { getControlSnapshot, renderControlDashboard } from "./advanced-runtime.js";
+export function resolveHttpSecurity(environment = process.env) {
+    const token = environment.MUNCH_HTTP_TOKEN ?? environment.MUNCH_SSE_TOKEN;
+    const explicitlyInsecure = environment.MUNCH_ALLOW_INSECURE_HTTP === "true" ||
+        environment.MUNCH_ALLOW_INSECURE_SSE === "true";
+    const railwayFallback = Boolean(environment.RAILWAY_ENVIRONMENT || environment.RAILWAY_PROJECT_ID);
+    return {
+        token,
+        allowInsecure: explicitlyInsecure || (!token && railwayFallback),
+        railwayFallback: !token && railwayFallback,
+    };
+}
 export function startHttpServer(options) {
     if (!options.token && !options.allowInsecure) {
         throw new Error("HTTP mode requires MUNCH_HTTP_TOKEN. Set MUNCH_ALLOW_INSECURE_HTTP=true only for isolated local development.");
@@ -44,6 +55,15 @@ export function startHttpServer(options) {
             }
             if (request.method === "GET" && url.pathname === "/ready") {
                 sendJson(response, ready ? 200 : 503, { ready, sessions: sessions.size, requestId });
+                return;
+            }
+            if (!options.token &&
+                request.method === "GET" &&
+                (url.pathname === "/control.json" || url.pathname === "/dashboard")) {
+                sendJson(response, 503, {
+                    error: "MUNCH_HTTP_TOKEN is required for control endpoints",
+                    requestId,
+                });
                 return;
             }
             if (!authorized(request, options.token)) {
@@ -114,6 +134,13 @@ export function startHttpServer(options) {
     server.keepAliveTimeout = 5_000;
     server.listen(options.port, () => {
         ready = true;
+        if (!options.token && options.allowInsecure) {
+            console.error(JSON.stringify({
+                level: "warn",
+                event: "http_auth_disabled",
+                message: "HTTP bearer authentication is disabled; configure MUNCH_HTTP_TOKEN for private access.",
+            }));
+        }
         console.error(JSON.stringify({
             level: "info",
             event: "http_server_started",

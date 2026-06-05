@@ -16,7 +16,7 @@ import { createHash, randomUUID } from "crypto";
 import { runSelfConfigure } from "./host-config.js";
 import { showNotification } from "./notifications.js";
 import { applyVersionedUpdate, checkForUpdate } from "./updater.js";
-import { startHttpServer } from "./http-server.js";
+import { resolveHttpSecurity, startHttpServer } from "./http-server.js";
 import { appendTrace, buildContextPackage, buildWorkspaceGraph, compilePolicy, configureRuntimeSettings, createEvidenceBundle, detectContradictions, getControlSnapshot as getRuntimeControlSnapshot, getProvenanceGraph, getRuntimeSettings, installReferencePack, listReferencePacks, negotiateCapabilities, predictChangeImpact, purgeExpiredRuntime, recordProvenance, recordReferenceOutcome, replayTrace, runEvaluation, scoreReferences, startTrace, } from "./advanced-runtime.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // ──────────────────────────────────────────────
@@ -1321,13 +1321,18 @@ async function main() {
         }, 1000);
     }
     if (isSseMode) {
-        const token = process.env.MUNCH_HTTP_TOKEN ?? process.env.MUNCH_SSE_TOKEN;
-        const allowInsecure = process.env.MUNCH_ALLOW_INSECURE_HTTP === "true" ||
-            process.env.MUNCH_ALLOW_INSECURE_SSE === "true";
+        const security = resolveHttpSecurity();
+        if (security.railwayFallback) {
+            console.error(JSON.stringify({
+                level: "warn",
+                event: "railway_token_missing",
+                message: "Railway HTTP mode started without bearer authentication. Set MUNCH_HTTP_TOKEN to secure the public endpoint.",
+            }));
+        }
         startHttpServer({
             port,
-            token,
-            allowInsecure,
+            token: security.token,
+            allowInsecure: security.allowInsecure,
             allowedOrigins: new Set((process.env.MUNCH_ALLOWED_ORIGINS ?? "")
                 .split(",")
                 .map((origin) => origin.trim())

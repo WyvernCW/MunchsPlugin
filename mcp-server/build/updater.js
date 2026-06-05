@@ -6,7 +6,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 const REPOSITORY = "WyvernCW/MunchsPlugin";
 export async function checkForUpdate(currentVersion) {
-    const release = await requestJson(`https://api.github.com/repos/${REPOSITORY}/releases/latest`);
+    const release = await requestJson(`https://api.github.com/repos/${REPOSITORY}/releases/latest`, {
+        allowNotFound: true,
+    });
+    if (!release) {
+        return {
+            currentVersion,
+            latestVersion: currentVersion,
+            releaseUrl: `https://github.com/${REPOSITORY}/releases`,
+            updateAvailable: false,
+        };
+    }
     const latestVersion = (release.tag_name ?? currentVersion).replace(/^v/, "");
     return {
         currentVersion,
@@ -23,6 +33,9 @@ export async function applyVersionedUpdate(version) {
         throw new Error("Set MUNCH_ALLOW_UPDATE_APPLY=true to permit an explicit versioned update");
     }
     const release = await requestJson(`https://api.github.com/repos/${REPOSITORY}/releases/tags/v${version}`);
+    if (!release) {
+        throw new Error(`Release v${version} was not found`);
+    }
     const packageName = `munch-${version}.tgz`;
     const packageAsset = release.assets?.find((asset) => asset.name === packageName);
     const checksumAsset = release.assets?.find((asset) => asset.name === `${packageName}.sha256`);
@@ -60,7 +73,7 @@ function compareVersions(left, right) {
     }
     return 0;
 }
-function requestJson(url) {
+function requestJson(url, options = {}) {
     return new Promise((resolve, reject) => {
         https.get(url, {
             headers: {
@@ -77,6 +90,10 @@ function requestJson(url) {
                     response.destroy(new Error("Update response is too large"));
             });
             response.on("end", () => {
+                if (response.statusCode === 404 && options.allowNotFound) {
+                    resolve(undefined);
+                    return;
+                }
                 if ((response.statusCode ?? 500) >= 400) {
                     reject(new Error(`Update check failed with HTTP ${response.statusCode}`));
                     return;

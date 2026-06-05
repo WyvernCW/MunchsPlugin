@@ -31,6 +31,23 @@ export interface HttpServerOptions {
   controlSnapshot?: () => Record<string, unknown>;
 }
 
+export function resolveHttpSecurity(environment: NodeJS.ProcessEnv = process.env): {
+  token?: string;
+  allowInsecure: boolean;
+  railwayFallback: boolean;
+} {
+  const token = environment.MUNCH_HTTP_TOKEN ?? environment.MUNCH_SSE_TOKEN;
+  const explicitlyInsecure =
+    environment.MUNCH_ALLOW_INSECURE_HTTP === "true" ||
+    environment.MUNCH_ALLOW_INSECURE_SSE === "true";
+  const railwayFallback = Boolean(environment.RAILWAY_ENVIRONMENT || environment.RAILWAY_PROJECT_ID);
+  return {
+    token,
+    allowInsecure: explicitlyInsecure || (!token && railwayFallback),
+    railwayFallback: !token && railwayFallback,
+  };
+}
+
 export function startHttpServer(options: HttpServerOptions) {
   if (!options.token && !options.allowInsecure) {
     throw new Error(
@@ -76,6 +93,17 @@ export function startHttpServer(options: HttpServerOptions) {
       }
       if (request.method === "GET" && url.pathname === "/ready") {
         sendJson(response, ready ? 200 : 503, { ready, sessions: sessions.size, requestId });
+        return;
+      }
+      if (
+        !options.token &&
+        request.method === "GET" &&
+        (url.pathname === "/control.json" || url.pathname === "/dashboard")
+      ) {
+        sendJson(response, 503, {
+          error: "MUNCH_HTTP_TOKEN is required for control endpoints",
+          requestId,
+        });
         return;
       }
       if (!authorized(request, options.token)) {
@@ -148,6 +176,13 @@ export function startHttpServer(options: HttpServerOptions) {
   server.keepAliveTimeout = 5_000;
   server.listen(options.port, () => {
     ready = true;
+    if (!options.token && options.allowInsecure) {
+      console.error(JSON.stringify({
+        level: "warn",
+        event: "http_auth_disabled",
+        message: "HTTP bearer authentication is disabled; configure MUNCH_HTTP_TOKEN for private access.",
+      }));
+    }
     console.error(JSON.stringify({
       level: "info",
       event: "http_server_started",

@@ -18,7 +18,17 @@ export async function checkForUpdate(currentVersion: string): Promise<UpdateInfo
   const release = await requestJson<{
     tag_name?: string;
     html_url?: string;
-  }>(`https://api.github.com/repos/${REPOSITORY}/releases/latest`);
+  }>(`https://api.github.com/repos/${REPOSITORY}/releases/latest`, {
+    allowNotFound: true,
+  });
+  if (!release) {
+    return {
+      currentVersion,
+      latestVersion: currentVersion,
+      releaseUrl: `https://github.com/${REPOSITORY}/releases`,
+      updateAvailable: false,
+    };
+  }
   const latestVersion = (release.tag_name ?? currentVersion).replace(/^v/, "");
   return {
     currentVersion,
@@ -38,6 +48,9 @@ export async function applyVersionedUpdate(version: string): Promise<void> {
   const release = await requestJson<{
     assets?: Array<{ name: string; browser_download_url: string }>;
   }>(`https://api.github.com/repos/${REPOSITORY}/releases/tags/v${version}`);
+  if (!release) {
+    throw new Error(`Release v${version} was not found`);
+  }
   const packageName = `munch-${version}.tgz`;
   const packageAsset = release.assets?.find((asset) => asset.name === packageName);
   const checksumAsset = release.assets?.find((asset) => asset.name === `${packageName}.sha256`);
@@ -75,7 +88,10 @@ function compareVersions(left: string, right: string): number {
   return 0;
 }
 
-function requestJson<T>(url: string): Promise<T> {
+function requestJson<T>(
+  url: string,
+  options: { allowNotFound?: boolean } = {},
+): Promise<T | undefined> {
   return new Promise((resolve, reject) => {
     https.get(
       url,
@@ -94,6 +110,10 @@ function requestJson<T>(url: string): Promise<T> {
           if (body.length > 1_000_000) response.destroy(new Error("Update response is too large"));
         });
         response.on("end", () => {
+          if (response.statusCode === 404 && options.allowNotFound) {
+            resolve(undefined);
+            return;
+          }
           if ((response.statusCode ?? 500) >= 400) {
             reject(new Error(`Update check failed with HTTP ${response.statusCode}`));
             return;

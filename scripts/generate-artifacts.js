@@ -4,6 +4,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { normalizeGeneratedText } from "../lib/generated-text.js";
+
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const check = process.argv.includes("--check");
 const canonicalHostDoc = readFileSync(join(root, "AGENT.md"), "utf8");
@@ -26,7 +28,7 @@ let drift = false;
 for (const [relative, expected] of outputs) {
   const path = join(root, relative);
   const actual = readFileSync(path, "utf8");
-  if (actual === expected) continue;
+  if (normalizeGeneratedText(actual) === normalizeGeneratedText(expected)) continue;
   drift = true;
   if (!check) writeFileSync(path, expected, "utf8");
   else console.error(`Generated artifact drift: ${relative}`);
