@@ -68,6 +68,42 @@ The agent must adapt to the user's working style and environment. Do not ask the
 - **Inferring Banned Patterns**:
   - If user rejects an animation framework, gradient style, or file system API -> Append that pattern to the rejectedPatterns array immediately. Never reuse a rejected pattern in subsequent turns or sessions.
 
+### Structured Preference Observation
+
+Use `observe_user_message` when the user explicitly expresses a preference, dislike, habitual choice, comfort statement, correction, or forget request.
+
+- High-confidence positive signals include “my favorite is,” “I love,” “I prefer,” and close semantic equivalents.
+- Medium-confidence signals include “I usually use,” “I normally code in,” or “I am comfortable with.”
+- Negative signals include “I dislike,” “I avoid,” “I do not like,” and “I no longer prefer.”
+- A simple mention such as “build this with React” is a task constraint, not proof that React is a favorite.
+- Do not infer or retain protected traits, credentials, contact details, health information, political or religious beliefs, or other sensitive personal data as preference facts.
+- Store category, subject, sentiment, strength, confidence, scope, source statement, evidence count, and timestamps.
+- Repeated compatible evidence raises confidence gradually.
+- A newer explicit correction changes the preference direction instead of preserving a stale favorite.
+- An explicit forget request removes the matching preference rather than turning it into a dislike.
+
+### Preference Recall
+
+Use `recall_user_preferences` when the user asks what they like, dislike, prefer, use most, or previously chose. Answer from ranked stored evidence and state uncertainty when no reliable fact exists.
+
+Example:
+
+- Stored fact: React, like, confidence 98%, frontend scope.
+- User asks: “What do I like the most?”
+- Response: “React is your strongest remembered preference.”
+
+Do not invent a preference from repository dependencies, generated code, or a one-time tool choice.
+
+### Preference-Aware Technology Choices
+
+Use `recommend_technology_options` when a broad request such as “build me a frontend website” leaves a material framework choice unresolved.
+
+- Label a matching remembered favorite as “Your preference.”
+- Include concise advantages, tradeoffs, and best-fit context for each option.
+- Do not claim the favorite is objectively best.
+- Do not ask when the user already named a stack, the repository already establishes one, or delivery constraints make the choice clear.
+- A remembered React preference can place React first, but it must not force React for a static page, an existing Vue repository, or an explicitly requested Next.js build.
+
 ---
 
 ## 3. Anti-Regression & Registry Pinning (add_registry_fix)
@@ -183,7 +219,22 @@ The following structure represents the complete type definition of `munch_memory
     "techStack": ["TypeScript", "Next.js", "Zustand", "SQLite"],
     "rejectedPatterns": ["neon purple gradients", "require(fs)", "TailwindCSS"],
     "acceptedPatterns": ["Glassmorphic dark containers", "Zustand slices pattern", "AABB 3D Box Physics"],
-    "vocabulary": ["BTL loop", "drift telemetry", "SIME"]
+    "vocabulary": ["BTL loop", "drift telemetry", "SIME"],
+    "preferences": [
+      {
+        "id": "PREF_example",
+        "category": "technology",
+        "subject": "React",
+        "sentiment": "like",
+        "strength": 1,
+        "confidence": 0.98,
+        "scope": "frontend",
+        "sourceStatement": "React is my favorite framework.",
+        "evidenceCount": 2,
+        "firstSeen": "2026-06-05T12:00:00Z",
+        "lastSeen": "2026-06-06T12:00:00Z"
+      }
+    ]
   },
   "registryFixes": [
     {

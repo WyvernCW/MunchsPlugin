@@ -99,6 +99,39 @@ test('stdio MCP supports selective references and redacted project memory', asyn
     assert.match(controlText, /"encryptionEnabled": true/);
     assert.match(controlText, /"loaded": \[\s+"network_protocols\.md"/);
     assert.match(controlText, /"regressionFixes":/);
+
+    const observed = await client.callTool({
+      name: 'observe_user_message',
+      arguments: { message: 'React is my favorite framework for frontend websites.' },
+    });
+    const observedData = JSON.parse(observed.content.find((item) => item.type === 'text')?.text ?? '{}');
+    assert.equal(observedData.detected, 1);
+    assert.equal(observedData.preferences[0].subject, 'React');
+
+    const recalled = await client.callTool({
+      name: 'recall_user_preferences',
+      arguments: { query: 'what do I like most?', category: 'technology' },
+    });
+    const recalledData = JSON.parse(recalled.content.find((item) => item.type === 'text')?.text ?? '{}');
+    assert.match(recalledData.answer, /React is your strongest remembered preference/);
+
+    const recommendation = await client.callTool({
+      name: 'recommend_technology_options',
+      arguments: { task: 'Build me a frontend website' },
+    });
+    const recommendationData = JSON.parse(
+      recommendation.content.find((item) => item.type === 'text')?.text ?? '{}',
+    );
+    assert.equal(recommendationData.shouldAsk, true);
+    assert.equal(recommendationData.options[0].name, 'React');
+    assert.equal(recommendationData.options[0].preferenceMatch, true);
+
+    const forgotten = await client.callTool({
+      name: 'observe_user_message',
+      arguments: { message: 'Forget my React preference.' },
+    });
+    const forgottenData = JSON.parse(forgotten.content.find((item) => item.type === 'text')?.text ?? '{}');
+    assert.deepEqual(forgottenData.forgotten, ['React']);
   } finally {
     await transport.close();
     rmSync(home, { recursive: true, force: true });

@@ -60,6 +60,25 @@ When constraints are absent, you must systematically reason about the best tools
 | **Scripting / Automation** | Platform-native scripting | Node.js (TS) or Python | Cross-platform, easy dependency management, fast execution. |
 | **Database Engines** | In-memory or zero-config local db | SQLite (local) or Local Storage (Web) | Avoids external service installation blockers during initialization. |
 
+### Preference-Aware Selection Gate
+
+Before asking the user to choose a stack:
+
+1. Check explicit task constraints.
+2. Inspect the existing repository stack.
+3. Recall structured user preferences.
+4. Decide whether the unresolved choice materially changes deployment, maintainability, performance, or product behavior.
+
+If the choice is still material, present at most three to five options. Put a remembered favorite first and label it “Your preference,” then include concise advantages, tradeoffs, and best-fit context. Do not frame the favorite as mandatory.
+
+Example for “build me a frontend website”:
+
+- React — Your preference. Flexible ecosystem and strong component reuse; requires choosing routing and data conventions.
+- Next.js — Strong routing, server rendering, and production conventions; adds framework and caching complexity.
+- Vanilla TypeScript — Minimal dependencies and direct browser control; more manual component and state organization.
+
+If the current repository already uses Vue, continue with Vue unless changing frameworks is part of the request. If the user explicitly requests Next.js, use Next.js even when React is the strongest stored preference.
+
 ---
 
 ## 3. Cognitive Walkthrough Examples

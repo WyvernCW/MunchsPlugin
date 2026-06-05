@@ -114,6 +114,10 @@ Installer lifecycle commands:
 | `ping`             | Health check                                       |
 | `remember_lesson`  | Persist a resolved bug or toolchain lesson          |
 | `update_user_model`| Persist user preferences and technical context      |
+| `observe_user_message` | Detect explicit likes, dislikes, favorites, corrections, and forget requests |
+| `recall_user_preferences` | Rank remembered preferences with confidence and task scope |
+| `forget_user_preference` | Remove a stored preference when explicitly requested |
+| `recommend_technology_options` | Compare stack options without forcing the remembered favorite |
 | `add_registry_fix` | Add or update an anti-regression rule                |
 | `log_conversation` | Persist a concise conversation bridge                |
 | `query_memory`     | Search persistent lessons, fixes, and summaries      |

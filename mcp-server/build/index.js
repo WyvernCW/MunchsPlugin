@@ -18,6 +18,7 @@ import { showNotification } from "./notifications.js";
 import { applyVersionedUpdate, checkForUpdate } from "./updater.js";
 import { resolveHttpSecurity, startHttpServer } from "./http-server.js";
 import { appendTrace, buildContextPackage, buildWorkspaceGraph, compilePolicy, configureRuntimeSettings, createEvidenceBundle, detectContradictions, getControlSnapshot as getRuntimeControlSnapshot, getProvenanceGraph, getRuntimeSettings, installReferencePack, listReferencePacks, negotiateCapabilities, predictChangeImpact, purgeExpiredRuntime, recordProvenance, recordReferenceOutcome, replayTrace, runEvaluation, scoreReferences, startTrace, } from "./advanced-runtime.js";
+import { extractPreferences, extractForgottenPreferenceSubjects, mergePreference, rankPreferences, recommendFrontendOptions, } from "./preference-engine.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // ──────────────────────────────────────────────
 // Self-Improving Memory Engine (SIME)
@@ -35,14 +36,15 @@ const MEMORY_LOCK_PATH = join(MEMORY_NAMESPACE_DIR, "munch_memory.lock");
 const SNAPSHOT_DIR = join(MEMORY_NAMESPACE_DIR, "snapshots");
 const LOADED_REFERENCES = new Set();
 const defaultMemory = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     userModel: {
         skillLevel: "expert",
         preferredStyle: "concise",
         techStack: [],
         rejectedPatterns: [],
         acceptedPatterns: [],
-        vocabulary: []
+        vocabulary: [],
+        preferences: [],
     },
     registryFixes: [],
     learnedLessons: [],
@@ -59,11 +61,43 @@ function stringArray(value) {
 function objectArray(value) {
     return Array.isArray(value) ? value.filter((item) => Boolean(item) && typeof item === "object") : [];
 }
+function normalizedPreferences(value) {
+    const now = new Date().toISOString();
+    return objectArray(value)
+        .filter((item) => typeof item.subject === "string" && item.subject.trim().length > 0)
+        .map((item) => {
+        const category = [
+            "technology", "design", "workflow", "communication", "domain", "other",
+        ].includes(item.category ?? "") ? item.category : "other";
+        const sentiment = ["like", "dislike", "neutral"].includes(item.sentiment ?? "")
+            ? item.sentiment
+            : "neutral";
+        const scope = ["global", "frontend", "backend", "mobile", "desktop", "project"].includes(item.scope ?? "")
+            ? item.scope
+            : "global";
+        const subject = item.subject.trim();
+        return {
+            id: typeof item.id === "string"
+                ? item.id
+                : `PREF_${createHash("sha256").update(`${category}:${subject.toLowerCase()}`).digest("hex").slice(0, 12)}`,
+            category,
+            subject,
+            sentiment,
+            strength: typeof item.strength === "number" ? Math.min(1, Math.max(0, item.strength)) : 0.5,
+            confidence: typeof item.confidence === "number" ? Math.min(1, Math.max(0, item.confidence)) : 0.5,
+            scope,
+            sourceStatement: typeof item.sourceStatement === "string" ? item.sourceStatement : "Migrated preference",
+            evidenceCount: Number.isInteger(item.evidenceCount) && item.evidenceCount > 0 ? item.evidenceCount : 1,
+            firstSeen: typeof item.firstSeen === "string" ? item.firstSeen : now,
+            lastSeen: typeof item.lastSeen === "string" ? item.lastSeen : now,
+        };
+    });
+}
 function normalizePersistentMemory(parsed) {
     const legacyUserModel = parsed?.user_model ?? {};
     const userModel = parsed?.userModel ?? legacyUserModel;
     return {
-        schemaVersion: 2,
+        schemaVersion: 3,
         userModel: {
             skillLevel: stringValue(userModel.skillLevel ?? userModel.skill_level, defaultMemory.userModel.skillLevel),
             preferredStyle: stringValue(userModel.preferredStyle ?? userModel.preferred_style ?? userModel.style, defaultMemory.userModel.preferredStyle),
@@ -71,6 +105,7 @@ function normalizePersistentMemory(parsed) {
             rejectedPatterns: stringArray(userModel.rejectedPatterns ?? userModel.rejected_patterns),
             acceptedPatterns: stringArray(userModel.acceptedPatterns ?? userModel.accepted_patterns),
             vocabulary: stringArray(userModel.vocabulary ?? userModel.vocab),
+            preferences: normalizedPreferences(userModel.preferences),
         },
         registryFixes: objectArray(parsed?.registryFixes ?? parsed?.fix_registry),
         learnedLessons: objectArray(parsed?.learnedLessons ?? parsed?.lessons),
@@ -107,6 +142,7 @@ function writePersistentMemory(memory) {
         const MAX_CONVERSATIONS = 30; // Increased to 30 for deeper history
         const MAX_MISTAKES = 15;
         const MAX_TIMELINE_TASKS = 30;
+        const MAX_PREFERENCES = 100;
         // Prune learned lessons (keep highest occurrences, then most recent)
         if (memory.learnedLessons.length > MAX_LESSONS) {
             memory.learnedLessons.sort((a, b) => {
@@ -146,6 +182,9 @@ function writePersistentMemory(memory) {
         }
         if (!existsSync(MEMORY_NAMESPACE_DIR)) {
             mkdirSync(MEMORY_NAMESPACE_DIR, { recursive: true });
+        }
+        if (memory.userModel.preferences.length > MAX_PREFERENCES) {
+            memory.userModel.preferences = rankPreferences(memory.userModel.preferences).slice(0, MAX_PREFERENCES);
         }
         lock = acquireMemoryLock();
         const normalized = redactPersistentMemory(normalizePersistentMemory(memory));
@@ -214,6 +253,13 @@ function redactPersistentMemory(memory) {
             ...item,
             summary: redact(item.summary),
         })),
+        userModel: {
+            ...memory.userModel,
+            preferences: memory.userModel.preferences.map((preference) => ({
+                ...preference,
+                sourceStatement: redact(preference.sourceStatement),
+            })),
+        },
     };
 }
 // Helper to calculate Jaccard similarity between two strings
@@ -337,6 +383,15 @@ function getFullControlSnapshot() {
             conversations: memory.conversationSummaries.length,
             recurrentMistakes: memory.recurrentMistakes?.length ?? 0,
             timelineTasks: memory.timeline?.length ?? 0,
+            preferences: memory.userModel.preferences.length,
+            topPreferences: rankPreferences(memory.userModel.preferences)
+                .slice(0, 5)
+                .map(({ subject, sentiment, confidence, scope }) => ({
+                subject,
+                sentiment,
+                confidence,
+                scope,
+            })),
         },
         references: {
             available: referenceDir && existsSync(referenceDir)
@@ -382,7 +437,12 @@ export function configureMcpServer(server) {
                 `- Style: ${memory.userModel.preferredStyle}\n` +
                 `- Active Tech Stack: ${memory.userModel.techStack.join(", ") || "None registered yet"}\n` +
                 `- Accepted Patterns: ${memory.userModel.acceptedPatterns.join(", ") || "None registered yet"}\n` +
-                `- Rejected Patterns: ${memory.userModel.rejectedPatterns.join(", ") || "None registered yet"}\n\n`;
+                `- Rejected Patterns: ${memory.userModel.rejectedPatterns.join(", ") || "None registered yet"}\n`;
+            const recalledPreferences = rankPreferences(memory.userModel.preferences).slice(0, 10);
+            memoryBlock += `- Structured Preferences: ${recalledPreferences.length > 0
+                ? recalledPreferences.map((preference) => `${preference.subject} (${preference.sentiment}, ${Math.round(preference.confidence * 100)}% confidence, scope: ${preference.scope})`).join("; ")
+                : "None registered yet"}\n` +
+                `- Preference Rule: Treat preferences as weighted evidence, not universal commands. Respect explicit task constraints and ask only when the choice materially affects the result.\n\n`;
             const currentCwd = process.cwd().replace(/\\/g, "/");
             const pastPaths = extractPaths(memory);
             memoryBlock += `### Cross-Project Path Mapping & Transfer Learning\n` +
@@ -972,6 +1032,15 @@ export function configureMcpServer(server) {
             rejectedPatterns: z.array(z.string()).optional().describe("Banned patterns, e.g. ['neon gradients', 'require(fs)']"),
             acceptedPatterns: z.array(z.string()).optional().describe("Accepted styling/architectural decisions"),
             vocabulary: z.array(z.string()).optional().describe("User terms or terminology"),
+            preferences: z.array(z.object({
+                category: z.enum(["technology", "design", "workflow", "communication", "domain", "other"]),
+                subject: z.string(),
+                sentiment: z.enum(["like", "dislike", "neutral"]).default("like"),
+                strength: z.number().min(0).max(1).default(0.8),
+                confidence: z.number().min(0).max(1).default(1),
+                scope: z.enum(["global", "frontend", "backend", "mobile", "desktop", "project"]).default("global"),
+                sourceStatement: z.string().optional(),
+            })).optional().describe("Structured preference facts with confidence and task scope"),
         },
     }, async (args) => {
         const memory = readPersistentMemory();
@@ -991,6 +1060,33 @@ export function configureMcpServer(server) {
         if (args.vocabulary) {
             memory.userModel.vocabulary = Array.from(new Set([...memory.userModel.vocabulary, ...args.vocabulary]));
         }
+        if (args.preferences) {
+            const now = new Date().toISOString();
+            for (const preference of args.preferences) {
+                const incoming = {
+                    id: `PREF_${createHash("sha256")
+                        .update(`${preference.category}:${preference.subject.toLowerCase()}`)
+                        .digest("hex")
+                        .slice(0, 12)}`,
+                    category: preference.category,
+                    subject: preference.subject.trim(),
+                    sentiment: preference.sentiment,
+                    strength: preference.strength,
+                    confidence: preference.confidence,
+                    scope: preference.scope,
+                    sourceStatement: preference.sourceStatement ?? "Explicit structured profile update",
+                    evidenceCount: 1,
+                    firstSeen: now,
+                    lastSeen: now,
+                };
+                const index = memory.userModel.preferences.findIndex((item) => item.id === incoming.id);
+                const merged = mergePreference(index >= 0 ? memory.userModel.preferences[index] : undefined, incoming);
+                if (index >= 0)
+                    memory.userModel.preferences[index] = merged;
+                else
+                    memory.userModel.preferences.push(merged);
+            }
+        }
         writePersistentMemory(memory);
         showNotification("User Profile Updated", `Preferred Style: ${memory.userModel.preferredStyle}`);
         return {
@@ -1000,6 +1096,138 @@ export function configureMcpServer(server) {
                     text: `✓ Persistent user model updated. Style: ${memory.userModel.preferredStyle} | Skill Level: ${memory.userModel.skillLevel}`,
                 },
             ],
+        };
+    });
+    // ── Tool: observe_user_message ────────────────
+    server.registerTool("observe_user_message", {
+        description: "Analyze a user message for explicit preference signals such as likes, favorites, dislikes, usual tools, " +
+            "or comfort statements, then persist high-confidence facts. Call this after messages that contain preference language. " +
+            "A mentioned technology is not automatically treated as a preference.",
+        inputSchema: {
+            message: z.string().describe("The user's exact message"),
+        },
+    }, async ({ message }) => {
+        const memory = readPersistentMemory();
+        const forgotten = extractForgottenPreferenceSubjects(message);
+        if (forgotten.length > 0) {
+            memory.userModel.preferences = memory.userModel.preferences.filter((preference) => !forgotten.some((subject) => preference.subject.toLowerCase() === subject.toLowerCase()));
+            writePersistentMemory(memory);
+            return {
+                content: [{
+                        type: "text",
+                        text: JSON.stringify({
+                            detected: 0,
+                            forgotten,
+                            guidance: "The matching preference facts were removed. Do not rely on them in later recommendations.",
+                        }, null, 2),
+                    }],
+            };
+        }
+        const detected = extractPreferences(message);
+        for (const incoming of detected) {
+            const index = memory.userModel.preferences.findIndex((item) => item.id === incoming.id);
+            const merged = mergePreference(index >= 0 ? memory.userModel.preferences[index] : undefined, incoming);
+            if (index >= 0)
+                memory.userModel.preferences[index] = merged;
+            else
+                memory.userModel.preferences.push(merged);
+            if (merged.category === "technology"
+                && merged.sentiment === "like"
+                && !memory.userModel.techStack.includes(merged.subject)) {
+                memory.userModel.techStack.push(merged.subject);
+            }
+        }
+        if (detected.length > 0)
+            writePersistentMemory(memory);
+        return {
+            content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        detected: detected.length,
+                        preferences: detected,
+                        guidance: detected.length > 0
+                            ? "Preference evidence stored. Use it as weighted context, not as a universal default."
+                            : "No explicit preference signal detected. Do not infer a favorite from a simple mention.",
+                    }, null, 2),
+                }],
+        };
+    });
+    // ── Tool: forget_user_preference ──────────────
+    server.registerTool("forget_user_preference", {
+        description: "Delete stored preference facts for a subject when the user explicitly asks to forget or clear them.",
+        inputSchema: {
+            subject: z.string().describe("Preference subject to forget, e.g. 'React'"),
+            category: z.enum(["technology", "design", "workflow", "communication", "domain", "other"]).optional(),
+        },
+    }, async ({ subject, category }) => {
+        const memory = readPersistentMemory();
+        const before = memory.userModel.preferences.length;
+        memory.userModel.preferences = memory.userModel.preferences.filter((preference) => preference.subject.toLowerCase() !== subject.trim().toLowerCase()
+            || Boolean(category && preference.category !== category));
+        const removed = before - memory.userModel.preferences.length;
+        if (removed > 0)
+            writePersistentMemory(memory);
+        return {
+            content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        removed,
+                        subject,
+                        message: removed > 0
+                            ? `Forgot ${removed} stored preference fact(s) for ${subject}.`
+                            : `No stored preference facts matched ${subject}.`,
+                    }, null, 2),
+                }],
+        };
+    });
+    // ── Tool: recall_user_preferences ─────────────
+    server.registerTool("recall_user_preferences", {
+        description: "Recall and rank persistent user preferences. Use for questions such as 'what do I like most?' " +
+            "or before making a technology choice where personal preference is relevant.",
+        inputSchema: {
+            query: z.string().optional().describe("Optional topic, e.g. 'frontend technology' or 'what do I like most'"),
+            category: z.enum(["technology", "design", "workflow", "communication", "domain", "other"]).optional(),
+            scope: z.enum(["global", "frontend", "backend", "mobile", "desktop", "project"]).optional(),
+            limit: z.number().int().min(1).max(20).default(5),
+        },
+    }, async ({ query, category, scope, limit }) => {
+        const memory = readPersistentMemory();
+        const ranked = rankPreferences(memory.userModel.preferences.filter((preference) => !category || preference.category === category), query ?? "", scope).slice(0, limit);
+        return {
+            content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        answer: ranked.length > 0
+                            ? ranked[0].sentiment === "like"
+                                ? `${ranked[0].subject} is your strongest remembered preference.`
+                                : `${ranked[0].subject} is your strongest remembered dislike.`
+                            : "I do not have enough stored preference evidence to answer confidently.",
+                        preferences: ranked,
+                    }, null, 2),
+                }],
+        };
+    });
+    // ── Tool: recommend_technology_options ────────
+    server.registerTool("recommend_technology_options", {
+        description: "Recommend and compare technology options for an underspecified task using repository constraints and remembered " +
+            "preferences. The output says whether asking the user is useful and labels favorites without forcing them.",
+        inputSchema: {
+            task: z.string().describe("The user's requested task"),
+            options: z.array(z.string()).optional().describe("Optional candidate technologies to compare"),
+        },
+    }, async ({ task, options }) => {
+        const memory = readPersistentMemory();
+        const recommendation = recommendFrontendOptions(memory.userModel.preferences, task, options);
+        return {
+            content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        ...recommendation,
+                        suggestedQuestion: recommendation.shouldAsk
+                            ? "Which approach do you want? I can use your remembered preference, or choose another option based on the tradeoffs below."
+                            : undefined,
+                    }, null, 2),
+                }],
         };
     });
     // ── Tool: add_registry_fix ───────────────────
@@ -1166,6 +1394,8 @@ export function configureMcpServer(server) {
             .filter((item) => item.score > 0.1)
             .sort((a, b) => b.score - a.score)
             .map((item) => item.conv);
+        const preferences = rankPreferences(memory.userModel.preferences, query)
+            .filter((preference) => calculateSearchScore(`${preference.category} ${preference.subject} ${preference.sentiment} ${preference.scope}`, 2) > 0.1);
         let output = `### Memory Query Results for "${query}"\n\n`;
         if (lessons.length > 0) {
             output += `#### Learned Lessons (${lessons.length})\n`;
@@ -1190,7 +1420,14 @@ export function configureMcpServer(server) {
             });
             output += "\n";
         }
-        if (lessons.length === 0 && fixes.length === 0 && convs.length === 0) {
+        if (preferences.length > 0) {
+            output += `#### User Preferences (${preferences.length})\n`;
+            preferences.forEach((preference) => {
+                output += `- **${preference.subject}**: ${preference.sentiment}, confidence ${Math.round(preference.confidence * 100)}%, scope ${preference.scope}, evidence ${preference.evidenceCount}x\n`;
+            });
+            output += "\n";
+        }
+        if (lessons.length === 0 && fixes.length === 0 && convs.length === 0 && preferences.length === 0) {
             output += "No matching persistent memories found.";
         }
         return { content: [{ type: "text", text: output }] };
