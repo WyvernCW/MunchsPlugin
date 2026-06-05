@@ -4,6 +4,8 @@ import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { normalizeGeneratedText } from "../lib/generated-text.js";
+
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const directory = join(root, "skill", "munch", "references");
 const output = join(directory, "catalog.json");
@@ -48,7 +50,7 @@ const expected = `${JSON.stringify({
 }, null, 2)}\n`;
 
 if (check) {
-  if (readFileSync(output, "utf8") !== expected) {
+  if (normalizeGeneratedText(readFileSync(output, "utf8")) !== normalizeGeneratedText(expected)) {
     console.error("Generated artifact drift: skill/munch/references/catalog.json");
     process.exitCode = 1;
   }
