@@ -208,19 +208,22 @@ npm run policy:compile
 npm run evaluate -- path/to/evaluation.json
 ```
 
-Remote servers use MCP Streamable HTTP at `/mcp`. `/health` and `/ready`
-provide process and readiness checks. Authenticated `/dashboard` and
-`/control.json` expose the local reliability state. Legacy HTTP+SSE is disabled
-by default.
+Remote servers use MCP Streamable HTTP. The Vercel deployment is available at
+`https://munch-ashy.vercel.app/api/mcp`, with `/mcp` provided as a shorter
+alias. The root URL returns deployment status and the active authentication
+mode.
 
-Railway supplies `PORT` automatically. When Railway metadata is present but
-`MUNCH_HTTP_TOKEN` is missing, Munch starts in compatibility mode and emits a
-structured security warning instead of crash-looping. Configure
-`MUNCH_HTTP_TOKEN` in Railway for bearer-authenticated `/mcp`, `/dashboard`, and
-`/control.json` access. Without a token, the compatibility mode exposes only
-the MCP transport and health probes; control endpoints remain unavailable.
-Other remote hosts still require a token unless `MUNCH_ALLOW_INSECURE_HTTP=true`
-is explicitly set.
+Set `MUNCH_HTTP_TOKEN` in the Vercel project for production, preview, and
+development environments. MCP clients must send
+`Authorization: Bearer <token>`. Browser clients must also be listed in
+`MUNCH_ALLOWED_ORIGINS` as a comma-separated set of exact origins. The Vercel
+handler refuses to start without a token unless
+`MUNCH_ALLOW_INSECURE_HTTP=true` is explicitly configured.
+
+Vercel Functions have ephemeral local storage. Munch maps runtime memory to
+`/tmp/.munchmemory` on Vercel, so durable cross-instance memory requires an
+external persistence provider in a future release. Local stdio installations
+continue to use `~/.munchmemory`.
 
 The update checker uses published GitHub releases, not `git pull`. A repository
 with no published release is treated as up to date; applying an update still

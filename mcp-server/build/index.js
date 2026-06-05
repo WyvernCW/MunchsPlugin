@@ -9,8 +9,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { readFileSync, existsSync, writeFileSync, mkdirSync, copyFileSync, renameSync, readdirSync, openSync, closeSync, unlinkSync, rmSync, statSync, } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { join, dirname, resolve } from "path";
+import { fileURLToPath, pathToFileURL } from "url";
 import os from "os";
 import { createHash, randomUUID } from "crypto";
 import { runSelfConfigure } from "./host-config.js";
@@ -22,7 +22,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // ──────────────────────────────────────────────
 // Self-Improving Memory Engine (SIME)
 // ──────────────────────────────────────────────
-const MEMORY_DIR = join(os.homedir(), ".munchmemory");
+const MEMORY_DIR = process.env.MUNCH_MEMORY_DIR
+    ?? (process.env.VERCEL ? join(os.tmpdir(), ".munchmemory") : join(os.homedir(), ".munchmemory"));
 const MEMORY_SCOPE = process.env.MUNCH_MEMORY_SCOPE === "project" ? "project" : "global";
 const PROJECT_ID = createHash("sha256").update(process.cwd()).digest("hex").slice(0, 16);
 const MEMORY_NAMESPACE_DIR = MEMORY_SCOPE === "project"
@@ -353,11 +354,8 @@ function getFullControlSnapshot() {
 // ──────────────────────────────────────────────
 // MCP Server definition
 // ──────────────────────────────────────────────
-function createMcpServer() {
-    const server = new McpServer({
-        name: "munch",
-        version: "1.0.0",
-    });
+export function configureMcpServer(server) {
+    // Tool, prompt, and resource registration is shared by CLI and serverless transports.
     // ── Tool: load_skill ──────────────────────────
     server.registerTool("load_skill", {
         description: "Load the full munch SKILL.md content into the agent context. " +
@@ -1312,6 +1310,12 @@ function createMcpServer() {
     }));
     return server;
 }
+export function createMcpServer() {
+    return configureMcpServer(new McpServer({
+        name: "munch",
+        version: "1.0.0",
+    }));
+}
 async function main() {
     const isSseMode = process.argv.includes("--sse") || process.env.MUNCH_SSE === "true" || process.env.PORT !== undefined;
     const port = parseInt(process.env.PORT || "8080", 10);
@@ -1322,13 +1326,6 @@ async function main() {
     }
     if (isSseMode) {
         const security = resolveHttpSecurity();
-        if (security.railwayFallback) {
-            console.error(JSON.stringify({
-                level: "warn",
-                event: "railway_token_missing",
-                message: "Railway HTTP mode started without bearer authentication. Set MUNCH_HTTP_TOKEN to secure the public endpoint.",
-            }));
-        }
         startHttpServer({
             port,
             token: security.token,
@@ -1366,7 +1363,12 @@ function parsePositiveInt(value, fallback) {
     const parsed = Number.parseInt(value ?? "", 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
-main().catch((err) => {
-    console.error("⟦§MUNCH⟧ Fatal:", err);
-    process.exit(1);
-});
+const entryPoint = process.argv[1]
+    ? pathToFileURL(resolve(process.argv[1])).href
+    : undefined;
+if (entryPoint === import.meta.url) {
+    main().catch((err) => {
+        console.error("⟦§MUNCH⟧ Fatal:", err);
+        process.exit(1);
+    });
+}

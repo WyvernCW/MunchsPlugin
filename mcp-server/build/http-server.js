@@ -8,11 +8,9 @@ export function resolveHttpSecurity(environment = process.env) {
     const token = environment.MUNCH_HTTP_TOKEN ?? environment.MUNCH_SSE_TOKEN;
     const explicitlyInsecure = environment.MUNCH_ALLOW_INSECURE_HTTP === "true" ||
         environment.MUNCH_ALLOW_INSECURE_SSE === "true";
-    const railwayFallback = Boolean(environment.RAILWAY_ENVIRONMENT || environment.RAILWAY_PROJECT_ID);
     return {
         token,
-        allowInsecure: explicitlyInsecure || (!token && railwayFallback),
-        railwayFallback: !token && railwayFallback,
+        allowInsecure: explicitlyInsecure,
     };
 }
 export function startHttpServer(options) {

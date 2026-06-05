@@ -11,11 +11,22 @@
     "dev": "tsc --watch",
     "start": "node build/index.js"
   },
-  "files": ["build", "README.md"],
-  "keywords": ["mcp", "munch", "agent", "skill", "claude", "codex", "opencode"],
+  "files": [
+    "build",
+    "README.md"
+  ],
+  "keywords": [
+    "mcp",
+    "munch",
+    "agent",
+    "skill",
+    "claude",
+    "codex",
+    "opencode"
+  ],
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "zod": "^3.25.28"
   },
   "devDependencies": {

@@ -1,5 +1,11 @@
 node_modules/
 mcp-server/node_modules/
+coverage/
+dist/
+.munchmemory/
+.vercel/
+.env*.local
+*.tgz
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

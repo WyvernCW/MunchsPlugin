@@ -26,28 +26,18 @@ async function waitFor(url, options = {}) {
   throw lastError;
 }
 
-test('HTTP security permits Railway startup without silently weakening other hosts', () => {
-  assert.deepEqual(resolveHttpSecurity({
-    PORT: '3000',
-    RAILWAY_ENVIRONMENT: 'production',
-  }), {
-    token: undefined,
-    allowInsecure: true,
-    railwayFallback: true,
-  });
-  assert.deepEqual(resolveHttpSecurity({
-    PORT: '3000',
-    RAILWAY_ENVIRONMENT: 'production',
-    MUNCH_HTTP_TOKEN: 'secret',
-  }), {
+test('HTTP security requires an explicit token or insecure-development flag', () => {
+  assert.deepEqual(resolveHttpSecurity({ MUNCH_HTTP_TOKEN: 'secret' }), {
     token: 'secret',
     allowInsecure: false,
-    railwayFallback: false,
   });
   assert.deepEqual(resolveHttpSecurity({ PORT: '3000' }), {
     token: undefined,
     allowInsecure: false,
-    railwayFallback: false,
+  });
+  assert.deepEqual(resolveHttpSecurity({ MUNCH_ALLOW_INSECURE_HTTP: 'true' }), {
+    token: undefined,
+    allowInsecure: true,
   });
 });
 
@@ -58,9 +48,9 @@ test('update policy treats a repository without releases as up to date', () => {
   assert.equal(update.updateAvailable, false);
 });
 
-test('Railway runtime starts without a token and reports the compatibility warning', async (context) => {
+test('HTTP runtime starts without a token only with the explicit insecure flag', async (context) => {
   const port = 24_000 + Math.floor(Math.random() * 5_000);
-  const home = mkdtempSync(join(tmpdir(), 'munch-railway-home-'));
+  const home = mkdtempSync(join(tmpdir(), 'munch-http-insecure-home-'));
   let stderr = '';
   const child = spawn(
     process.execPath,
@@ -70,9 +60,9 @@ test('Railway runtime starts without a token and reports the compatibility warni
       env: {
         ...process.env,
         PORT: String(port),
-        RAILWAY_ENVIRONMENT: 'production',
         MUNCH_HTTP_TOKEN: '',
         MUNCH_SSE_TOKEN: '',
+        MUNCH_ALLOW_INSECURE_HTTP: 'true',
         MUNCH_DESKTOP_NOTIFICATIONS: 'false',
         HOME: home,
         USERPROFILE: home,
@@ -102,7 +92,6 @@ test('Railway runtime starts without a token and reports the compatibility warni
     body: '{}',
   });
   assert.notEqual(mcp.status, 401);
-  assert.match(stderr, /railway_token_missing/);
   assert.match(stderr, /http_auth_disabled/);
 });
 

@@ -125,7 +125,7 @@ As the system is updated, the memory schema in the JSON files will evolve. The a
 SIME is designed to synchronize knowledge across both local client setups and remote deployment services.
 
 - **Local Paths**: Reads and writes to `~/.munchmemory/munch_memory.json` on the host machine.
-- **Remote Consistency**: When deploying the MCP server to remote hosting platforms (e.g. Railway), the database can reside in a persistent volume or stateful storage. If remote storage is not available, the agent relies on session snapshots to bridge state, using `log_conversation` as a structured export format.
+- **Remote Consistency**: When deploying the MCP server to Vercel Functions, local filesystem state is ephemeral. Use an external persistence service for durable cross-instance memory; otherwise use session snapshots and `log_conversation` as structured export formats.
 
 ---
 

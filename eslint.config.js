@@ -1,4 +1,5 @@
 import js from "@eslint/js";
+import react from "eslint-plugin-react";
 
 export default [
   {
@@ -14,22 +15,35 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ["**/*.js"],
+    files: ["**/*.{js,jsx}"],
+    plugins: {
+      react,
+    },
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
       globals: {
         Buffer: "readonly",
         console: "readonly",
+        document: "readonly",
         fetch: "readonly",
+        navigator: "readonly",
         process: "readonly",
+        Response: "readonly",
         setTimeout: "readonly",
         URL: "readonly",
+        window: "readonly",
       },
     },
     rules: {
       "no-console": "off",
       "no-useless-escape": "off",
+      "react/jsx-uses-vars": "error",
     },
   },
   {
