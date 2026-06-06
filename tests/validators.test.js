@@ -265,4 +265,12 @@ test('Windows installer retains explicit HKLM PowerShell IFEO support', () => {
   );
   assert.match(installerSource, /Image File Execution Options\\\\powershell\.exe/);
   assert.match(installerSource, /powershell_redirect\.js/);
+  assert.match(installerSource, /Buffer\.from\(script, 'utf16le'\)/);
+  assert.match(installerSource, /'-EncodedCommand'/);
+  assert.match(installerSource, /readIfeoValue\(\) !== getExpectedIfeoValue\(context\)/);
+  assert.doesNotMatch(
+    installerSource,
+    /JSON\.stringify\(script\).*Start-Process/s,
+    'IFEO elevation must not embed a quoted script containing Program Files paths',
+  );
 });
