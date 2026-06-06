@@ -21,6 +21,7 @@
     "polyglot"
   ],
   "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Munch",
     "shortDescription": "Augmented cognitive agent — full-stack coding, UI/UX, architecture, security, analysis.",
@@ -37,37 +38,12 @@
     "termsOfServiceURL": "https://github.com/WyvernCW/MunchsPlugin",
     "defaultPrompt": [
       "Help me pair program or debug code",
-      "Build",
-      "Design",
-      "Debug",
-      "Test",
-      "skill",
-      "skills"
+      "Review this code for bugs and security issues",
+      "Design and implement this feature"
     ],
     "brandColor": "#0ea5e9",
     "composerIcon": "./assets/munch_plugin_logo.svg",
     "logo": "./assets/munch_plugin_logo.png",
     "screenshots": []
-  },
-  "id": "munch",
-  "enabledByDefault": true,
-  "channels": [
-    "coding",
-    "engineering",
-    "architecture"
-  ],
-  "activation": {
-    "onStartup": false,
-    "onCommands": [
-      "build",
-      "test",
-      "debug",
-      "design",
-      "architect"
-    ],
-    "onChannels": [
-      "coding",
-      "engineering"
-    ]
   }
 }

@@ -47,6 +47,7 @@
     "package.json",
     "plugin.json",
     "marketplace.json",
+    ".mcp.json",
     "munch_plugin_logo.png",
     "munch_plugin_logo.svg",
     "AGENT.md",

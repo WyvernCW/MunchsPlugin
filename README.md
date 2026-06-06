@@ -74,7 +74,13 @@ or
 
 
 npm install -g --ignore-scripts git+https://github.com/WyvernCW/MunchsPlugin.git
+munch-setup setup --codex-only --no-ifeo
 ```
+
+The first command installs the package and command-line entry points. The
+second command registers the Munch plugin, skill, and MCP server with Codex.
+`--ignore-scripts` deliberately prevents npm from changing host configuration,
+so the setup command is required.
 
 The installer script will automatically:
 
@@ -99,6 +105,7 @@ Installer lifecycle commands:
 | `munch-setup repair` | Reapply missing managed state |
 | `munch-setup uninstall` | Restore backups and remove owned state |
 | `munch-setup setup --no-ifeo` | Install without configuring IFEO |
+| `munch-setup setup --codex-only --no-ifeo` | Register only the Codex plugin, skill, and MCP server |
 
 ---
 

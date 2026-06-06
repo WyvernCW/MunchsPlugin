@@ -12,32 +12,3 @@ policy:
 
 dependencies:
   tools: []
-  skills: ["munch"]
-
-# Antigravity compatibility metadata
-name: munch
-version: "1.0"
-description: >
-  Augmented cognitive agent skill. Activates anti-regression tracking,
-  adaptive user modeling, BTL build loop, OWASP security scanning, and
-  polyglot code generation across 20+ T1 languages.
-author: cika
-license: MIT
-homepage: https://github.com/WyvernCW/MunchsPlugin
-
-# Skills bundled with this package (Antigravity compatibility)
-skills:
-  - name: munch
-    path: ../SKILL.md
-    description: >
-      Full-stack coding, UI/UX, architecture, security, and analysis kernel.
-      Activates when building, reviewing, designing, or fixing code.
-
-# MCP server bundled with this plugin (Antigravity compatibility)
-mcp:
-  servers:
-    munch:
-      command: node
-      args:
-        - "{{SKILL_DIR}}/../../mcp-server/build/index.js"
-      env: {}

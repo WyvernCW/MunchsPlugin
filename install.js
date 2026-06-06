@@ -17,6 +17,7 @@ const command = process.argv.slice(2).find((arg) => !arg.startsWith('-')) ?? 'se
 const dryRun = args.has('--dry-run');
 const includeIfeo = !args.has('--no-ifeo');
 const skipBuild = args.has('--skip-build');
+const codexOnly = args.has('--codex-only');
 
 function print(value) {
   console.log(JSON.stringify(value, null, 2));
@@ -25,7 +26,7 @@ function print(value) {
 try {
   if (command === 'setup' || command === 'repair') {
     console.log(`⟦§MUNCH INSTALLER⟧ ${command}${dryRun ? ' dry-run' : ''}`);
-    const result = install(context, { dryRun, includeIfeo, skipBuild });
+    const result = install(context, { dryRun, includeIfeo, skipBuild, codexOnly });
     print({
       status: dryRun ? 'planned' : 'installed',
       managedPaths: result.state.ownedPaths.length,
@@ -41,9 +42,9 @@ try {
     console.log(`⟦§MUNCH INSTALLER⟧ uninstall${dryRun ? ' dry-run' : ''}`);
     print(uninstall(context, { dryRun }));
   } else if (command === 'plan') {
-    print(getInstallPlan(context, { includeIfeo }));
+    print(getInstallPlan(context, { includeIfeo, codexOnly }));
   } else {
-    console.error('Usage: munch-setup [setup|repair|doctor|uninstall|plan] [--dry-run] [--no-ifeo] [--skip-build]');
+    console.error('Usage: munch-setup [setup|repair|doctor|uninstall|plan] [--dry-run] [--no-ifeo] [--skip-build] [--codex-only]');
     process.exitCode = 2;
   }
 } catch (error) {

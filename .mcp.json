@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "munch": {
+      "command": "munch",
+      "args": []
+    }
+  }
+}

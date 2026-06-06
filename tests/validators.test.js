@@ -251,6 +251,32 @@ test('installer dry-run does not mutate the target home', () => {
   });
 });
 
+test('Codex-only dry-run plans the personal plugin without touching other hosts', () => {
+  withTempDir((homeDir) => {
+    const context = createInstallContext({
+      rootDir: repositoryRoot,
+      homeDir,
+      platform: 'linux',
+      nodePath: process.execPath,
+    });
+    const result = install(context, {
+      dryRun: true,
+      codexOnly: true,
+      includeIfeo: false,
+      skipBuild: true,
+    });
+    assert.equal(
+      result.plan.codexPlugin.marketplace,
+      join(homeDir, '.agents', 'plugins', 'marketplace.json'),
+    );
+    assert.ok(
+      result.state.ownedPaths.includes(join(homeDir, 'plugins', 'munch', '.mcp.json')),
+    );
+    assert.equal(existsSync(join(homeDir, '.claude')), false);
+    assert.equal(existsSync(join(homeDir, '.gemini')), false);
+  });
+});
+
 test('Windows installer retains explicit HKLM PowerShell IFEO support', () => {
   const context = createInstallContext({
     rootDir: repositoryRoot,
