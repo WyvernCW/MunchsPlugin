@@ -194,8 +194,11 @@ test('supporting references expose agent guidance and Mermaid metadata', () => {
 test('installer supports reversible setup in an isolated home', () => {
   withTempDir((homeDir) => {
     const existingSkill = join(homeDir, '.agents', 'skills', 'munch');
+    const emptyGeminiConfig = join(homeDir, '.gemini', 'config', 'mcp_config.json');
     mkdirSync(existingSkill, { recursive: true });
+    mkdirSync(join(homeDir, '.gemini', 'config'), { recursive: true });
     writeFileSync(join(existingSkill, 'user-file.txt'), 'preserve me\n');
+    writeFileSync(emptyGeminiConfig, '');
     const context = createInstallContext({
       rootDir: repositoryRoot,
       homeDir,
@@ -214,6 +217,10 @@ test('installer supports reversible setup in an isolated home', () => {
       existsSync(join(homeDir, '.agents', 'skills', 'munch', 'SKILL.md')),
       true,
     );
+    assert.equal(
+      JSON.parse(readFileSync(emptyGeminiConfig, 'utf8')).mcpServers.munch.command,
+      process.execPath.replace(/\\/g, '/'),
+    );
 
     const repaired = install(context, {
       includeIfeo: false,
@@ -228,7 +235,28 @@ test('installer supports reversible setup in an isolated home', () => {
       readFileSync(join(existingSkill, 'user-file.txt'), 'utf8'),
       'preserve me\n',
     );
+    assert.equal(readFileSync(emptyGeminiConfig, 'utf8'), '');
     assert.equal(existsSync(join(existingSkill, 'SKILL.md')), false);
+  });
+});
+
+test('installer rejects non-empty malformed host JSON without overwriting it', () => {
+  withTempDir((homeDir) => {
+    const malformedConfig = join(homeDir, '.gemini', 'config', 'mcp_config.json');
+    mkdirSync(join(homeDir, '.gemini', 'config'), { recursive: true });
+    writeFileSync(malformedConfig, '{"mcpServers":');
+    const context = createInstallContext({
+      rootDir: repositoryRoot,
+      homeDir,
+      platform: 'linux',
+      nodePath: process.execPath,
+    });
+
+    assert.throws(
+      () => install(context, { includeIfeo: false, skipBuild: true }),
+      /Cannot parse JSON config/,
+    );
+    assert.equal(readFileSync(malformedConfig, 'utf8'), '{"mcpServers":');
   });
 });
 
@@ -270,10 +298,43 @@ test('Codex-only dry-run plans the personal plugin without touching other hosts'
       join(homeDir, '.agents', 'plugins', 'marketplace.json'),
     );
     assert.ok(
-      result.state.ownedPaths.includes(join(homeDir, 'plugins', 'munch', '.mcp.json')),
+      result.state.ownedPaths.includes(
+        join(homeDir, '.codex', 'plugins', 'munch', '.mcp.json'),
+      ),
     );
     assert.equal(existsSync(join(homeDir, '.claude')), false);
     assert.equal(existsSync(join(homeDir, '.gemini')), false);
+  });
+});
+
+test('Codex-only setup installs through the personal marketplace without a CLI subprocess', () => {
+  withTempDir((homeDir) => {
+    const context = createInstallContext({
+      rootDir: repositoryRoot,
+      homeDir,
+      platform: 'win32',
+      nodePath: process.execPath,
+    });
+    const result = install(context, {
+      codexOnly: true,
+      includeIfeo: false,
+      skipBuild: true,
+    });
+    const marketplace = JSON.parse(
+      readFileSync(join(homeDir, '.agents', 'plugins', 'marketplace.json'), 'utf8'),
+    );
+
+    assert.equal(result.state.registry.ifeoManaged, undefined);
+    assert.equal(marketplace.name, 'personal');
+    assert.equal(marketplace.plugins[0].name, 'munch');
+    assert.equal(marketplace.plugins[0].source.path, './.codex/plugins/munch');
+    assert.equal(
+      existsSync(
+        join(homeDir, '.codex', 'plugins', 'munch', '.codex-plugin', 'plugin.json'),
+      ),
+      true,
+    );
+    assert.equal(doctor(context).healthy, true);
   });
 });
 
