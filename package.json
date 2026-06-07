@@ -1,11 +1,11 @@
 {
-  "name": "munch",
+  "name": "@wyverncw/munch",
   "version": "1.0.0",
   "description": "Augmented cognitive agent skill & MCP server",
   "homepage": "https://github.com/WyvernCW/MunchsPlugin",
   "repository": {
     "type": "git",
-    "url": "https://github.com/WyvernCW/MunchsPlugin.git"
+    "url": "git+https://github.com/WyvernCW/MunchsPlugin.git"
   },
   "bugs": "https://github.com/WyvernCW/MunchsPlugin/issues",
   "engines": {
@@ -13,8 +13,8 @@
   },
   "type": "module",
   "bin": {
-    "munch": "./mcp-server/build/index.js",
-    "munch-setup": "./install.js"
+    "munch": "mcp-server/build/index.js",
+    "munch-setup": "install.js"
   },
   "scripts": {
     "setup": "node install.js",
