@@ -143,6 +143,10 @@ function App() {
 
       <main id="top">
         <section className="hero">
+          <div className="hero-bg">
+            <div className="hero-bg-grid" />
+          </div>
+          <span className="hero-tag">MUNCH / 01</span>
           <div className="hero-copy">
             <div className="eyebrow"><span>01</span> Open-source skill + MCP server</div>
             <h1>
@@ -190,8 +194,11 @@ function App() {
 
         <div className="compatibility" aria-label="Compatible agents">
           <span>Works with</span>
-          <strong>Codex</strong><strong>Claude</strong><strong>OpenCode</strong>
-          <strong>KiloCode</strong><strong>Antigravity</strong>
+          <strong>Codex</strong>
+          <strong>Claude</strong>
+          <strong>OpenCode</strong>
+          <strong>KiloCode</strong>
+          <strong>Antigravity</strong>
         </div>
 
         <section className="signal-strip" aria-label="Munch reliability principles">
@@ -225,17 +232,14 @@ function App() {
 
         <section className="capability-section" id="capabilities">
           <div className="section-heading">
-            <div className="section-intro">
-              <span className="section-label">03 / Capabilities</span>
-              <h2>Built for the full engineering loop.</h2>
-            </div>
+            <span className="section-label">03 / Capabilities</span>
+            <h2>Built for the full engineering loop.</h2>
             <p>One system for implementation, review, debugging, architecture, security, and UI work.</p>
           </div>
           <div className="capability-list">
-            {capabilities.map(([icon, title, description], index) => (
+            {capabilities.map(([icon, title, description]) => (
               <article key={title}>
                 <div className="icon-frame"><Icon name={icon} /></div>
-                <span className="capability-number">0{index + 1}</span>
                 <h3>{title}</h3>
                 <p>{description}</p>
               </article>
