@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import logoUrl from '../munch_plugin_logo.svg';
 
@@ -116,7 +116,36 @@ const workflow = [
   ['05', 'Remember', 'Persist lessons and regression fixes so solved problems stay solved.'],
 ];
 
+function Intro({ onDone }) {
+  const [exiting, setExiting] = useState(false);
+  useEffect(() => {
+    const t1 = setTimeout(() => setExiting(true), 800);
+    const t2 = setTimeout(() => onDone(), 1200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+  return (
+    <div className={`intro-overlay${exiting ? ' intro-exit' : ''}`} aria-hidden="true">
+      <div className={`intro-content${exiting ? ' intro-content-exit' : ''}`}>
+        <div className="intro-logo-wrap">
+          <div className="intro-glow" />
+          <img className="intro-logo" src={logoUrl} alt="" />
+          <div className="intro-particles">
+            <div className="intro-particle" /><div className="intro-particle" />
+            <div className="intro-particle" /><div className="intro-particle" />
+            <div className="intro-particle" /><div className="intro-particle" />
+            <div className="intro-particle" /><div className="intro-particle" />
+          </div>
+        </div>
+        <h2 className="intro-title">MUNCH</h2>
+        <p className="intro-sub">agent reliability</p>
+        <div className="intro-bar" />
+      </div>
+    </div>
+  );
+}
+
 function App() {
+  const [showIntro, setShowIntro] = useState(true);
   const [copied, setCopied] = useState('');
   const copy = async (value, label) => {
     const didCopy = await writeClipboard(value);
@@ -125,7 +154,9 @@ function App() {
   };
 
   return (
-    <div className="site-shell">
+    <>
+      {showIntro && <Intro onDone={() => setShowIntro(false)} />}
+      <div className="site-shell">
       <header className="nav">
         <a className="brand" href="#top" aria-label="Munch home">
           <img src={logoUrl} alt="" />
@@ -295,6 +326,7 @@ function App() {
         <a href={githubUrl} target="_blank" rel="noreferrer">WyvernCW/MunchsPlugin</a>
       </footer>
     </div>
+    </>
   );
 }
 

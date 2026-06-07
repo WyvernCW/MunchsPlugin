@@ -10,14 +10,95 @@
       content="Munch is an open-source reliability layer, skill, and MCP server for AI coding agents. Context routing, security, verification, and persistent memory for agentic coding workflows."
     />
     <meta name="application-name" content="Munch" />
+    <link rel="icon" type="image/svg+xml" href="/munch_plugin_logo.svg" />
     <link rel="preconnect" href="https://github.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Outfit:wght@300;400;500;600&display=swap" />
     <title>Munch — Reliability for coding agents</title>
+    <style>
+      #skeleton {
+        position: fixed; inset: 0; z-index: 1;
+        background: #121316; overflow: hidden;
+      }
+      .sk-inner {
+        max-width: 1120px; margin: 0 auto; padding: 0 48px;
+      }
+      .sk-nav {
+        height: 72px; display: flex; align-items: center; gap: 24px;
+        border-bottom: 1px solid #1e2025;
+      }
+      .sk-brand { width: 80px; height: 20px; border-radius: 4px; background: #1e2025; }
+      .sk-links { display: flex; gap: 24px; margin-left: auto; }
+      .sk-link { width: 64px; height: 12px; border-radius: 4px; background: #1e2025; }
+      .sk-link:nth-child(2) { width: 80px; }
+      .sk-link:nth-child(3) { width: 56px; }
+      .sk-action { width: 80px; height: 32px; border-radius: 6px; background: #1e2025; }
+      .sk-hero {
+        display: grid; grid-template-columns: 1.618fr 1fr; gap: 64px;
+        padding: 80px 0 120px; align-items: center;
+      }
+      .sk-eyebrow { width: 120px; height: 12px; border-radius: 4px; background: #1e2025; margin-bottom: 32px; }
+      .sk-h1 { width: 80%; height: 28px; border-radius: 4px; background: #1e2025; margin-bottom: 12px; }
+      .sk-h1:nth-child(3) { width: 55%; }
+      .sk-p { width: 90%; height: 14px; border-radius: 4px; background: #1e2025; margin: 28px 0 20px; }
+      .sk-p:nth-child(5) { width: 65%; margin-top: 0; }
+      .sk-actions { display: flex; gap: 12px; margin-top: 16px; }
+      .sk-btn { width: 130px; height: 40px; border-radius: 6px; background: #1e2025; }
+      .sk-map { height: 260px; border-radius: 8px; background: #1a1c20; border: 1px solid #1e2025; }
+      .sk-row { display: flex; gap: 16px; margin-top: 24px; }
+      .sk-tag { height: 28px; border-radius: 14px; background: #1e2025; flex: 1; }
+      @media (prefers-reduced-motion: no-preference) {
+        .sk-brand, .sk-link, .sk-action, .sk-eyebrow, .sk-h1, .sk-p, .sk-btn, .sk-map, .sk-tag {
+          background: linear-gradient(90deg, #1e2025 25%, #25282d 50%, #1e2025 75%);
+          background-size: 200% 100%;
+          animation: sk-shimmer 1.6s ease-in-out infinite;
+        }
+        .sk-map { background: linear-gradient(90deg, #1a1c20 25%, #1e2025 50%, #1a1c20 75%); background-size: 200% 100%; }
+      }
+      @keyframes sk-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="skeleton">
+        <div class="sk-inner">
+          <div class="sk-nav">
+            <div class="sk-brand"></div>
+            <div class="sk-links">
+              <div class="sk-link"></div>
+              <div class="sk-link"></div>
+              <div class="sk-link"></div>
+            </div>
+            <div class="sk-action"></div>
+          </div>
+          <div class="sk-hero">
+            <div>
+              <div class="sk-eyebrow"></div>
+              <div class="sk-h1"></div>
+              <div class="sk-h1"></div>
+              <div class="sk-p"></div>
+              <div class="sk-p"></div>
+              <div class="sk-actions">
+                <div class="sk-btn"></div>
+                <div class="sk-btn"></div>
+              </div>
+            </div>
+            <div class="sk-map"></div>
+          </div>
+          <div class="sk-row">
+            <div class="sk-tag"></div>
+            <div class="sk-tag"></div>
+            <div class="sk-tag"></div>
+            <div class="sk-tag"></div>
+            <div class="sk-tag"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
