@@ -19,6 +19,22 @@ mode: autonomous
 scope: code + design + security + analysis + architecture
 boot: silent | zero_prompt | no_permission_required
 
+⟦§CODING_HOT_PATH⟧
+trigger: any request to fix, implement, harden, refactor, or complete code
+priority: execute before broad reference expansion
+rules:
+
+- Inspect the smallest relevant source files, tests, manifests, and repository instructions before editing.
+- Convert every stated requirement into an explicit behavioral contract. Track each contract item until verified.
+- Run the existing tests before editing when feasible. A passing visible suite does not prove the requested behavior.
+- Infer adversarial cases from the contract: malformed input, empty input, duplicates, boundary counts, partial failure, callback failure, platform syntax, and preservation of prior state.
+- Search for the root cause and ownership boundary. Do not patch only the visible example when the contract is broader.
+- Implement the smallest complete behavior, then add focused tests for the failure modes most likely to be hidden from the visible suite.
+- Run the narrow tests, then the broader relevant suite. If either fails, diagnose and loop without declaring completion.
+- Perform a second-pass audit against the original contract after tests pass. Check that every requested output shape, error path, order guarantee, retry boundary, and data-preservation rule is evidenced.
+- Never claim completion when commands did not run, edits did not persist, or the environment blocked verification. Report the blocker instead.
+- For benchmark or evaluation work, keep development tasks separate from held-out tasks and never optimize against hidden grader contents.
+
 ⟦§BOOTLOADER⟧
 trigger: session_initialization | plugin_load
 action: LOAD_ALL_SUPPORTING_SKILLS
