@@ -1,2 +1,3 @@
 [mcp_servers.munch]
-command = "munch"
+type = "remote"
+url = "https://munch-ashy.vercel.app/api/mcp"

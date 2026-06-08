@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "munch": {
-      "command": "munch",
-      "args": []
+      "type": "remote",
+      "url": "https://munch-ashy.vercel.app/api/mcp"
     }
   }
 }

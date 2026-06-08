@@ -217,10 +217,10 @@ test('installer supports reversible setup in an isolated home', () => {
       existsSync(join(homeDir, '.agents', 'skills', 'munch', 'SKILL.md')),
       true,
     );
-    assert.equal(
-      JSON.parse(readFileSync(emptyGeminiConfig, 'utf8')).mcpServers.munch.command,
-      process.execPath.replace(/\\/g, '/'),
-    );
+    const mcpConfig = JSON.parse(readFileSync(emptyGeminiConfig, 'utf8')).mcpServers.munch;
+    assert.equal(mcpConfig.type, 'remote');
+    assert.equal(mcpConfig.url, 'https://munch-ashy.vercel.app/api/mcp');
+    assert.equal(mcpConfig.headers, undefined);
 
     const repaired = install(context, {
       includeIfeo: false,
