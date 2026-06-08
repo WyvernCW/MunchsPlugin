@@ -10,8 +10,6 @@ This reference governs all database schema designs, migrations, query performanc
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in database architecture and operations.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 When an AI agent receives a request to modify database schemas, write migrations, optimize SQL queries, configure indexing, manage database replication, or troubleshoot transaction lockups, the agent must load and follow this reference.
 
 The agent must do this before proposing or applying database changes.

@@ -10,8 +10,6 @@ This reference governs all browser automation, end-to-end testing, and browser s
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in browser automation and testing.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 When an AI agent receives a request to automate, test, verify, or scrape a web interface, the agent must load and follow this reference.
 
 The agent must do this before generating any automation scripts or testing commands.

@@ -77,6 +77,10 @@ rules:
   - Read `references/code_review_refactoring.md` when reviewing changes, ranking findings, preserving compatibility, or performing behavior-safe refactors.
   - Read `references/network_protocols.md` when implementing HTTP, TLS, DNS, proxies, WebSockets, SSE, framing, timeouts, or reconnect behavior.
   - Read `references/documentation_engineering.md` when creating READMEs, tutorials, references, ADRs, runbooks, changelogs, or migration guides.
+  - Read `references/design_tokens.md` when building token systems, CTI naming, Style Dictionary configurations, theme architectures, or platform value mapping.
+  - Read `references/brand_systems.md` when designing brand identity, color palettes, typography systems, spacing grids, or cross-platform brand consistency.
+  - Read `references/design_engineering.md` when bridging design-to-code, building Figma integrations, architecting component libraries, or running visual regression testing.
+  - Read `references/icon_asset_engineering.md` when processing SVG icons, building icon component systems, managing raster assets, or optimizing image delivery.
   - Read `references/polyglot_index.md` to load the worldwide language classification index (comprising 100+ core languages, shell environments, blockchain models, esoteric engines).
   - Read `references/polyglot_idioms.md` for cross-language naming, error-handling, concurrency, and interoperability patterns.
   - Read `references/polyglot_mainstream.md`, `references/polyglot_systems.md`, `references/polyglot_data_functional.md`, and `references/polyglot_game_legacy_esolang.md` to activate syntax guidelines and security checks for the 100+ programming languages.

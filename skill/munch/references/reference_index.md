@@ -10,8 +10,6 @@ This reference governs the routing, coordination, and load ordering of all suppo
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in resource-aware development.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 When an AI agent receives a request involving multi-module setups, routing, domain parsing, or context budget management, the agent must load and follow this reference.
 
 The agent must do this before loading other reference documents from the directory.
@@ -170,6 +168,10 @@ The following behaviors are mandatory.
 | HTTP, TLS, DNS, proxies, WebSockets, SSE, timeouts | `network_protocols.md` | `api_design.md`, `distributed_systems.md` |
 | README, tutorial, ADR, runbook, changelog, migration | `documentation_engineering.md` | `api_design.md`, `package_release.md` |
 | Policy, trust mode, replay, provenance, evaluation, context budget, workspace impact, evidence, privacy, dashboard | `agent_reliability_runtime.md` | `ai_agent_engineering.md`, `testing_strategy.md`, `security_engineering.md` |
+| Design tokens, CTI naming, Style Dictionary, theme tokens, platform value mapping | `design_tokens.md` | `frontend_design.md`, `brand_systems.md`, `accessibility_engineering.md` |
+| Brand identity, color palettes, typography systems, font loading, spacing grid, brand governance | `brand_systems.md` | `design_tokens.md`, `frontend_design.md`, `accessibility_engineering.md` |
+| Design-to-code, Figma API, component libraries, visual regression, design review, design debt | `design_engineering.md` | `design_tokens.md`, `testing_strategy.md`, `documentation_engineering.md` |
+| SVG optimization, icon components, sprite sheets, raster assets, responsive images, image CDN, asset accessibility | `icon_asset_engineering.md` | `design_tokens.md`, `performance_guard.md`, `accessibility_engineering.md` |
 
 Load the primary reference first, then only the supporting references needed by the concrete files and boundaries involved. When a task spans multiple rows, preserve the order: platform and security constraints, architecture and protocol rules, implementation guidance, testing, then documentation.
 

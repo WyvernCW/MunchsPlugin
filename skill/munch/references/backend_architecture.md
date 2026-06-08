@@ -10,8 +10,6 @@ This reference governs all backend architecture decisions. It establishes servic
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in backend system architecture.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 This skill activates when the agent is modifying services, database scaling models, background workers, retry configurations, telemetry setups, or recovery paths.
 
 ### Activation Triggers

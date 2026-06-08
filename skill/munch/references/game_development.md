@@ -6,7 +6,7 @@ This reference governs all game design, simulation execution, input mapping, cha
 ---
 
 ## How AI Agents Should Use This Skill
-This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in game development. This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent). When an AI agent receives a request to design game systems, configure physics colliders, implement input mapping, write entity component scripts, manage state transitions, or build asset import rules, the agent must load and follow this reference. The agent must do this before writing any scripts or importing game configurations.
+This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in game development. When an AI agent receives a request to design game systems, configure physics colliders, implement input mapping, write entity component scripts, manage state transitions, or build asset import rules, the agent must load and follow this reference. The agent must do this before writing any scripts or importing game configurations.
 
 ### Activation Triggers
 The agent should activate this skill when the user request contains any of the following signals:

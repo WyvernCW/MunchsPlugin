@@ -10,8 +10,6 @@ This reference governs how APIs are designed. It establishes resource naming con
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in API design.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 This skill activates when the agent is defining endpoints, payloads, HTTP statuses, auth headers, rate limits, or error bodies.
 
 ### Activation Triggers

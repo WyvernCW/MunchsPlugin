@@ -10,8 +10,6 @@ This reference governs all mobile application architecture, view controllers, to
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in mobile application development.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 When an AI agent receives a request to layout mobile screens, handle foreground or background state events, store user secrets in native keychains, implement offline synchronization queues, configure push notification tokens, or write build scripts for App Store or Google Play Store, the agent must load and follow this reference.
 
 The agent must do this before writing any mobile code files.

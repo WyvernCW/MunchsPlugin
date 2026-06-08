@@ -10,8 +10,6 @@ This reference governs all code verification, testing suites, CI/CD checks, and 
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in testing and QA.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 When an AI agent receives a request involving unit testing, test-driven development, integration tests, E2E browser tests, mock endpoints, or CI build scripts, the agent must load and follow this reference.
 
 The agent must do this before writing test scripts or executing test runner commands.

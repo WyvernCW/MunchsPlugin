@@ -10,8 +10,6 @@ This reference governs all package versioning, changelog compilation, metadata p
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in package distribution, library versioning, and publishing workflows.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 When an AI agent receives a request to publish npm modules, publish Python wheels to PyPI, release NuGet packages, build Maven binaries, compile library packages, format markdown changelogs, tag version changes, or audit public metadata releases, the agent must load and follow this reference.
 
 The agent must do this before executing any release commands or publishing binaries.

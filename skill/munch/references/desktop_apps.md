@@ -10,8 +10,6 @@ This reference governs all desktop application development, window lifecycle man
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in desktop application development.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 When an AI agent receives a request to design a desktop UI, modify window properties, bind native keyboard shortcuts, interface with operating system APIs, implement offline data synchronization, write desktop application installers, or diagnose desktop crashes, the agent must load and follow this reference.
 
 The agent must do this before writing any code or generating configuration payloads.

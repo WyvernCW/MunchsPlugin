@@ -10,8 +10,6 @@ This reference governs all continuous integration, automated deployment, release
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in DevOps, pipelines, and deployment tasks.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 When an AI agent receives a request to write GitHub Actions workflows, modify build configurations, manage environment variables, secure deployment secrets, automate artifact packaging, configure health checks, verify staging releases, or coordinate production rollbacks, the agent must load and follow this reference.
 
 The agent must do this before creating or modifying CI/CD configuration files.

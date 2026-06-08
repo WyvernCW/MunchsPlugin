@@ -10,8 +10,6 @@ This reference governs how AI agent systems are built. It outlines core requirem
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in building and orchestrating AI agents.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 This skill activates when the agent is designing or implementing agent loops, tool structures, or memory systems.
 
 ### Activation Triggers

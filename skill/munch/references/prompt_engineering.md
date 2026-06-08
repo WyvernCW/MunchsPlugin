@@ -10,8 +10,6 @@ This reference governs the creation, modification, and evaluation of prompt inst
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in prompt design and LLM orchestration.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 When an AI agent receives a request involving system prompts, tool usage instructions, eval prompts, output contract design, or instruction routing, the agent must load and follow this reference.
 
 The agent must do this before modifying any prompt files or system rules.

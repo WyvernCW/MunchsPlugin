@@ -10,8 +10,6 @@ This reference governs all design, layout, analysis, and verification rules for 
 
 This reference is designed for use by all coding agents (such as Antigravity, Claude Code, OpenCode, KiloCode, etc.) to guide their execution in reverse engineering projects.
 
-This memory and reference was written by Gemini 3.5 Flash (via the Antigravity agent).
-
 When an AI agent receives a request involving binary inspection, decompiled logs, packet analysis, or memory dumps, the agent must load and follow this reference.
 
 The agent must do this before running any inspection utilities or commands.
