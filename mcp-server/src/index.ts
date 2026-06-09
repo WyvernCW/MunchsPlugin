@@ -28,6 +28,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 import os from "os";
 import { createHash, randomUUID } from "crypto";
 import { runSelfConfigure } from "./host-config.js";
+import { registerWebTools } from "./web.js";
 import { showNotification } from "./notifications.js";
 import { applyVersionedUpdate, checkForUpdate } from "./updater.js";
 import { resolveHttpSecurity, startHttpServer } from "./http-server.js";
@@ -1979,6 +1980,9 @@ server.registerTool(
     };
   }
 );
+
+// ── Web Tools (search, scrape, GitHub, YouTube, Wikipedia, X/Twitter, TikTok, Gmail, Drive, browser) ──
+registerWebTools(server);
 
 // ── Prompt: use_powershell_7 ──────────────────
 server.registerPrompt(

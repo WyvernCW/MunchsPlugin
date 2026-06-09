@@ -29,8 +29,16 @@
     "@modelcontextprotocol/sdk": "^1.26.0",
     "zod": "^3.25.28"
   },
+  "optionalDependencies": {
+    "@sparticuz/chromium": "^149.0.0",
+    "puppeteer": "^24.43.1",
+    "puppeteer-core": "^25.1.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/puppeteer": "^5.4.7",
     "typescript": "^5.8.3"
   }
 }
