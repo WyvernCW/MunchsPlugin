@@ -241,6 +241,22 @@ TEST:
   adversarial:      2+ counter_arguments | 2+ failure_scenarios
   intent_alignment: implicit_goals ∩ explicit_instructions
   cross_platform:   mobile + desktop | if UI
+WEB_TEST:
+  trigger:       building_a_web_app | UI_component | frontend_feature
+  steps:
+    1:           npm run build  → verify zero compile errors
+    2:           deploy to staging or use running dev server
+    3:           call browser_test_page(url) to capture console logs, screenshot, HTML
+    4:           check consoleLogs for errors, warnings, React hydration mismatches
+    5:           if interactive: call browser_interact(url, actions) to test flows
+    6:           check pageErrors and HTTP failures (4xx, 5xx)
+    7:           if failures found → call remember_lesson → LOOP back to BUILD
+    8:           if clean → proceed to SHIP
+  tools:
+    - browser_test_page: "MCP tool — opens URL, returns console logs + screenshot + HTML"
+    - browser_interact:  "MCP tool — clicks, types, scrolls, returns final state"
+    - browser-test.mjs:  "Standalone script: node scripts/browser-test.mjs <url>"
+    - remember_lesson:   "MCP tool — persist the failure + fix for future regression prevention"
 LOOP:
   target:       highest_impact_flaw
   fix:          surgical_correction

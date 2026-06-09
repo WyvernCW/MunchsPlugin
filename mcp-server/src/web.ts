@@ -674,27 +674,50 @@ function detectChrome(): string | undefined {
 }
 
 async function browserScrape(url: string): Promise<string> {
-  // Strategy 1: @sparticuz/chromium (works on Vercel/AWS Lambda serverless)
-  // with puppeteer-extra + stealth plugin for Cloudflare bypass
+  const errors: string[] = [];
+
+  // Strategy 0: Cloudflare Worker proxy (if configured)
+  // Cloudflare Workers run on Cloudflare's network, so they naturally bypass
+  // Cloudflare WAF/JS challenges. This is the most effective strategy.
+  const cfWorkerUrl = process.env.MUNCH_CF_WORKER_URL;
+  if (cfWorkerUrl) {
+    try {
+      const res = await fetch(`${cfWorkerUrl}?url=${encodeURIComponent(url)}`, {
+        signal: AbortSignal.timeout(20000),
+      });
+      if (res.ok) {
+        const text = await res.text();
+        if (text.length > 100 && !isCloudflareChallenge(text)) {
+          return text.slice(0, 15000);
+        }
+        errors.push("CF Worker: returned Cloudflare challenge page");
+      } else {
+        errors.push(`CF Worker: HTTP ${res.status}`);
+      }
+    } catch (e) {
+      errors.push(`CF Worker: ${(e as Error).message}`);
+    }
+  }
+
+  // Strategy 1: @sparticuz/chromium (serverless Vercel/AWS Lambda)
+  // Downloads slim Chromium (~50MB) on first call, cached in /tmp for subsequent calls
   try {
     const ChromiumClass = await Function('return import("@sparticuz/chromium")')();
     const executablePath = await ChromiumClass.executablePath();
     let launchBrowser: (opts: Record<string, unknown>) => Promise<any>;
 
     try {
-      // Try with puppeteer-extra + stealth first (better Cloudflare bypass)
       const PuppeteerExtra = (await Function('return import("puppeteer-extra")')()).default;
       const StealthPlugin = (await Function('return import("puppeteer-extra-plugin-stealth")')()).default;
       PuppeteerExtra.use(StealthPlugin());
       launchBrowser = (opts) => PuppeteerExtra.launch(opts);
     } catch {
-      // Fallback to plain puppeteer-core
       const puppeteerCore = await Function('return import("puppeteer-core")')();
       launchBrowser = (opts) => puppeteerCore.launch(opts);
     }
 
     const browser = await launchBrowser({
-      args: ChromiumClass.args,
+      args: [...ChromiumClass.args, "--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
       executablePath,
       headless: true,
     });
@@ -710,12 +733,15 @@ async function browserScrape(url: string): Promise<string> {
         removals.forEach((el) => el.remove());
         return (clone.textContent ?? "").replace(/\s+/g, " ").slice(0, 15000);
       });
-      return title ? `# ${title}\n\n${text.trim()}` : text.trim();
+      if (text.length > 50 && !text.includes("Just a moment") && !text.includes("security verification")) {
+        return title ? `# ${title}\n\n${text.trim()}` : text.trim();
+      }
+      errors.push("chromium: Cloudflare challenge page returned");
     } finally {
       await browser.close().catch(() => {});
     }
-  } catch {
-    // Fall through to desktop puppeteer
+  } catch (e) {
+    errors.push(`chromium: ${(e as Error).message}`);
   }
 
   // Strategy 2: puppeteer-extra with stealth + local Chrome (desktop)
@@ -741,36 +767,70 @@ async function browserScrape(url: string): Promise<string> {
           removals.forEach((el) => el.remove());
           return { title: document.title ?? "", text: (clone.textContent ?? "").replace(/\s+/g, " ").slice(0, 15000) };
         });
-        return `# ${result.title}\n\n${result.text.trim()}`;
+        if (result.text.length > 50) {
+          return `# ${result.title}\n\n${result.text.trim()}`;
+        }
+        errors.push("desktop: empty body");
       } finally {
         await browser.close().catch(() => {});
       }
-    } catch {
-      // Fall through to proxies
+    } catch (e) {
+      errors.push(`desktop: ${(e as Error).message}`);
     }
   }
 
-  // Strategy 3: proxy services (works everywhere including Vercel, no browser needed)
+  // Strategy 3: proxy services (works everywhere, no browser needed)
   const cacheResult = await fetchViaGoogleCache(url);
-  if (cacheResult) return `${cacheResult}\n\n*[Scraped via Google Cache]*`;
+  if (cacheResult && !cacheResult.includes("not redirected") && !cacheResult.includes("google.com") && !cacheResult.includes("redirected within") && !cacheResult.startsWith("# Google Search")) return `${cacheResult}\n\n*[Scraped via Google Cache]*`;
+  errors.push("Google Cache: failed");
 
   const textiseResult = await fetchViaTextise(url);
-  if (textiseResult) return textiseResult;
+  if (textiseResult && !isCloudflareChallenge(textiseResult)) return textiseResult;
+  errors.push("Textise: failed");
 
   const jinaResult = await fetchViaJinaReader(url);
-  if (jinaResult) return jinaResult;
+  if (jinaResult && !isCloudflareChallenge(jinaResult)) return jinaResult;
+  errors.push("Jina Reader: failed");
 
   const beeResult = await fetchViaScrapingBee(url);
-  if (beeResult) return beeResult;
+  if (beeResult) return `${beeResult}\n\n*[Scraped via ScrapingBee]*`;
+  errors.push("ScrapingBee: not configured or failed");
 
   const apiResult = await fetchViaScraperAPI(url);
-  if (apiResult) return apiResult;
+  if (apiResult) return `${apiResult}\n\n*[Scraped via ScraperAPI]*`;
+  errors.push("ScraperAPI: not configured or failed");
 
   const fireResult = await fetchViaFirecrawl(url);
-  if (fireResult) return fireResult;
+  if (fireResult) return `${fireResult}\n\n*[Scraped via Firecrawl]*`;
+  errors.push("Firecrawl: not configured or failed");
 
   // Final fallback: direct web_scrape
-  return scrapeUrl(url);
+  try {
+    const result = await scrapeUrl(url);
+    // Reject Cloudflare challenge pages
+    if (isCloudflareChallenge(result)) {
+      errors.push("web_scrape: Cloudflare challenge page");
+    } else {
+      return result;
+    }
+  } catch (e) {
+    errors.push(`web_scrape: ${(e as Error).message}`);
+  }
+
+  // Everything failed — provide actionable error
+  return (
+    `Could not scrape ${url}. All strategies exhausted:\n` +
+    errors.map((e) => `  - ${e}`).join("\n") +
+    "\n\nThis site has very aggressive anti-bot protection (likely Cloudflare with CAPTCHA).\n" +
+    "Options to make scraping work:\n" +
+    "1. Deploy the Cloudflare Worker (bypasses Cloudflare — free, no install):\n" +
+    "   See browser-worker/README.md for 2-minute deployment\n" +
+    "2. Install puppeteer locally and run munch-mcp locally (stdio mode)\n" +
+    "3. Set a scraping API key on the server:\n" +
+    "   - MUNCH_FIRECRAWL_KEY (free tier: 500 pages/mo)\n" +
+    "   - MUNCH_SCRAPINGBEE_KEY (free trial: 2500 credits)\n" +
+    "   - MUNCH_SCRAPERAPI_KEY (free tier: 5000 requests/mo)"
+  );
 }
 
 // ── Proxy / bypass helpers ───────────────────────────────
@@ -831,9 +891,10 @@ async function fetchViaJinaReader(url: string): Promise<string | null> {
         markdownStart >= 0
           ? text.slice(markdownStart + "Markdown Content:".length).trim()
           : text.slice(0, 12000).trim();
+      if (isCloudflareChallenge(content)) return null;
       return title ? `# ${title}\n\n${content}` : content;
     }
-    return text.slice(0, 12000);
+    return null;
   } catch {
     return null;
   }
@@ -851,6 +912,7 @@ async function fetchViaScrapingBee(url: string): Promise<string | null> {
     const title = extractMetaTitle(text);
     const body = extractBody(text);
     const clean = htmlToText(body).slice(0, 12000);
+    if (isCloudflareChallenge(clean)) return null;
     return title ? `# ${title}\n\n${clean}` : clean;
   } catch {
     return null;
@@ -869,6 +931,7 @@ async function fetchViaScraperAPI(url: string): Promise<string | null> {
     const title = extractMetaTitle(text);
     const body = extractBody(text);
     const clean = htmlToText(body).slice(0, 12000);
+    if (isCloudflareChallenge(clean)) return null;
     return title ? `# ${title}\n\n${clean}` : clean;
   } catch {
     return null;
@@ -888,6 +951,7 @@ async function fetchViaGoogleCache(url: string): Promise<string | null> {
     const body = extractBody(html);
     const clean = htmlToText(body).slice(0, 12000);
     if (clean.length < 50) return null;
+    if (title === "Google Search" || clean.includes("redirected within")) return null;
     return title ? `# ${title} [cached]\n\n${clean}` : clean;
   } catch {
     return null;
@@ -911,7 +975,7 @@ async function fetchViaTextise(url: string): Promise<string | null> {
       });
       if (!res.ok) continue;
       const text = await res.text();
-      if (text.length > 100) return text.slice(0, 15000);
+      if (text.length > 100 && !isCloudflareChallenge(text)) return text.slice(0, 15000);
     } catch {
       continue;
     }
@@ -941,7 +1005,7 @@ async function fetchViaFirecrawl(url: string): Promise<string | null> {
     const data = (await res.json()) as Record<string, unknown>;
     if (data.success) {
       const md = (data.data as Record<string, unknown>)?.markdown as string ?? "";
-      if (md.length > 50) return md.slice(0, 15000);
+      if (md.length > 50 && !isCloudflareChallenge(md)) return md.slice(0, 15000);
     }
     return null;
   } catch {
@@ -963,7 +1027,7 @@ async function scrapeUrl(url: string): Promise<string> {
       const title = extractMetaTitle(html);
       const body = extractBody(html);
       const text = htmlToText(body).slice(0, 8000);
-      if (text.length > 50) {
+      if (text.length > 50 && !isCloudflareChallenge(text)) {
         return title ? `# ${title}\n\n${text}` : text;
       }
       errors.push(`attempt ${attempt + 1}: empty body`);
@@ -1007,8 +1071,247 @@ async function scrapeUrl(url: string): Promise<string> {
   errors.push("Firecrawl: not configured or failed");
 
   throw new Error(
-    `All scraping strategies failed.\n${errors.map((e) => `  - ${e}`).join("\n")}`,
+    `All scraping strategies failed.\n${errors.map((e) => `  - ${e}`).join("\n")}\n\n` +
+    "For Cloudflare-protected sites, deploy the Cloudflare Worker (see browser-worker/README.md).",
   );
+}
+
+function isCloudflareChallenge(text: string): boolean {
+  return text.includes("Just a moment") && (text.includes("security verification") || text.includes("checking your browser") || text.includes("Please stand by") || text.includes("DDoS protection") || text.includes("Enable JavaScript") || text.includes("challenge-platform") || text.includes("cf_chl_opt"));
+}
+
+// ── Browser Testing Tools ─────────────────────────────
+
+interface ConsoleEntry {
+  type: string;
+  text: string;
+  timestamp: number;
+}
+
+interface BrowserTestResult {
+  title: string;
+  html: string;
+  text: string;
+  consoleLogs: ConsoleEntry[];
+  screenshotBase64: string;
+  timingMs: number;
+  errors: string[];
+}
+
+type InteractionAction = {
+  type: "click" | "type" | "select" | "scroll" | "wait" | "screenshot";
+  selector?: string;
+  value?: string;
+  ms?: number;
+};
+
+async function tryPuppeteer<T>(fn: (puppeteer: any, chromePath: string) => Promise<T>): Promise<T | null> {
+  const chromePath = process.env.CHROME_PATH || process.env.PUPPETEER_EXECUTABLE_PATH || detectChrome();
+  if (!chromePath) return null;
+  try {
+    const puppeteerCore = await Function('return import("puppeteer-core")')();
+    return await fn(puppeteerCore, chromePath);
+  } catch {
+    return null;
+  }
+}
+
+async function browserTestPage(url: string, options?: {
+  waitUntil?: "load" | "domcontentloaded" | "networkidle0" | "networkidle2";
+  timeout?: number;
+}): Promise<BrowserTestResult> {
+  const result: BrowserTestResult = {
+    title: "",
+    html: "",
+    text: "",
+    consoleLogs: [],
+    screenshotBase64: "",
+    timingMs: 0,
+    errors: [],
+  };
+
+  const puppeteerResult = await tryPuppeteer(async (puppeteerCore, chromePath) => {
+    const browser = await puppeteerCore.launch({
+      headless: true,
+      executablePath: chromePath,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+    });
+    try {
+      const page = await browser.newPage();
+      const consoleLogs: ConsoleEntry[] = [];
+      page.on("console", (msg: any) => {
+        consoleLogs.push({
+          type: msg.type(),
+          text: msg.text(),
+          timestamp: Date.now(),
+        });
+      });
+      page.on("pageerror", (err: Error) => {
+        result.errors.push(`pageerror: ${err.message}`);
+      });
+
+      const t0 = performance.now();
+      const waitUntil = options?.waitUntil ?? "networkidle2";
+      await page.goto(url, { waitUntil, timeout: options?.timeout ?? 30000 });
+      await new Promise((r) => setTimeout(r, 1000));
+      const timingMs = Math.round(performance.now() - t0);
+
+      const title = await page.title();
+      const html = await page.content();
+      const screenshotBase64 = await page.screenshot({ encoding: "base64", type: "jpeg", quality: 80 });
+      const bodyText = await page.evaluate(() => {
+        const clone = document.body.cloneNode(true) as HTMLElement;
+        const removals = clone.querySelectorAll("script,style,nav,footer,header,iframe");
+        removals.forEach((el) => el.remove());
+        return (clone.textContent ?? "").replace(/\s+/g, " ").slice(0, 20000);
+      });
+
+      return {
+        title,
+        html: html.slice(0, 15000),
+        text: bodyText.trim(),
+        consoleLogs,
+        screenshotBase64: `data:image/jpeg;base64,${screenshotBase64}`,
+        timingMs,
+        errors: result.errors,
+      };
+    } finally {
+      await browser.close().catch(() => {});
+    }
+  });
+
+  if (puppeteerResult) return puppeteerResult;
+  result.errors.push("puppeteer-core not available, falling back to fetch");
+
+  // Fallback: direct fetch
+  try {
+    const t0 = performance.now();
+    const text = await browserScrape(url);
+    const timingMs = Math.round(performance.now() - t0);
+    return {
+      ...result,
+      text,
+      html: text,
+      timingMs,
+    };
+  } catch (e) {
+    result.errors.push(`fetch fallback: ${(e as Error).message}`);
+  }
+
+  return result;
+}
+
+async function browserInteract(
+  url: string,
+  actions: InteractionAction[],
+): Promise<BrowserTestResult> {
+  const result: BrowserTestResult = {
+    title: "",
+    html: "",
+    text: "",
+    consoleLogs: [],
+    screenshotBase64: "",
+    timingMs: 0,
+    errors: [],
+  };
+
+  const puppeteerResult = await tryPuppeteer(async (puppeteerCore, chromePath) => {
+    const browser = await puppeteerCore.launch({
+      headless: true,
+      executablePath: chromePath,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+    });
+    try {
+      const page = await browser.newPage();
+      const consoleLogs: ConsoleEntry[] = [];
+      page.on("console", (msg: any) => {
+        consoleLogs.push({
+          type: msg.type(),
+          text: msg.text(),
+          timestamp: Date.now(),
+        });
+      });
+      page.on("pageerror", (err: Error) => {
+        result.errors.push(`pageerror: ${err.message}`);
+      });
+
+      const t0 = performance.now();
+      await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+
+      for (let i = 0; i < actions.length; i++) {
+        const action = actions[i];
+        try {
+          switch (action.type) {
+            case "click":
+              if (!action.selector) { result.errors.push(`action ${i}: click missing selector`); break; }
+              await page.waitForSelector(action.selector, { timeout: 5000 });
+              await page.click(action.selector);
+              break;
+
+            case "type":
+              if (!action.selector) { result.errors.push(`action ${i}: type missing selector`); break; }
+              await page.waitForSelector(action.selector, { timeout: 5000 });
+              await page.click(action.selector);
+              await page.type(action.selector, action.value ?? "", { delay: 30 });
+              break;
+
+            case "select":
+              if (!action.selector) { result.errors.push(`action ${i}: select missing selector`); break; }
+              await page.waitForSelector(action.selector, { timeout: 5000 });
+              await page.select(action.selector, action.value ?? "");
+              break;
+
+            case "scroll":
+              if (action.selector) {
+                await page.waitForSelector(action.selector, { timeout: 5000 });
+                await page.$eval(action.selector, (el: any) => el.scrollIntoView({ behavior: "smooth" }));
+              } else {
+                await page.evaluate((y: number) => window.scrollTo(0, y), action.value ? parseInt(action.value) : 500);
+              }
+              break;
+
+            case "wait":
+              await new Promise((r) => setTimeout(r, action.ms ?? 1000));
+              break;
+
+            case "screenshot":
+              // Capture screenshot at this point
+              break;
+          }
+        } catch (e) {
+          result.errors.push(`action ${i} (${action.type}): ${(e as Error).message}`);
+        }
+      }
+
+      await new Promise((r) => setTimeout(r, 500));
+      const timingMs = Math.round(performance.now() - t0);
+      const title = await page.title();
+      const html = await page.content();
+      const screenshotBase64 = await page.screenshot({ encoding: "base64", type: "jpeg", quality: 80 });
+      const bodyText = await page.evaluate(() => {
+        const clone = document.body.cloneNode(true) as HTMLElement;
+        const removals = clone.querySelectorAll("script,style,nav,footer,header,iframe");
+        removals.forEach((el) => el.remove());
+        return (clone.textContent ?? "").replace(/\s+/g, " ").slice(0, 20000);
+      });
+
+      return {
+        title,
+        html: html.slice(0, 15000),
+        text: bodyText.trim(),
+        consoleLogs,
+        screenshotBase64: `data:image/jpeg;base64,${screenshotBase64}`,
+        timingMs,
+        errors: result.errors,
+      };
+    } finally {
+      await browser.close().catch(() => {});
+    }
+  });
+
+  if (puppeteerResult) return puppeteerResult;
+  result.errors.push("puppeteer-core not available; browser_interact requires a local browser");
+  return result;
 }
 
 // ── Registration ─────────────────────────────────────────
@@ -1468,6 +1771,152 @@ export function registerWebTools(server: McpServer): void {
             {
               type: "text" as const,
               text: `browser_scrape error: ${(e as Error).message}`,
+            },
+          ],
+        };
+      }
+    },
+  );
+
+  // ── browser_test_page ─────────────────────
+  server.registerTool(
+    "browser_test_page",
+    {
+      description:
+        "Open a URL in a headless browser and return test results: console logs, " +
+        "HTML, extracted text, screenshot (base64 JPEG), page load timing, and errors. " +
+        "Uses Puppeteer with local Chrome when available (stdio/local mode), falls back " +
+        "to fetch-based scraping on remote (Vercel). Critical for QA: captures JS errors, " +
+        "React warnings, missing elements, and blank-page detection.",
+      inputSchema: {
+        url: z.string().url().describe("URL to test in the browser"),
+        waitUntil: z
+          .enum(["load", "domcontentloaded", "networkidle0", "networkidle2"])
+          .optional()
+          .default("networkidle2")
+          .describe("When to consider navigation complete"),
+        timeout: z
+          .number()
+          .optional()
+          .default(30000)
+          .describe("Navigation timeout in milliseconds"),
+      },
+    },
+    async ({ url, waitUntil, timeout }: { url: string; waitUntil?: string; timeout?: number }) => {
+      try {
+        const result = await browserTestPage(url, { waitUntil: waitUntil as any, timeout });
+        const lines: string[] = [];
+        lines.push(`# Browser Test: ${url}`);
+        lines.push(`Timing: ${result.timingMs}ms`);
+        lines.push(`Title: ${result.title}`);
+        lines.push("");
+
+        if (result.consoleLogs.length > 0) {
+          lines.push("");
+          lines.push(`## Console Logs (${result.consoleLogs.length})`);
+          const errors = result.consoleLogs.filter((l) => l.type === "error");
+          const warnings = result.consoleLogs.filter((l) => l.type === "warning");
+          if (errors.length > 0) lines.push(`\n### ❌ Errors (${errors.length})`);
+          errors.forEach((l) => lines.push(`  ${l.text}`));
+          if (warnings.length > 0) lines.push(`\n### ⚠️ Warnings (${warnings.length})`);
+          warnings.forEach((l) => lines.push(`  ${l.text}`));
+          const others = result.consoleLogs.filter((l) => l.type !== "error" && l.type !== "warning");
+          others.slice(0, 20).forEach((l) => lines.push(`  [${l.type}] ${l.text}`));
+          if (others.length > 20) lines.push(`  ... and ${others.length - 20} more`);
+        }
+
+        if (result.errors.length > 0) {
+          lines.push("");
+          lines.push("## Errors");
+          result.errors.forEach((e) => lines.push(`  ❌ ${e}`));
+        }
+
+        lines.push("");
+        lines.push("## Page Content");
+        lines.push(result.text.slice(0, 3000));
+
+        if (result.screenshotBase64) {
+          lines.push("");
+          lines.push("## Screenshot");
+          lines.push(result.screenshotBase64);
+        }
+
+        return { content: [{ type: "text" as const, text: lines.join("\n") }] };
+      } catch (e) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `browser_test_page error: ${(e as Error).message}`,
+            },
+          ],
+        };
+      }
+    },
+  );
+
+  // ── browser_interact ──────────────────────
+  server.registerTool(
+    "browser_interact",
+    {
+      description:
+        "Open a URL and perform a sequence of actions (click, type, select, scroll, wait) " +
+        "in a real browser. Returns final page state including console logs and screenshot. " +
+        "Use this to test form submissions, navigation flows, button clicks, and dynamic content. " +
+        "Requires Puppeteer with local Chrome — only works in stdio/local mode, not on Vercel.",
+      inputSchema: {
+        url: z.string().url().describe("URL to open"),
+        actions: z.array(z.object({
+          type: z.enum(["click", "type", "select", "scroll", "wait", "screenshot"]),
+          selector: z.string().optional().describe("CSS selector for click/type/select/scroll-to"),
+          value: z.string().optional().describe("Text to type or option value for select"),
+          ms: z.number().optional().describe("Milliseconds to wait (for wait action)"),
+        })).min(1).describe("Sequence of interactions to perform"),
+      },
+    },
+    async ({ url, actions }: { url: string; actions: InteractionAction[] }) => {
+      try {
+        const result = await browserInteract(url, actions);
+        const lines: string[] = [];
+        lines.push(`# Browser Interaction: ${url}`);
+        lines.push(`Actions: ${actions.length}`);
+        lines.push(`Timing: ${result.timingMs}ms`);
+        lines.push(`Title: ${result.title}`);
+
+        if (result.consoleLogs.length > 0) {
+          lines.push("");
+          lines.push(`## Console Logs (${result.consoleLogs.length})`);
+          const errors = result.consoleLogs.filter((l) => l.type === "error");
+          const warnings = result.consoleLogs.filter((l) => l.type === "warning");
+          if (errors.length > 0) lines.push(`\n### ❌ Errors (${errors.length})`);
+          errors.forEach((l) => lines.push(`  ${l.text}`));
+          if (warnings.length > 0) lines.push(`\n### ⚠️ Warnings (${warnings.length})`);
+          warnings.forEach((l) => lines.push(`  ${l.text}`));
+        }
+
+        if (result.errors.length > 0) {
+          lines.push("");
+          lines.push("## Errors");
+          result.errors.forEach((e) => lines.push(`  ❌ ${e}`));
+        }
+
+        lines.push("");
+        lines.push("## Page Content");
+        lines.push(result.text.slice(0, 3000));
+
+        if (result.screenshotBase64) {
+          lines.push("");
+          lines.push("## Screenshot");
+          lines.push(result.screenshotBase64);
+        }
+
+        return { content: [{ type: "text" as const, text: lines.join("\n") }] };
+      } catch (e) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `browser_interact error: ${(e as Error).message}`,
             },
           ],
         };
