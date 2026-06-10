@@ -52,46 +52,17 @@
   </Fragment>
 
   <Fragment>
-    <UI Id="MunchInstallDir">
-      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
-      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
-      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
-
-      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
-
-      <DialogRef Id="BrowseDlg" />
-      <DialogRef Id="DiskCostDlg" />
-      <DialogRef Id="ErrorDlg" />
-      <DialogRef Id="FatalError" />
-      <DialogRef Id="FilesInUse" />
-      <DialogRef Id="MsiRMFilesInUse" />
-      <DialogRef Id="PrepareDlg" />
-      <DialogRef Id="ProgressDlg" />
-      <DialogRef Id="ResumeDlg" />
-      <DialogRef Id="UserExit" />
-      <DialogRef Id="WelcomeDlg" />
-      <DialogRef Id="LicenseAgreementDlg" />
-      <DialogRef Id="InstallDirDlg" />
-      <DialogRef Id="VerifyReadyDlg" />
-      <DialogRef Id="ExitDialog" />
-
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="LicenseAgreementDlg" Condition="1" />
-      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg" Condition="LicenseAccepted = &quot;1&quot;" />
+    <UIRef Id="WixUI_InstallDir" />
+  </Fragment>
+  <Fragment>
+    <UI>
       <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="AutoUpdateDlg" Condition="1" />
-      <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1" Condition="1" />
-      <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2" Condition="1" />
-      <Publish Dialog="AutoUpdateDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" Condition="1" />
       <Publish Dialog="AutoUpdateDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="1" />
+      <Publish Dialog="AutoUpdateDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" Condition="1" />
       <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="AutoUpdateDlg" Condition="1" />
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Condition="Installed" />
-      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="1" Condition="1" />
-      <Publish Dialog="WelcomeDlg" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-      <Publish Dialog="LicenseAgreementDlg" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-      <Publish Dialog="InstallDirDlg" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-      <Publish Dialog="VerifyReadyDlg" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-      <Publish Dialog="AutoUpdateDlg" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-      <Publish Dialog="ExitDialog" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
+    </UI>
 
+    <UI>
       <Dialog Id="AutoUpdateDlg" Width="370" Height="270" Title="[ProductName] Setup">
         <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" Text="WixUI_Bmp_Banner" />
         <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Updates" />
