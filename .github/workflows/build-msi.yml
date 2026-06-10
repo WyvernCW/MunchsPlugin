@@ -1,0 +1,103 @@
+name: Build MSI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  build-msi:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mcp-server/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+          npm ci --prefix mcp-server --ignore-scripts
+
+      - name: Compile TypeScript
+        run: npm run compile
+
+      - name: Ensure .last-commit placeholder
+        run: |
+          if (-not (Test-Path .last-commit)) { "0000000000000" | Set-Content .last-commit }
+
+      - name: Install WiX Toolset v5
+        run: dotnet tool install --global wix --version 5.*
+
+      - name: Refresh PATH
+        shell: pwsh
+        run: |
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "User") + ";$env:Path"
+          echo "WI5_PATH=$env:Path" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Harvest source files
+        shell: pwsh
+        run: |
+          wix harvest dir . `
+            -component-group HarvestedFiles `
+            -platform x64 `
+            -o installer/windows/main-files.wxs `
+            -t installer/windows/harvest-transform.xslt `
+            --bf `
+            -directoryref INSTALLDIR
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          wix build installer/windows/builder.wxs installer/windows/main-files.wxs `
+            -b "SourceDir=$((Get-Location).Path)" `
+            -b "ProductVersion=$version" `
+            -o "installer/windows/munch-$version.msi" `
+            -arch x64
+
+      - name: Sign MSI (if certificate configured)
+        shell: pwsh
+        env:
+          MSI_SIGNING_CERT: ${{ secrets.MSI_SIGNING_CERT }}
+          MSI_SIGNING_PASSWORD: ${{ secrets.MSI_SIGNING_PASSWORD }}
+        run: |
+          if ($env:MSI_SIGNING_CERT -and $env:MSI_SIGNING_CERT.Length -gt 0) {
+            $certFile = "$env:RUNNER_TEMP\signing.pfx"
+            [Convert]::FromBase64String($env:MSI_SIGNING_CERT) | Set-Content $certFile -AsByteStream
+            $version = (Get-Content package.json | ConvertFrom-Json).version
+            & "signtool" sign /fd SHA256 /a /f $certFile /p "$env:MSI_SIGNING_PASSWORD" "installer/windows/munch-$version.msi"
+            Write-Host "MSI signed."
+          } else {
+            Write-Host "No signing certificate configured. MSI is unsigned."
+          }
+
+      - name: Generate SHA256
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $hash = Get-FileHash "installer/windows/munch-$version.msi" -Algorithm SHA256
+          Set-Content "installer/windows/munch-$version.msi.sha256" $hash.Hash
+          Write-Host "SHA256: $($hash.Hash)"
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: munch-msi
+          path: |
+            installer/windows/munch-*.msi
+            installer/windows/munch-*.msi.sha256
+          retention-days: 90
+          if-no-files-found: error
