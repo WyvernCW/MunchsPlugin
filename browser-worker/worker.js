@@ -1,3 +1,5 @@
+/* global btoa, addEventListener */
+
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 const HDR = {
   'User-Agent': UA,
@@ -16,11 +18,11 @@ function isCF(text) {
 }
 
 async function tryFetch(url, retries) {
-  for (var i = 0; i < retries; i++) {
+  for (let i = 0; i < retries; i++) {
     if (i > 0) await new Promise(function(r) { setTimeout(r, 500 * (i + 1)); });
     try {
-      var res = await fetch(url, { headers: HDR, redirect: 'follow' });
-      var t = await res.text();
+      const res = await fetch(url, { headers: HDR, redirect: 'follow' });
+      const t = await res.text();
       if (!isCF(t)) return { text: t, ok: true };
     } catch(e) { if (i === retries - 1) throw e; }
   }
@@ -28,32 +30,32 @@ async function tryFetch(url, retries) {
 }
 
 async function handleRequest(request) {
-  var url = new URL(request.url);
-  var p = url.pathname;
+  const url = new URL(request.url);
+  const p = url.pathname;
 
   if (p === '/health' || p === '/') {
     return new Response(JSON.stringify({ status: 'ok', worker: 'munch-scraper' }), { headers: { 'Content-Type': 'application/json' } });
   }
 
   if (p === '/raw') {
-    var target = url.searchParams.get('url');
+    const target = url.searchParams.get('url');
     if (!target) return new Response(JSON.stringify({ error: 'Missing url' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    var r = await tryFetch(target, 3);
+    const r = await tryFetch(target, 3);
     if (r) {
       return new Response(JSON.stringify({ status: 200, length: r.text.length, isChallenge: false, html_b64: btoa(r.text) }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
-    var res = await fetch(target, { headers: HDR, redirect: 'follow' });
-    var t = await res.text();
+    const res = await fetch(target, { headers: HDR, redirect: 'follow' });
+    const t = await res.text();
     return new Response(JSON.stringify({ status: res.status, length: t.length, isChallenge: isCF(t), html_b64: btoa(t) }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
   }
 
   if (p === '/scrape') {
-    var target = url.searchParams.get('url');
+    const target = url.searchParams.get('url');
     if (!target) return new Response(JSON.stringify({ error: 'Missing url' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    var r = await tryFetch(target, 3);
+    const r = await tryFetch(target, 3);
     if (!r) {
-      var res = await fetch(target, { headers: HDR, redirect: 'follow' });
-      var t = await res.text();
+      const res = await fetch(target, { headers: HDR, redirect: 'follow' });
+      const t = await res.text();
       return new Response(t, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*', 'X-Fetch-Is-Challenge': isCF(t) ? 'true' : 'false' } });
     }
     return new Response(r.text, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' } });

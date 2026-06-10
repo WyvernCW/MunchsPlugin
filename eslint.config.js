@@ -7,6 +7,8 @@ export default [
       "mcp-server/build/**",
       "mcp-server/node_modules/**",
       "node_modules/**",
+      "dist/**",
+      "coverage/**",
       "AGENT.md",
       "AGENTS.md",
       "CLAUDE.md",
@@ -41,6 +43,7 @@ export default [
         setTimeout: "readonly",
         URL: "readonly",
         window: "readonly",
+        IntersectionObserver: "readonly",
       },
     },
     rules: {
