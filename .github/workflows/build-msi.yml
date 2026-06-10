@@ -58,18 +58,8 @@ jobs:
           $version = (Get-Content package.json | ConvertFrom-Json).version
           & $wix build installer/windows/builder.wxs installer/windows/main-files.wxs -d "SourceDir=$src" -d "ProductVersion=$version" -o "installer/windows/munch-$version.msi" -arch x64 --acceptEula wix7
 
-      - name: Locate signtool
-        shell: pwsh
-        run: |
-          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
-          if ($signtool) {
-            Write-Host "SIGNTOOL_PATH=$signtool" | Out-File -FilePath $env:GITHUB_ENV -Append
-            Write-Host "Found signtool: $signtool"
-          } else {
-            Write-Host "signtool not found — MSI will be unsigned"
-          }
-
       - name: Sign MSI (if certificate configured)
+        continue-on-error: true
         shell: pwsh
         env:
           MSI_SIGNING_CERT: ${{ secrets.MSI_SIGNING_CERT }}
@@ -79,9 +69,21 @@ jobs:
             $certFile = "$env:RUNNER_TEMP\signing.pfx"
             [Convert]::FromBase64String($env:MSI_SIGNING_CERT) | Set-Content $certFile -AsByteStream
             $version = (Get-Content package.json | ConvertFrom-Json).version
-            $signtool = if ($env:SIGNTOOL_PATH) { $env:SIGNTOOL_PATH } else { "signtool" }
-            & $signtool sign /fd SHA256 /a /f $certFile /p "$env:MSI_SIGNING_PASSWORD" "installer/windows/munch-$version.msi"
-            Write-Host "MSI signed."
+            $msi = "installer/windows/munch-$version.msi"
+            $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+            if (-not $signtool) {
+              $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Microsoft SDKs" -Recurse -Filter "signtool.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+            }
+            if (-not $signtool) {
+              $signtool = Get-ChildItem -Path "${env:ProgramFiles(x86)}" -Depth 4 -Filter "signtool.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+            }
+            if ($signtool) {
+              Write-Host "Signing with: $signtool"
+              & $signtool sign /fd SHA256 /a /f $certFile /p "$env:MSI_SIGNING_PASSWORD" $msi
+              Write-Host "MSI signed."
+            } else {
+              Write-Host "signtool not found — skipping sign"
+            }
           } else {
             Write-Host "No signing certificate configured. MSI is unsigned."
           }
