@@ -73,7 +73,7 @@ npm run setup
 or
 
 
-npm install -g --ignore-scripts git+https://github.com/WyvernCW/MunchsPlugin.git
+npm install -g --ignore-scripts WyvernCW/MunchsPlugin
 munch-setup setup --codex-only --no-ifeo
 ```
 

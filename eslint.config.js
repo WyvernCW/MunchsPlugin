@@ -49,14 +49,4 @@ export default [
       "react/jsx-uses-vars": "error",
     },
   },
-  {
-    files: ["skill/munch/scripts/powershell_redirect.js"],
-    languageOptions: {
-      sourceType: "commonjs",
-      globals: {
-        process: "readonly",
-        require: "readonly",
-      },
-    },
-  },
 ];

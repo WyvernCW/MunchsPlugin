@@ -52,55 +52,66 @@
   </Fragment>
 
   <Fragment>
-    <UI Id="MunchWizardUI">
+    <UI>
       <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
-      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+      <TextStyle Id="WixUI_Font_Big" FaceName="Tahoma" Size="12" />
       <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
 
       <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
 
-      <DialogRef Id="BrowseDlg" />
-      <DialogRef Id="DiskCostDlg" />
-      <DialogRef Id="ErrorDlg" />
-      <DialogRef Id="FatalError" />
-      <DialogRef Id="FilesInUse" />
-      <DialogRef Id="MsiRMFilesInUse" />
-      <DialogRef Id="PrepareDlg" />
-      <DialogRef Id="ProgressDlg" />
-      <DialogRef Id="ResumeDlg" />
-      <DialogRef Id="UserExit" />
-      <DialogRef Id="WelcomeDlg" />
-      <DialogRef Id="LicenseAgreementDlg" />
-      <DialogRef Id="InstallDirDlg" />
-      <DialogRef Id="VerifyReadyDlg" />
-      <DialogRef Id="ExitDialog" />
+      <Dialog Id="WelcomeDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Welcome to the [ProductName] Setup Wizard" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="WelcomeText" Type="Text" X="25" Y="70" Width="320" Height="160" Text="This wizard will guide you through installing [ProductName] version [ProductVersion].&#xD;&#xA;&#xD;&#xA;Click Next to continue or Cancel to exit the Setup Wizard." />
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="{\WixUI_Font_Normal}&amp;Next">
+          <Publish Event="NewDialog" Value="LicenseAgreementDlg" Condition="1" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="{\WixUI_Font_Normal}&amp;Cancel">
+          <Publish Event="EndDialog" Value="Exit" Condition="1" />
+        </Control>
+      </Dialog>
 
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="LicenseAgreementDlg" Condition="1" />
-      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg" Condition="LicenseAccepted = &quot;1&quot;" />
-      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="AutoUpdateDlg" Condition="1" />
-      <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1" Condition="1" />
-      <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2" Condition="1" />
-      <Publish Dialog="AutoUpdateDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" Condition="1" />
-      <Publish Dialog="AutoUpdateDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="1" />
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="AutoUpdateDlg" Condition="1" />
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Condition="Installed" />
-      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="1" Condition="1" />
-      <Publish Dialog="WelcomeDlg" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-      <Publish Dialog="LicenseAgreementDlg" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-      <Publish Dialog="InstallDirDlg" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-      <Publish Dialog="VerifyReadyDlg" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-      <Publish Dialog="AutoUpdateDlg" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-      <Publish Dialog="ExitDialog" Control="Cancel" Event="EndDialog" Value="Exit" Condition="1" />
-    </UI>
+      <Dialog Id="LicenseAgreementDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}License Agreement" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="LicenseText" Type="ScrollableText" X="20" Y="55" Width="330" Height="140" Sunken="yes">
+          <Text SourceFile="$(var.SourceDir)LICENSE" />
+        </Control>
+        <Control Id="AcceptCheckbox" Type="CheckBox" X="20" Y="200" Width="300" Height="18" Property="LicenseAccepted" CheckBoxValue="1" Text="I &amp;accept the terms in the License Agreement" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="{\WixUI_Font_Normal}&amp;Back">
+          <Publish Event="NewDialog" Value="WelcomeDlg" Condition="1" />
+        </Control>
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="{\WixUI_Font_Normal}&amp;Next">
+          <Publish Event="NewDialog" Value="InstallDirDlg" Condition="LicenseAccepted = &quot;1&quot;" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="{\WixUI_Font_Normal}&amp;Cancel">
+          <Publish Event="EndDialog" Value="Exit" Condition="1" />
+        </Control>
+      </Dialog>
 
-    <InstallUISequence>
-      <Show Dialog="WelcomeDlg" Sequence="1001" />
-      <Show Dialog="ProgressDlg" Sequence="1003" />
-    </InstallUISequence>
+      <Dialog Id="InstallDirDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Destination Folder" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Click Next to install to the default folder or click Change to choose another." />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="FolderLabel" Type="Text" X="20" Y="60" Width="50" Height="15" Text="Folder:" />
+        <Control Id="Folder" Type="PathEdit" X="60" Y="55" Width="210" Height="18" Property="WIXUI_INSTALLDIR" Indirect="yes" />
+        <Control Id="Change" Type="PushButton" X="280" Y="55" Width="70" Height="18" Text="&amp;Browse" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="{\WixUI_Font_Normal}&amp;Back">
+          <Publish Event="NewDialog" Value="LicenseAgreementDlg" Condition="1" />
+        </Control>
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="{\WixUI_Font_Normal}&amp;Next">
+          <Publish Event="NewDialog" Value="AutoUpdateDlg" Condition="1" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="{\WixUI_Font_Normal}&amp;Cancel">
+          <Publish Event="EndDialog" Value="Exit" Condition="1" />
+        </Control>
+      </Dialog>
 
-    <UI>
       <Dialog Id="AutoUpdateDlg" Width="370" Height="270" Title="[ProductName] Setup">
-        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" />
         <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Updates" />
         <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Configure automatic update settings" />
         <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
@@ -108,16 +119,49 @@
         <Control Id="AutoUpdateCheckbox" Type="CheckBox" X="25" Y="105" Width="290" Height="18" Property="AUTOUPDATE" CheckBoxValue="1" Text="Enable automatic updates (recommended)" />
         <Control Id="DescText" Type="Text" X="40" Y="125" Width="290" Height="30" TabSkip="yes" Text="If disabled, you will be notified when updates are available so you can install them manually." />
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="{\WixUI_Font_Normal}&amp;Back">
+          <Publish Event="NewDialog" Value="InstallDirDlg" Condition="1" />
+        </Control>
         <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="{\WixUI_Font_Normal}&amp;Next">
           <Publish Event="NewDialog" Value="VerifyReadyDlg" Condition="1" />
         </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="{\WixUI_Font_Normal}&amp;Cancel">
+          <Publish Event="EndDialog" Value="Exit" Condition="1" />
+        </Control>
+      </Dialog>
+
+      <Dialog Id="VerifyReadyDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Ready to Install" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="InstallText" Type="Text" X="25" Y="70" Width="320" Height="150" Text="Click Install to begin the installation.&#xD;&#xA;&#xD;&#xA;If you want to review or change any of your installation settings, click Back. Click Cancel to exit the wizard." />
         <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="{\WixUI_Font_Normal}&amp;Back">
-          <Publish Event="NewDialog" Value="InstallDirDlg" Condition="1" />
+          <Publish Event="NewDialog" Value="AutoUpdateDlg" Condition="1" />
+        </Control>
+        <Control Id="Install" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="{\WixUI_Font_Normal}&amp;Install">
+          <Publish Event="EndDialog" Value="Return" Condition="1" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="{\WixUI_Font_Normal}&amp;Cancel">
+          <Publish Event="EndDialog" Value="Exit" Condition="1" />
+        </Control>
+      </Dialog>
+
+      <Dialog Id="ExitDialog" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Completed" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="CompleteText" Type="Text" X="25" Y="70" Width="320" Height="100" Text="[ProductName] has been installed successfully.&#xD;&#xA;&#xD;&#xA;Click Finish to exit the Setup Wizard." />
+        <Control Id="Finish" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="{\WixUI_Font_Normal}&amp;Finish">
+          <Publish Event="EndDialog" Value="Return" Condition="1" />
         </Control>
         <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="{\WixUI_Font_Normal}&amp;Cancel">
           <Publish Event="EndDialog" Value="Exit" Condition="1" />
         </Control>
       </Dialog>
     </UI>
+
+    <InstallUISequence>
+      <Show Dialog="WelcomeDlg" Sequence="1001" />
+    </InstallUISequence>
   </Fragment>
 </Wix>

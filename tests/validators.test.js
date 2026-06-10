@@ -26,6 +26,7 @@ import {
   doctor,
   getInstallPlan,
   install,
+  isPwshAvailable,
   readInstallState,
   uninstall,
 } from '../lib/installer-core.js';
@@ -66,6 +67,24 @@ test('hallucination guard reports a missing target', () => {
   const results = scanTargets([join(tmpdir(), `missing-${Date.now()}.js`)]);
   assert.equal(results.length, 1);
   assert.equal(results[0].violations[0].line, 0);
+});
+
+test('hallucination guard reports AI stub comments', () => {
+  withTempDir((dir) => {
+    const target = join(dir, 'sample.js');
+    writeFileSync(target, `
+      // your code here
+      // rest of code remains the same
+      // existing code remains
+    `, 'utf8');
+    const violations = scanFile(target);
+    assert.equal(violations.length, 3);
+  });
+});
+
+test('installer isPwshAvailable returns a boolean', () => {
+  const result = isPwshAvailable();
+  assert.equal(typeof result, 'boolean');
 });
 
 test('BTL validator finds the nearest project tsconfig', () => {

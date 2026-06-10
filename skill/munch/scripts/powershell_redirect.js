@@ -4,7 +4,7 @@
  * Intercepts calls to powershell.exe and forwards them to pwsh.exe
  */
 
-const { spawn } = require('child_process');
+import { spawn } from 'node:child_process';
 
 // process.argv[0] is the node executable path
 // process.argv[1] is this script path

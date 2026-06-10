@@ -12,6 +12,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync, copyFileSync, renam
 import { join, dirname, resolve } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import os from "os";
+import { spawnSync } from "child_process";
 import { createHash, randomUUID } from "crypto";
 import { runSelfConfigure } from "./host-config.js";
 import { registerWebTools } from "./web.js";
@@ -1530,6 +1531,52 @@ export function configureMcpServer(server) {
                     text: `✓ Long-horizon task updated in timeline: ${name} (${status.toUpperCase()})`
                 }
             ]
+        };
+    });
+    // ── Tool: verify_code_safety ──────────────────
+    server.registerTool("verify_code_safety", {
+        description: "Run the Munch BTL validator and hallucination guard on a local file to check for compilation issues and stubs/placeholders.",
+        inputSchema: {
+            filePath: z.string().describe("Path to the file to check, relative or absolute"),
+        },
+    }, async ({ filePath }) => {
+        const absPath = resolve(filePath);
+        if (!existsSync(absPath)) {
+            return {
+                content: [{ type: "text", text: `Error: File not found: ${filePath}` }],
+                isError: true,
+            };
+        }
+        const projectRoot = resolve(__dirname, "..", "..");
+        const btlScript = join(projectRoot, "skill", "munch", "scripts", "BTL_validator.js");
+        const hgScript = join(projectRoot, "skill", "munch", "scripts", "hallucination_guard.js");
+        const errors = [];
+        if (existsSync(hgScript)) {
+            const hgResult = spawnSync(process.execPath, [hgScript, absPath], { encoding: "utf8" });
+            if (hgResult.status !== 0) {
+                errors.push(`[Hallucination Guard Violations]:\n${hgResult.stdout || hgResult.stderr}`);
+            }
+        }
+        else {
+            errors.push(`Warning: Hallucination Guard script not found at ${hgScript}`);
+        }
+        if (existsSync(btlScript)) {
+            const btlResult = spawnSync(process.execPath, [btlScript, absPath], { encoding: "utf8" });
+            if (btlResult.status !== 0) {
+                errors.push(`[BTL Validator Violations]:\n${btlResult.stdout || btlResult.stderr}`);
+            }
+        }
+        else {
+            errors.push(`Warning: BTL Validator script not found at ${btlScript}`);
+        }
+        if (errors.length > 0) {
+            return {
+                content: [{ type: "text", text: errors.join("\n\n") }],
+                isError: true,
+            };
+        }
+        return {
+            content: [{ type: "text", text: `✓ Verification passed for ${filePath}. 0 violations found.` }],
         };
     });
     // ── Web Tools (search, scrape, GitHub, YouTube, Wikipedia, X/Twitter, TikTok, Gmail, Drive, browser) ──

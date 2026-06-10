@@ -14,6 +14,9 @@ const BANNED_PATTERNS = [
   { regex: /#\s*\.\.\./g, message: 'Python placeholder comment found. Code must be complete.' },
   { regex: /catch\s*\(\s*\w*\s*\)\s*\{\s*\}/g, message: 'Silent catch block detected.' },
   { regex: /(TODO|FIXME):\s*implement/gi, message: 'Unimplemented placeholder tag found.' },
+  { regex: /\/\/\s*(?:your|insert|write)\s+code\s+here/gi, message: 'Common AI code stub placeholder found.' },
+  { regex: /\/\/\s*rest\s+of\s+(?:the\s+)?code/gi, message: 'Placeholder rest-of-code comment found.' },
+  { regex: /\/\/\s*existing\s+code\s+remains/gi, message: 'Placeholder existing code remains comment found.' },
   {
     regex: /(password|passwd|secret|api_key|apikey|private_key|token|auth_token)\s*=\s*['"`][a-zA-Z0-9_.\/-]{12,}['"`]/gi,
     message: 'Potential hardcoded secret or token detected.',

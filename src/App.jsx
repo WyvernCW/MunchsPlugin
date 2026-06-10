@@ -296,8 +296,8 @@ function App() {
               <span>munch.setup</span>
             </div>
             <div className="terminal-title"><Icon name="terminal" /><span>Local install</span><small>recommended</small></div>
-            <code>npm install -g --ignore-scripts git+https://github.com/WyvernCW/MunchsPlugin.git{'\n'} </code>
-            <button type="button" aria-live="polite" onClick={() => copy('npm install -g --ignore-scripts git+https://github.com/WyvernCW/MunchsPlugin.git')}>
+            <code>npm install -g --ignore-scripts WyvernCW/MunchsPlugin{'\n'} </code>
+            <button type="button" aria-live="polite" onClick={() => copy('npm install -g --ignore-scripts WyvernCW/MunchsPlugin', 'install')}>
               <Icon name="copy" />{' '}
               {copied === 'install'
                 ? 'Copied'

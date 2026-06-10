@@ -132,6 +132,26 @@ test('stdio MCP supports selective references and redacted project memory', asyn
     });
     const forgottenData = JSON.parse(forgotten.content.find((item) => item.type === 'text')?.text ?? '{}');
     assert.deepEqual(forgottenData.forgotten, ['React']);
+
+    // Test verify_code_safety MCP tool
+    const fs = await import('node:fs');
+    const badFile = join(home, 'bad.js');
+    fs.writeFileSync(badFile, '// TODO: implement this function\n', 'utf8');
+    const badVerify = await client.callTool({
+      name: 'verify_code_safety',
+      arguments: { filePath: badFile },
+    });
+    assert.equal(badVerify.isError, true);
+    assert.match(badVerify.content.find((item) => item.type === 'text')?.text ?? '', /placeholder/i);
+
+    const goodFile = join(home, 'good.js');
+    fs.writeFileSync(goodFile, 'console.log("hello");\n', 'utf8');
+    const goodVerify = await client.callTool({
+      name: 'verify_code_safety',
+      arguments: { filePath: goodFile },
+    });
+    assert.notEqual(goodVerify.isError, true);
+    assert.match(goodVerify.content.find((item) => item.type === 'text')?.text ?? '', /Verification passed/);
   } finally {
     await transport.close();
     rmSync(home, { recursive: true, force: true });
