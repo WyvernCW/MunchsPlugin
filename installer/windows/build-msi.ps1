@@ -55,45 +55,32 @@ if (-not (Test-Path "$SourceDir\.last-commit")) {
 }
 
 # Ensure WiX v5 is installed
-$wixInstalled = $null -ne (Get-Command "wix" -ErrorAction SilentlyContinue)
-if (-not $wixInstalled) {
+$wix = "$env:USERPROFILE\.dotnet\tools\wix.exe"
+if (-not (Test-Path $wix)) {
   Write-Host "Installing WiX Toolset v5..."
   dotnet tool install --global wix --version 5.* 2>&1 | Out-Null
-  # Refresh PATH to find wix
-  $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "User") + ";$env:Path"
-  $wixInstalled = $null -ne (Get-Command "wix" -ErrorAction SilentlyContinue)
-  if (-not $wixInstalled) {
+  if (-not (Test-Path $wix)) {
     Write-Error "Failed to install WiX. Install manually: dotnet tool install --global wix"
     exit 1
   }
 }
 
-Write-Host "WiX: $(wix --version)"
+Write-Host "WiX: $(& $wix --version)"
 
-# Harvest all source files into a component group
-Write-Host "Harvesting source files..."
+# Generate file manifest (WiX v5 removed heat.exe)
+Write-Host "Generating file manifest..."
 $harvestFile = "$OutputDir\main-files.wxs"
-wix harvest dir $SourceDir `
-  -component-group HarvestedFiles `
-  -platform x64 `
-  -o $harvestFile `
-  -t "$PSScriptRoot\harvest-transform.xslt" `
-  --bf `
-  -directoryref INSTALLDIR `
-
+& "$PSScriptRoot\generate-harvest.ps1" -SourceDir $SourceDir -OutputFile $harvestFile
 if ($LASTEXITCODE -ne 0) {
-  Write-Error "Harvest failed"
+  Write-Error "File manifest generation failed"
   exit 1
 }
 
 # Build the MSI
 Write-Host "Building MSI..."
+$srcDir = if ($SourceDir.EndsWith('\')) { $SourceDir } else { $SourceDir + '\' }
 $msiPath = "$OutputDir\munch-$productVersion.msi"
-wix build "$PSScriptRoot\builder.wxs" $harvestFile `
-  -b "SourceDir=$SourceDir" `
-  -b "ProductVersion=$productVersion" `
-  -o $msiPath `
-  -arch x64
+& $wix build "$PSScriptRoot\builder.wxs" $harvestFile -d "SourceDir=$srcDir" -d "ProductVersion=$productVersion" -o $msiPath -arch x64
 
 if ($LASTEXITCODE -ne 0) {
   Write-Error "MSI build failed"

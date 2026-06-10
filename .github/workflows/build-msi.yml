@@ -41,19 +41,17 @@ jobs:
       - name: Install WiX Toolset v5
         run: dotnet tool install --global wix --version 5.*
 
-      - name: Harvest source files
+      - name: Generate file manifest
         shell: pwsh
-        run: |
-          $wix = "$env:USERPROFILE\.dotnet\tools\wix.exe"
-          if (-not (Test-Path $wix)) { throw "wix.exe not found at $wix" }
-          & $wix harvest dir . -component-group HarvestedFiles -platform x64 -o installer/windows/main-files.wxs -t installer/windows/harvest-transform.xslt --bf -directoryref INSTALLDIR
+        run: ./installer/windows/generate-harvest.ps1 -SourceDir (Get-Location) -OutputFile installer/windows/main-files.wxs
 
       - name: Build MSI
         shell: pwsh
         run: |
           $wix = "$env:USERPROFILE\.dotnet\tools\wix.exe"
+          $src = (Get-Location).Path + "\"
           $version = (Get-Content package.json | ConvertFrom-Json).version
-          & $wix build installer/windows/builder.wxs installer/windows/main-files.wxs -b "SourceDir=$((Get-Location).Path)" -b "ProductVersion=$version" -o "installer/windows/munch-$version.msi" -arch x64
+          & $wix build installer/windows/builder.wxs installer/windows/main-files.wxs -d "SourceDir=$src" -d "ProductVersion=$version" -o "installer/windows/munch-$version.msi" -arch x64
 
       - name: Sign MSI (if certificate configured)
         shell: pwsh

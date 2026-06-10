@@ -16,32 +16,33 @@
 
     <Icon Id="icon.ico" SourceFile="$(var.SourceDir)munch_plugin_logo.png" />
 
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="LocalAppDataProgramFiles">
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsDir" Name="Programs">
         <Directory Id="INSTALLDIR" Name="Munch">
-          <Component Id="InstallDirComponent" Guid="a1b2c3d4-e5f6-7890-abcd-ef1234567890">
+          <Component Id="InstallDirComponent" Guid="a1b2c3d4-e5f6-7890-abcd-ef1234567890" Bitness="always64">
             <RemoveFolder Id="RemoveInstallDir" On="uninstall" />
             <RegistryValue Root="HKCU" Key="Software\Munch" Name="InstallDir" Type="string" Value="[INSTALLDIR]" />
           </Component>
         </Directory>
       </Directory>
-    </Directory>
+    </StandardDirectory>
 
-    <Feature Id="MainProduct" Title="Munch" Level="1" Absent="disallow">
+    <Feature Id="MainProduct" Title="Munch" Level="1">
       <ComponentGroupRef Id="HarvestedFiles" />
       <ComponentRef Id="InstallDirComponent" />
     </Feature>
+  </Package>
 
-    <StandardCustomAction
-      Id="RunFirstRun"
-      Execute="deferred"
+  <Fragment>
+    <CustomAction Id="RunFirstRun"
+      ExeCommand="WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -NoProfile -File &quot;[INSTALLDIR]scripts\first-run.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;"
+      Directory="SystemFolder"
       Impersonate="yes"
-      Return="check"
-      ExeCommand='"[SystemFolder]WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -NoProfile -File "[INSTALLDIR]scripts\first-run.ps1" -InstallDir "[INSTALLDIR]"'
-    />
+      Execute="deferred"
+      Return="check" />
 
     <InstallExecuteSequence>
-      <Custom Action="RunFirstRun" After="InstallFinalize">NOT Installed</Custom>
+      <Custom Action="RunFirstRun" After="InstallFinalize" Condition="NOT Installed" />
     </InstallExecuteSequence>
-  </Package>
+  </Fragment>
 </Wix>
