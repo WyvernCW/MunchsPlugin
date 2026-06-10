@@ -15,6 +15,7 @@ Thumbs.db
 .vercel
 .env*
 install/
+installer/
 installer/windows/*.msi
 installer/windows/*.msi.sha256
 installer/windows/*.wixpdb

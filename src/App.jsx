@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 import logoUrl from '../munch_plugin_logo.svg';
 
 const githubUrl = 'https://github.com/WyvernCW/MunchsPlugin';
 const mcpUrl = 'https://munch-ashy.vercel.app/api/mcp';
 
+/* ── Clipboard helper ── */
 async function writeClipboard(value) {
   try {
     await navigator.clipboard.writeText(value);
@@ -29,6 +30,39 @@ async function writeClipboard(value) {
   }
 }
 
+/* ── Scroll-triggered reveal hook ── */
+function useReveal(options = {}) {
+  const ref = useRef(null);
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    /* Respect prefers-reduced-motion */
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (motionQuery.matches) {
+      setRevealed(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setRevealed(true);
+          observer.unobserve(el);
+        }
+      },
+      { threshold: options.threshold ?? 0.15, rootMargin: options.rootMargin ?? '0px 0px -40px 0px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, revealed];
+}
+
+/* ── SVG Icon component ── */
 function Icon({ name }) {
   const paths = {
     route: (
@@ -93,6 +127,16 @@ function Icon({ name }) {
         <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
       </>
     ),
+    menu: (
+      <>
+        <path d="M4 7h16M4 12h16M4 17h16" />
+      </>
+    ),
+    close: (
+      <>
+        <path d="M6 6l12 12M18 6L6 18" />
+      </>
+    ),
   };
   return (
     <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -116,6 +160,7 @@ const workflow = [
   ['05', 'Remember', 'Persist lessons and regression fixes so solved problems stay solved.'],
 ];
 
+/* ── Cinematic intro splash ── */
 function Intro({ onDone }) {
   const [exiting, setExiting] = useState(false);
   useEffect(() => {
@@ -144,188 +189,284 @@ function Intro({ onDone }) {
   );
 }
 
+/* ── Reveal wrapper ── */
+function Reveal({ children, className = '', delay = 0, as: Tag = 'div' }) {
+  const [ref, revealed] = useReveal();
+  return (
+    <Tag
+      ref={ref}
+      className={`reveal-up ${revealed ? 'revealed' : ''} ${className}`.trim()}
+      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
+    >
+      {children}
+    </Tag>
+  );
+}
+
 function App() {
   const [showIntro, setShowIntro] = useState(true);
   const [copied, setCopied] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const copy = async (value, label) => {
     const didCopy = await writeClipboard(value);
     setCopied(didCopy ? label : `error:${label}`);
     window.setTimeout(() => setCopied(''), 1400);
   };
 
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+
+  /* ── Reveal refs for sections ── */
+  const [signalRef, signalRevealed] = useReveal();
+  const [workflowRef, workflowRevealed] = useReveal({ threshold: 0.1 });
+  const [capRef, capRevealed] = useReveal({ threshold: 0.1 });
+  const [installRef, installRevealed] = useReveal({ threshold: 0.15 });
+
   return (
     <>
       {showIntro && <Intro onDone={() => setShowIntro(false)} />}
+
+      {/* Skip to content */}
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+
       <div className="site-shell">
-      <header className="nav">
-        <a className="brand" href="#top" aria-label="Munch home">
-          <img src={logoUrl} alt="" />
-          <span>Munch</span><small>agent reliability</small>
-        </a>
-        <nav aria-label="Primary navigation">
-          <a href="#how">How it works</a>
-          <a href="#capabilities">Capabilities</a>
-          <a href="#install">Install</a>
-        </nav>
-        <a className="nav-action" href={githubUrl} target="_blank" rel="noreferrer">
-          <Icon name="github" /> GitHub
-        </a>
-      </header>
+        <header className="full-width">
+          <div className="nav container">
+            <a className="brand" href="#top" aria-label="Munch home">
+              <img src={logoUrl} alt="" />
+              <span>Munch</span><small>agent reliability</small>
+            </a>
 
-      <main id="top">
-        <section className="hero">
-          <div className="hero-bg">
-            <div className="hero-bg-grid" />
-          </div>
-          <span className="hero-tag">MUNCH / 01</span>
-          <div className="hero-copy">
-            <div className="eyebrow"><span>01</span> Open-source skill + MCP server</div>
-            <h1>
-              <span>Reliability</span>
-              <span className="accent-line">infrastructure</span>
-              <span>for coding agents.</span>
-            </h1>
-            <p>
-              Munch gives coding agents a disciplined runtime for context routing,
-              verification, security, and memory, so solved problems stay solved.
-            </p>
-            <div className="hero-actions">
-              <a className="button primary" href={githubUrl} target="_blank" rel="noreferrer">
-                View on GitHub <Icon name="arrow" />
-              </a>
-              <a className="button secondary" href="#install">Connect MCP</a>
-            </div>
-            <div className="hero-proof" aria-label="Project qualities">
-              <span><Icon name="check" /> MIT licensed</span>
-              <span><Icon name="check" /> Local-first memory</span>
-              <span><Icon name="check" /> 40+ engineering references</span>
-            </div>
-          </div>
+            <nav className="nav-links" aria-label="Primary navigation">
+              <a href="#how">How it works</a>
+              <a href="#capabilities">Capabilities</a>
+              <a href="#install">Install</a>
+            </nav>
 
-          <div className="system-map" aria-label="Munch system flow">
-            <div className="map-head">
-              <span>Agent request</span>
-              <span className="live-dot">runtime online</span>
-            </div>
-            <div className="map-core">
-              <img src={logoUrl} alt="Munch" />
-              <div><strong>Munch router</strong><span>classify · load · verify</span></div>
-              <b>v1.0</b>
-            </div>
-            <div className="map-branches">
-              <div><Icon name="shield" /><span>Security</span></div>
-              <div><Icon name="memory" /><span>Memory</span></div>
-              <div><Icon name="loop" /><span>BTL loop</span></div>
-            </div>
-            <div className="map-output">
-              <Icon name="graph" /><span>Evidence-backed output</span><strong>verified</strong>
-            </div>
-          </div>
-        </section>
+            {/* Mobile hamburger */}
+            <button
+              className="hamburger"
+              type="button"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((prev) => !prev)}
+            >
+              <Icon name={menuOpen ? 'close' : 'menu'} />
+            </button>
 
-        <div className="compatibility" aria-label="Compatible agents">
-          <span>Works with</span>
-          <strong>Codex</strong>
-          <strong>Claude</strong>
-          <strong>OpenCode</strong>
-          <strong>KiloCode</strong>
-          <strong>Antigravity</strong>
-        </div>
-
-        <section className="signal-strip" aria-label="Munch reliability principles">
-          <article><strong>Selective context</strong><span>Load what the task needs, nothing more.</span></article>
-          <article><strong>Regression memory</strong><span>Keep resolved failures from resurfacing.</span></article>
-          <article><strong>Verifiable delivery</strong><span>Completion requires evidence, not confidence.</span></article>
-        </section>
-
-        <section className="split-section" id="how">
-          <div className="section-intro">
-            <span className="section-label">02 / How it works</span>
-            <h2>A reliability layer, not another chatbot.</h2>
-          </div>
-          <div className="section-copy">
-            <p>
-              Munch sits between your request and the agent’s execution. It routes the
-              smallest useful reference set, keeps prior decisions from drifting, and
-              requires verification before work is treated as complete.
-            </p>
-          </div>
-          <div className="workflow" aria-label="Munch workflow">
-            {workflow.map(([number, title, description]) => (
-              <article key={title}>
-                <span>{number}</span>
-                <h3>{title}</h3>
-                <p>{description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="capability-section" id="capabilities">
-          <div className="section-heading">
-            <span className="section-label">03 / Capabilities</span>
-            <h2>Built for the full engineering loop.</h2>
-            <p>One system for implementation, review, debugging, architecture, security, and UI work.</p>
-          </div>
-          <div className="capability-list">
-            {capabilities.map(([icon, title, description]) => (
-              <article key={title}>
-                <div className="icon-frame"><Icon name={icon} /></div>
-                <h3>{title}</h3>
-                <p>{description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="install-section" id="install">
-          <div className="install-copy">
-            <span className="section-label">04 / Get started</span>
-            <h2>Install locally or connect remotely.</h2>
-            <p>
-              Use the complete local skill with durable memory, or connect any compatible
-              MCP client to the hosted Streamable HTTP endpoint.
-            </p>
-            <a href={`${githubUrl}#quick-install`} target="_blank" rel="noreferrer">
-              Read installation guide <Icon name="arrow" />
+            <a className="nav-action" href={githubUrl} target="_blank" rel="noreferrer">
+              <Icon name="github" /> GitHub
             </a>
           </div>
-          <div className="terminal-panel">
-            <div className="terminal-bar">
-              <span className="terminal-lights" aria-hidden="true"><i /><i /><i /></span>
-              <span>munch.setup</span>
-            </div>
-            <div className="terminal-title"><Icon name="terminal" /><span>Local install</span><small>recommended</small></div>
-            <code>npm install -g --ignore-scripts WyvernCW/MunchsPlugin{'\n'} </code>
-            <button type="button" aria-live="polite" onClick={() => copy('npm install -g --ignore-scripts WyvernCW/MunchsPlugin', 'install')}>
-              <Icon name="copy" />{' '}
-              {copied === 'install'
-                ? 'Copied'
-                : copied === 'error:install'
-                  ? 'Copy failed'
-                  : 'Copy'}
-            </button>
-            <div className="terminal-divider" />
-            <div className="terminal-title"><Icon name="route" /><span>Remote MCP endpoint</span></div>
-            <code>{mcpUrl}</code>
-            <button type="button" aria-live="polite" onClick={() => copy(mcpUrl, 'mcp')}>
-              <Icon name="copy" />{' '}
-              {copied === 'mcp'
-                ? 'Copied'
-                : copied === 'error:mcp'
-                  ? 'Copy failed'
-                  : 'Copy'}
-            </button>
-          </div>
-        </section>
-      </main>
 
-      <footer>
-        <a className="brand" href="#top"><img src={logoUrl} alt="" /><span>Munch</span><small>agent reliability</small></a>
-        <p>Open source under the MIT License.</p>
-        <a href={githubUrl} target="_blank" rel="noreferrer">WyvernCW/MunchsPlugin</a>
-      </footer>
-    </div>
+          {/* Mobile nav panel */}
+          <div className={`mobile-nav-panel ${menuOpen ? 'open' : ''}`} aria-hidden={!menuOpen}>
+            <nav aria-label="Mobile navigation">
+              <a href="#how" onClick={closeMenu}>How it works</a>
+              <a href="#capabilities" onClick={closeMenu}>Capabilities</a>
+              <a href="#install" onClick={closeMenu}>Install</a>
+              <a href={githubUrl} target="_blank" rel="noreferrer" onClick={closeMenu}>
+                <Icon name="github" /> GitHub
+              </a>
+            </nav>
+          </div>
+        </header>
+
+        <main id="main-content">
+          {/* ── HERO ── */}
+          <section className="full-width hero-wrap">
+            <div className="hero container" id="top">
+              <div className="hero-bg">
+                <div className="hero-bg-grid" />
+              </div>
+              <span className="hero-tag">MUNCH / 01</span>
+              <div className="hero-copy">
+                <div className="eyebrow"><span>01</span> Open-source skill + MCP server</div>
+                <h1>
+                  <span>Reliability</span>
+                  <span className="accent-line">infrastructure</span>
+                  <span>for coding agents.</span>
+                </h1>
+                <p>
+                  Munch gives coding agents a disciplined runtime for context routing,
+                  verification, security, and memory, so solved problems stay solved.
+                </p>
+                <div className="hero-actions">
+                  <a className="button primary" href={githubUrl} target="_blank" rel="noreferrer">
+                    View on GitHub <Icon name="arrow" />
+                  </a>
+                  <a className="button secondary" href="#install">Connect MCP</a>
+                </div>
+                <div className="hero-proof" aria-label="Project qualities">
+                  <span><Icon name="check" /> MIT licensed</span>
+                  <span><Icon name="check" /> Local-first memory</span>
+                  <span><Icon name="check" /> 40+ engineering references</span>
+                </div>
+              </div>
+
+              <div className="system-map" aria-label="Munch system flow">
+                <div className="map-head">
+                  <span>Agent request</span>
+                  <span className="live-dot">runtime online</span>
+                </div>
+                <div className="map-core">
+                  <img src={logoUrl} alt="Munch" />
+                  <div><strong>Munch router</strong><span>classify · load · verify</span></div>
+                  <b>v1.0</b>
+                </div>
+                <div className="map-branches">
+                  <div><Icon name="shield" /><span>Security</span></div>
+                  <div><Icon name="memory" /><span>Memory</span></div>
+                  <div><Icon name="loop" /><span>BTL loop</span></div>
+                </div>
+                <div className="map-output">
+                  <Icon name="graph" /><span>Evidence-backed output</span><strong>verified</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ── COMPATIBILITY BAR ── */}
+          <div className="full-width compat-wrap">
+            <div className="compatibility container" aria-label="Compatible agents">
+              <span>Works with</span>
+              <strong>Codex</strong>
+              <strong>Claude</strong>
+              <strong>OpenCode</strong>
+              <strong>KiloCode</strong>
+              <strong>Antigravity</strong>
+            </div>
+          </div>
+
+          {/* ── SIGNAL STRIP ── */}
+          <div className="full-width signal-wrap">
+            <section
+              ref={signalRef}
+              className={`signal-strip container ${signalRevealed ? 'revealed' : ''}`}
+              aria-label="Munch reliability principles"
+            >
+              <article style={{ transitionDelay: '0ms' }}>
+                <strong>Selective context</strong><span>Load what the task needs, nothing more.</span>
+              </article>
+              <article style={{ transitionDelay: '100ms' }}>
+                <strong>Regression memory</strong><span>Keep resolved failures from resurfacing.</span>
+              </article>
+              <article style={{ transitionDelay: '200ms' }}>
+                <strong>Verifiable delivery</strong><span>Completion requires evidence, not confidence.</span>
+              </article>
+            </section>
+          </div>
+
+          {/* ── HOW IT WORKS ── */}
+          <div className="full-width">
+            <section className="split-section container" id="how">
+              <Reveal className="section-intro">
+                <span className="section-label">02 / How it works</span>
+                <h2>A reliability layer, not another chatbot.</h2>
+              </Reveal>
+              <Reveal className="section-copy" delay={80}>
+                <p>
+                  Munch sits between your request and the agent's execution. It routes the
+                  smallest useful reference set, keeps prior decisions from drifting, and
+                  requires verification before work is treated as complete.
+                </p>
+              </Reveal>
+              <div
+                ref={workflowRef}
+                className={`workflow ${workflowRevealed ? 'revealed' : ''}`}
+                aria-label="Munch workflow"
+              >
+                {workflow.map(([number, title, description], i) => (
+                  <article key={title} style={{ transitionDelay: `${i * 80}ms` }}>
+                    <span>{number}</span>
+                    <h3>{title}</h3>
+                    <p>{description}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {/* ── CAPABILITIES ── */}
+          <div className="full-width cap-wrap">
+            <section className="capability-section container" id="capabilities">
+              <Reveal className="section-heading">
+                <span className="section-label">03 / Capabilities</span>
+                <h2>Built for the full engineering loop.</h2>
+                <p>One system for implementation, review, debugging, architecture, security, and UI work.</p>
+              </Reveal>
+              <div
+                ref={capRef}
+                className={`capability-list ${capRevealed ? 'revealed' : ''}`}
+              >
+                {capabilities.map(([icon, title, description], i) => (
+                  <article key={title} style={{ transitionDelay: `${i * 100}ms` }}>
+                    <div className="icon-frame"><Icon name={icon} /></div>
+                    <h3>{title}</h3>
+                    <p>{description}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {/* ── INSTALL ── */}
+          <div className="full-width">
+            <section
+              ref={installRef}
+              className={`install-section container ${installRevealed ? 'revealed' : ''}`}
+              id="install"
+            >
+              <div className="install-copy">
+                <span className="section-label">04 / Get started</span>
+                <h2>Install locally or connect remotely.</h2>
+                <p>
+                  Use the complete local skill with durable memory, or connect any compatible
+                  MCP client to the hosted Streamable HTTP endpoint.
+                </p>
+                <a href={`${githubUrl}#quick-install`} target="_blank" rel="noreferrer">
+                  Read installation guide <Icon name="arrow" />
+                </a>
+              </div>
+              <div className="terminal-panel">
+                <div className="terminal-bar">
+                  <span className="terminal-lights" aria-hidden="true"><i /><i /><i /></span>
+                  <span>munch.setup</span>
+                </div>
+                <div className="terminal-title"><Icon name="terminal" /><span>Local install</span><small>recommended</small></div>
+                <code>npm install -g --ignore-scripts WyvernCW/MunchsPlugin{'\n'} </code>
+                <button type="button" aria-live="polite" onClick={() => copy('npm install -g --ignore-scripts WyvernCW/MunchsPlugin', 'install')}>
+                  <Icon name="copy" />{' '}
+                  {copied === 'install'
+                    ? 'Copied'
+                    : copied === 'error:install'
+                      ? 'Copy failed'
+                      : 'Copy'}
+                </button>
+                <div className="terminal-divider" />
+                <div className="terminal-title"><Icon name="route" /><span>Remote MCP endpoint</span></div>
+                <code>{mcpUrl}</code>
+                <button type="button" aria-live="polite" onClick={() => copy(mcpUrl, 'mcp')}>
+                  <Icon name="copy" />{' '}
+                  {copied === 'mcp'
+                    ? 'Copied'
+                    : copied === 'error:mcp'
+                      ? 'Copy failed'
+                      : 'Copy'}
+                </button>
+              </div>
+            </section>
+          </div>
+        </main>
+
+        <div className="full-width footer-wrap">
+          <footer className="container">
+            <a className="brand" href="#top"><img src={logoUrl} alt="" /><span>Munch</span><small>agent reliability</small></a>
+            <p>Open source under the MIT License.</p>
+            <a href={githubUrl} target="_blank" rel="noreferrer">WyvernCW/MunchsPlugin</a>
+          </footer>
+        </div>
+      </div>
     </>
   );
 }
