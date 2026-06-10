@@ -10,6 +10,8 @@
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of Munch is already installed." />
 
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
     <Property Id="ARPPRODUCTICON" Value="icon.ico" />
     <Property Id="ARPHELPLINK" Value="https://github.com/WyvernCW/MunchsPlugin" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/WyvernCW/MunchsPlugin" />
