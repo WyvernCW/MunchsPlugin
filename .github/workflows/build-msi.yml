@@ -41,32 +41,15 @@ jobs:
       - name: Install WiX Toolset v5
         run: dotnet tool install --global wix --version 5.*
 
-      - name: Refresh PATH
-        shell: pwsh
-        run: |
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "User") + ";$env:Path"
-          echo "WI5_PATH=$env:Path" | Out-File -FilePath $env:GITHUB_ENV -Append
-
       - name: Harvest source files
         shell: pwsh
-        run: |
-          wix harvest dir . `
-            -component-group HarvestedFiles `
-            -platform x64 `
-            -o installer/windows/main-files.wxs `
-            -t installer/windows/harvest-transform.xslt `
-            --bf `
-            -directoryref INSTALLDIR
+        run: dotnet wix harvest dir . -component-group HarvestedFiles -platform x64 -o installer/windows/main-files.wxs -t installer/windows/harvest-transform.xslt --bf -directoryref INSTALLDIR
 
       - name: Build MSI
         shell: pwsh
         run: |
           $version = (Get-Content package.json | ConvertFrom-Json).version
-          wix build installer/windows/builder.wxs installer/windows/main-files.wxs `
-            -b "SourceDir=$((Get-Location).Path)" `
-            -b "ProductVersion=$version" `
-            -o "installer/windows/munch-$version.msi" `
-            -arch x64
+          dotnet wix build installer/windows/builder.wxs installer/windows/main-files.wxs -b "SourceDir=$((Get-Location).Path)" -b "ProductVersion=$version" -o "installer/windows/munch-$version.msi" -arch x64
 
       - name: Sign MSI (if certificate configured)
         shell: pwsh
