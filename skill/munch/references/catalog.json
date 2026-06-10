@@ -114,11 +114,7 @@
         "brand",
         "systems"
       ],
-      "dependencies": [
-        "design_tokens.md",
-        "frontend_design.md",
-        "accessibility_engineering.md"
-      ],
+      "dependencies": [],
       "graphIds": [
         "brand_systems_workflow_v1",
         "brand_systems_domain_map_v1"
@@ -257,11 +253,7 @@
         "design",
         "engineering"
       ],
-      "dependencies": [
-        "design_tokens.md",
-        "testing_strategy.md",
-        "documentation_engineering.md"
-      ],
+      "dependencies": [],
       "graphIds": [
         "design_engineering_workflow_v1",
         "design_engineering_domain_map_v1"
@@ -278,11 +270,7 @@
         "design",
         "tokens"
       ],
-      "dependencies": [
-        "frontend_design.md",
-        "brand_systems.md",
-        "accessibility_engineering.md"
-      ],
+      "dependencies": [],
       "graphIds": [
         "design_tokens_token_flow_v1",
         "design_tokens_domain_map_v1"
@@ -438,11 +426,7 @@
         "asset",
         "engineering"
       ],
-      "dependencies": [
-        "design_tokens.md",
-        "performance_guard.md",
-        "accessibility_engineering.md"
-      ],
+      "dependencies": [],
       "graphIds": [
         "icon_asset_engineering_pipeline_v1",
         "icon_asset_engineering_domain_map_v1"
@@ -679,12 +663,16 @@
         "ai_agent_engineering.md",
         "api_design.md",
         "backend_architecture.md",
+        "brand_systems.md",
         "cli_tui_engineering.md",
         "code_review_refactoring.md",
         "database_engineering.md",
+        "design_engineering.md",
+        "design_tokens.md",
         "distributed_systems.md",
         "documentation_engineering.md",
         "frontend_design.md",
+        "icon_asset_engineering.md",
         "network_protocols.md",
         "observability_debugging.md",
         "package_release.md",

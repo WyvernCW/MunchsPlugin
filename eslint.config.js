@@ -15,7 +15,7 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ["**/*.{js,jsx}"],
+    files: ["**/*.{js,jsx,mjs}"],
     plugins: {
       react,
     },
@@ -29,11 +29,14 @@ export default [
       },
       globals: {
         Buffer: "readonly",
+        clearTimeout: "readonly",
         console: "readonly",
         document: "readonly",
         fetch: "readonly",
         navigator: "readonly",
+        performance: "readonly",
         process: "readonly",
+        require: "readonly",
         Response: "readonly",
         setTimeout: "readonly",
         URL: "readonly",

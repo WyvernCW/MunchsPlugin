@@ -24,15 +24,10 @@ import {
   existsSync,
   mkdirSync,
   rmSync,
-  renameSync,
   cpSync,
 } from "fs";
 import { join, dirname, resolve } from "path";
-import { fileURLToPath } from "url";
 import https from "https";
-import { createInterface } from "readline";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const INSTALL_DIR = resolve(
   process.env.MUNCH_INSTALL_DIR
@@ -55,7 +50,7 @@ function log(msg) {
     const dir = dirname(UPDATE_LOG);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     writeFileSync(UPDATE_LOG, line + "\n", { flag: "as" });
-  } catch {}
+  } catch { /* log write failed silently */ }
 }
 
 function fetchJSON(url) {
@@ -71,7 +66,7 @@ function fetchJSON(url) {
             } else {
               resolve(JSON.parse(data));
             }
-          } catch (e) {
+          } catch {
             reject(new Error(`Failed to parse response: ${data.slice(0, 200)}`));
           }
         });

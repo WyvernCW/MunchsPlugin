@@ -18,7 +18,6 @@
 
 import { launch } from "puppeteer-core";
 import { existsSync } from "fs";
-import { resolve } from "path";
 import process from "process";
 
 const CHROME_PATHS = [
