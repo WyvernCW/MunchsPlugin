@@ -3,6 +3,7 @@ param(
   [string]$OutputFile
 )
 $ErrorActionPreference = "Stop"
+$SourceDir = $SourceDir.TrimEnd('\')
 $excludeDirs = @('node_modules', '.git', '.vercel', 'coverage', 'dist', 'certs', '.store', 'opencode-plugin', 'installer')
 $excludeFiles = @('*.wixpdb', '*.msi', '*.sha256', '*.tgz')
 

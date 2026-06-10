@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 /**
- * munch Auto-Updater v1.0
+ * munch Auto-Updater v2.0
  *
  * Compares the latest commit SHA on the configured GitHub branch against the
- * stored SHA. If different, it downloads the full repo zipball, replaces all
- * files in the install directory (except node_modules/), re-runs npm ci if
- * lockfiles changed, re-compiles TypeScript, re-registers agent configs, and
- * records the new SHA.
+ * stored SHA. In auto-update mode (default), it downloads and applies the
+ * update silently. In notify-only mode (--notify), it writes a flag file and
+ * shows a desktop notification instead.
  *
  * Designed to run as a silent scheduled task — no output unless --verbose.
  *
@@ -17,7 +16,7 @@
  *   MUNCH_VERBOSE        Set to "true" for detailed logging
  */
 
-import { execSync } from "child_process";
+import { execSync, spawnSync } from "child_process";
 import {
   readFileSync,
   writeFileSync,
@@ -29,6 +28,7 @@ import {
 import { join, dirname, resolve } from "path";
 import https from "https";
 
+const NOTIFY_ONLY = process.argv.includes("--notify");
 const INSTALL_DIR = resolve(
   process.env.MUNCH_INSTALL_DIR
     || (process.platform === "win32"
@@ -36,6 +36,7 @@ const INSTALL_DIR = resolve(
       : join(process.env.HOME, ".local", "share", "munch"))
 );
 const LAST_COMMIT_FILE = join(INSTALL_DIR, ".last-commit");
+const UPDATE_AVAILABLE_FILE = join(INSTALL_DIR, ".update-available");
 const UPDATE_LOG = join(INSTALL_DIR, "updates.log");
 const GITHUB_REPO = process.env.MUNCH_GITHUB_REPO || "WyvernCW/MunchsPlugin";
 const BRANCH = process.env.MUNCH_BRANCH || "main";
@@ -198,6 +199,22 @@ function needsNpmCi() {
   );
 }
 
+function showNotification(message) {
+  if (process.platform !== "win32") {
+    log(`Notification: ${message}`);
+    return;
+  }
+  try {
+    const ps = `
+Add-Type -AssemblyName System.Windows.Forms;
+[System.Windows.Forms.MessageBox]::Show('${message.replace(/'/g, "''")}', 'Munch Update Available', 'OK', 'Information')
+`;
+    spawnSync("powershell", ["-NoProfile", "-Command", ps], { timeout: 10000 });
+  } catch (e) {
+    log(`Notification failed: ${e.message}`);
+  }
+}
+
 async function main() {
   log(`=== Munch Auto-Update Check ===`);
   log(`Install dir: ${INSTALL_DIR}`);
@@ -217,6 +234,20 @@ async function main() {
 
     if (lastSha && latestSha === lastSha) {
       log("Already up to date.");
+      if (NOTIFY_ONLY && existsSync(UPDATE_AVAILABLE_FILE)) {
+        rmSync(UPDATE_AVAILABLE_FILE, { force: true });
+      }
+      return;
+    }
+
+    if (NOTIFY_ONLY) {
+      log("Change detected (notify mode). Writing flag file...");
+      writeFileSync(UPDATE_AVAILABLE_FILE, JSON.stringify({
+        sha: latestSha,
+        detectedAt: new Date().toISOString(),
+      }));
+      showNotification(`A new version of Munch is available.\nCommit: ${latestSha.slice(0, 7)}`);
+      log(`Update available: commit ${latestSha} (not applied — notify mode)`);
       return;
     }
 
@@ -248,6 +279,11 @@ async function main() {
 
     // Record the new SHA
     writeLastCommit(latestSha);
+
+    // Remove notification flag if it existed
+    if (existsSync(UPDATE_AVAILABLE_FILE)) {
+      rmSync(UPDATE_AVAILABLE_FILE, { force: true });
+    }
 
     log(`Update complete: commit ${latestSha}`);
   } catch (e) {

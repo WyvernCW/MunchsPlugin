@@ -19,3 +19,4 @@ installer/windows/*.msi.sha256
 installer/windows/*.wixpdb
 installer/windows/certs/
 installer/windows/main-files.wxs
+.wix/

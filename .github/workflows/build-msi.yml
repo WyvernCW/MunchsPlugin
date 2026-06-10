@@ -38,8 +38,13 @@ jobs:
         run: |
           if (-not (Test-Path .last-commit)) { "0000000000000" | Set-Content .last-commit }
 
-      - name: Install WiX Toolset v5
-        run: dotnet tool install --global wix --version 5.*
+      - name: Install WiX Toolset v7
+        run: |
+          dotnet tool install --global wix
+          wix eula accept wix7
+
+      - name: Install WixUI extension
+        run: wix extension add WixToolset.UI.wixext
 
       - name: Generate file manifest
         shell: pwsh
@@ -51,7 +56,7 @@ jobs:
           $wix = "$env:USERPROFILE\.dotnet\tools\wix.exe"
           $src = (Get-Location).Path + "\"
           $version = (Get-Content package.json | ConvertFrom-Json).version
-          & $wix build installer/windows/builder.wxs installer/windows/main-files.wxs -d "SourceDir=$src" -d "ProductVersion=$version" -o "installer/windows/munch-$version.msi" -arch x64
+          & $wix build installer/windows/builder.wxs installer/windows/main-files.wxs -d "SourceDir=$src" -d "ProductVersion=$version" -o "installer/windows/munch-$version.msi" -arch x64 --acceptEula wix7
 
       - name: Sign MSI (if certificate configured)
         shell: pwsh

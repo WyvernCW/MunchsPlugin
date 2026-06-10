@@ -94,19 +94,35 @@ if ($userPath -notlike "*$InstallDir*") {
   $env:Path = $newPath
 }
 
-# Step 6: Create auto-update scheduled task
+# Step 6: Read auto-update preference from registry
+$autoUpdate = 1
+try {
+  $regValue = Get-ItemProperty -Path "HKCU:\Software\Munch" -Name "AutoUpdate" -ErrorAction Stop
+  $autoUpdate = $regValue.AutoUpdate
+} catch {
+  # Default to enabled
+  $autoUpdate = 1
+}
+
+# Step 7: Create auto-update scheduled task
 $taskName = "Munch Auto-Update"
 $existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-if (-not $existing) {
-  Write-Host "Creating scheduled task: $taskName"
-  $action = New-ScheduledTaskAction -Execute "node" -Argument "`"$InstallDir\scripts\auto-update.mjs`"" -WorkingDirectory $InstallDir
-  $trigger = New-ScheduledTaskTrigger -Daily -At 10:00AM -RepetitionInterval (New-TimeSpan -Hours 24)
-  $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType S4U -RunLevel Limited
-  Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Force | Out-Null
-  Write-Host "Scheduled task created."
+
+if ($autoUpdate -eq 1) {
+  Write-Host "Auto-update: ENABLED (silent daily updates)"
+  $updaterArgs = "`"$InstallDir\scripts\auto-update.mjs`""
+  $logonType = "S4U"
 } else {
-  Write-Host "Scheduled task already exists."
+  Write-Host "Auto-update: DISABLED (notifications only)"
+  $updaterArgs = "`"$InstallDir\scripts\auto-update.mjs`" --notify"
+  $logonType = "Interactive"
 }
+
+$action = New-ScheduledTaskAction -Execute "node" -Argument $updaterArgs -WorkingDirectory $InstallDir
+$trigger = New-ScheduledTaskTrigger -Daily -At 10:00AM -RepetitionInterval (New-TimeSpan -Hours 24)
+$principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType $logonType -RunLevel Limited
+Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Force | Out-Null
+Write-Host "Scheduled task configured."
 
 Write-Host "`nMunch setup complete!"
 Write-Host "The auto-updater will check for updates daily."
